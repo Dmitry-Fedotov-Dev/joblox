@@ -1,0 +1,28 @@
+{{template "top" "Открытое API · Joblox"}}
+<h1>Открытое API</h1>
+<p>Биржа и счётчик открыты: любой сайт или приложение может показывать исполнителей и числа. Ответы в JSON,
+  с CORS для всех.</p>
+
+<h2>Исполнители на связи</h2>
+<pre>GET /api/v1/market
+GET /api/v1/market?kind=taxi
+
+{"cards": [
+  {"kind": "taxi", "title": "Такси Азамат", "place": "Чолпон-Ата", "about": "...",
+   "contact": "+996 ...", "url": "https://....trycloudflare.com/", "online": 2},
+  {"kind": "radio", "title": "OpenLine Радио", "url": "https://openline.one/radio/", "badge": "OpenLine"}
+]}</pre>
+<p class="muted small">Виды: taxi, delivery, bakery, freight, shop, agent, radio, other.</p>
+
+<h2>Счётчик</h2>
+<pre>GET /api/v1/stats
+{"installations": 12, "online": 340, "orders_today": 95, "kinds": {"bakery": 4, "taxi": 3}, "updated_at": "..."}</pre>
+
+<h2>Пульс установки</h2>
+<p>Программа Joblox присылает его сама раз в 5 минут. Карточка <code>listing</code> есть, только если владелец
+  включил «Показать на бирже».</p>
+<pre>POST /api/v1/beat
+{"id": "32 hex", "kind": "taxi", "version": "1.0.0", "online": 7, "orders_today": 3,
+ "listing": {"title": "...", "place": "...", "about": "...", "contact": "...", "url": "https://..."}}</pre>
+<p class="muted small">Сервер биржи тоже открытый: <code>joblox hub</code>, можно поднять свой.</p>
+{{template "foot" .}}

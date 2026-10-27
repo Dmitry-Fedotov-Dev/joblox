@@ -1,8 +1,9 @@
-// Package hub is Joblox Network: a public counter of Joblox installations. An installation whose owner
-// turned it on sends a heartbeat with a random id and a few numbers; the hub publishes only the totals.
+// Package hub is Joblox Network: the market of performers and a public counter of Joblox installations.
+// An installation sends a heartbeat with a random id and a few numbers; the hub publishes only the totals.
+// When the owner also pressed "Показать на бирже", the heartbeat carries their card (name, place, a short
+// text, a contact and the shop's address), and the market shows it while the shop is online.
 //
-// What the hub never receives or keeps: names, addresses, goods, prices, customers, payments, IP addresses.
-// There is no list of shops, so there is nothing to moderate and nobody to advertise.
+// What the hub never receives or keeps: goods, prices, customers, orders, payments, IP addresses.
 package hub
 
 import (
@@ -16,14 +17,14 @@ import (
 	"net"
 	"net/http"
 	"regexp"
-	"sort"
+	"strings"
 	"sync"
 	"time"
 
 	_ "modernc.org/sqlite" // database/sql driver "sqlite"
 )
 
-//go:embed page.html
+//go:embed *.html
 var pageFS embed.FS
 
 const (
@@ -39,11 +40,12 @@ const (
 
 // Beat is what an installation sends.
 type Beat struct {
-	ID          string `json:"id"`
-	Kind        string `json:"kind"`
-	Version     string `json:"version"`
-	Online      int    `json:"online"`
-	OrdersToday int    `json:"orders_today"`
+	ID          string   `json:"id"`
+	Kind        string   `json:"kind"`
+	Version     string   `json:"version"`
+	Online      int      `json:"online"`
+	OrdersToday int      `json:"orders_today"`
+	Listing     *Listing `json:"listing,omitempty"` // only when the owner shows the shop on the market
 }
 
 // Stats is the public total.
@@ -77,10 +79,18 @@ func (b *Beat) Validate() error {
 	}
 	b.Online = min(b.Online, maxOnline)
 	b.OrdersToday = min(b.OrdersToday, maxOrders)
+	if b.Listing != nil && b.Listing.Clean() != nil {
+		b.Listing = nil // a broken card is not shown, the counters still count
+	}
 	return nil
 }
 
 type Hub struct {
+	// AdminToken lets the network owner hide a card (POST /api/v1/hide); empty turns moderation off.
+	AdminToken string
+	// Contact is where people report a card, shown on the market.
+	Contact string
+
 	db   *sql.DB
 	log  *slog.Logger
 	now  func() time.Time
@@ -102,13 +112,24 @@ func Open(path string, log *slog.Logger) (*Hub, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS installs (
+	for _, q := range []string{
+		`CREATE TABLE IF NOT EXISTS installs (
 		id TEXT PRIMARY KEY, kind TEXT NOT NULL, version TEXT NOT NULL,
-		online INTEGER NOT NULL, orders_today INTEGER NOT NULL, seen_at INTEGER NOT NULL)`); err != nil {
+		online INTEGER NOT NULL, orders_today INTEGER NOT NULL, seen_at INTEGER NOT NULL)`,
+		`CREATE TABLE IF NOT EXISTS hidden (id TEXT PRIMARY KEY)`,
+	} {
+		if _, err := db.Exec(q); err != nil {
+			_ = db.Close()
+			return nil, err
+		}
+	}
+	// the card column came with the market; databases of the counter-only hub get it here
+	if _, err := db.Exec(`ALTER TABLE installs ADD COLUMN listing TEXT NOT NULL DEFAULT ''`); err != nil &&
+		!strings.Contains(err.Error(), "duplicate column") {
 		_ = db.Close()
 		return nil, err
 	}
-	page, err := template.ParseFS(pageFS, "page.html")
+	page, err := template.New("").Funcs(template.FuncMap{"kindTitle": KindTitle}).ParseFS(pageFS, "*.html")
 	if err != nil {
 		_ = db.Close()
 		return nil, err
@@ -158,10 +179,18 @@ func (h *Hub) allow(id, addr string) bool {
 
 // Record stores a heartbeat.
 func (h *Hub) Record(ctx context.Context, b Beat) error {
-	_, err := h.db.ExecContext(ctx, `INSERT INTO installs (id, kind, version, online, orders_today, seen_at)
-		VALUES (?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind, version=excluded.version,
-		online=excluded.online, orders_today=excluded.orders_today, seen_at=excluded.seen_at`,
-		b.ID, b.Kind, b.Version, b.Online, b.OrdersToday, h.now().Unix())
+	listing := ""
+	if b.Listing != nil {
+		raw, err := json.Marshal(b.Listing)
+		if err != nil {
+			return err
+		}
+		listing = string(raw)
+	}
+	_, err := h.db.ExecContext(ctx, `INSERT INTO installs (id, kind, version, online, orders_today, seen_at, listing)
+		VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind, version=excluded.version,
+		online=excluded.online, orders_today=excluded.orders_today, seen_at=excluded.seen_at, listing=excluded.listing`,
+		b.ID, b.Kind, b.Version, b.Online, b.OrdersToday, h.now().Unix(), listing)
 	return err
 }
 
@@ -200,14 +229,19 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/beat", h.beat)
 	mux.HandleFunc("GET /api/v1/stats", h.stats)
 	mux.HandleFunc("OPTIONS /api/v1/stats", h.stats)
+	mux.HandleFunc("GET /api/v1/market", h.market)
+	mux.HandleFunc("POST /api/v1/hide", h.hide)
 	mux.HandleFunc("GET /{$}", h.home)
+	mux.HandleFunc("GET /start", h.static("start.html"))
+	mux.HandleFunc("GET /terms", h.static("terms.html"))
+	mux.HandleFunc("GET /api", h.static("api.html"))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// the page has no scripts at all; it refreshes itself with a meta tag
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		r.Body = http.MaxBytesReader(w, r.Body, 1024)
+		r.Body = http.MaxBytesReader(w, r.Body, 4096)
 		mux.ServeHTTP(w, r)
 	})
 }
@@ -268,9 +302,9 @@ func (h *Hub) stats(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(st)
 }
 
-type kindRow struct {
-	Kind  string
-	Count int
+type section struct {
+	Kind, Action, Title string
+	Cards               []Card
 }
 
 func (h *Hub) home(w http.ResponseWriter, r *http.Request) {
@@ -279,20 +313,54 @@ func (h *Hub) home(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	var kinds []kindRow
-	for k, n := range st.Kinds {
-		kinds = append(kinds, kindRow{Kind: k, Count: n})
+	cards, err := h.Market(r.Context(), "")
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
-	sort.Slice(kinds, func(i, j int) bool {
-		return kinds[i].Count > kinds[j].Count || kinds[i].Count == kinds[j].Count && kinds[i].Kind < kinds[j].Kind
-	})
+	byKind := map[string][]Card{}
+	var more []Card
+	for _, c := range cards {
+		if c.Badge != "" {
+			more = append(more, c)
+			continue
+		}
+		k := c.Kind
+		if _, ok := kindTitles[k]; !ok || k == "agent" || k == "radio" {
+			k = "other"
+		}
+		byKind[k] = append(byKind[k], c)
+	}
+	var sections []section
+	for _, s := range Sections {
+		if len(byKind[s.Kind]) == 0 && s.Kind == "other" {
+			continue
+		}
+		sections = append(sections, section{Kind: s.Kind, Action: s.Action, Title: KindTitle(s.Kind), Cards: byKind[s.Kind]})
+	}
+	h.render(w, "market.html", struct {
+		Stats
+		Sections []section
+		More     []Card
+		Roles    []Card
+		Contact  string
+	}{st, sections, more, Roles, h.Contact})
+}
+
+func (h *Hub) static(page string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		h.render(w, page, struct {
+			Roles   []Card
+			Contact string
+		}{Roles, h.Contact})
+	}
+}
+
+func (h *Hub) render(w http.ResponseWriter, page string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	if err := h.page.Execute(w, struct {
-		Stats
-		KindRows []kindRow
-	}{st, kinds}); err != nil {
-		h.log.Error("page", "err", err)
+	if err := h.page.ExecuteTemplate(w, page, data); err != nil {
+		h.log.Error("page", "page", page, "err", err)
 	}
 }
 

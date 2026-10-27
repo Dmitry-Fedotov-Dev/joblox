@@ -1,4 +1,4 @@
-# Joblox Network: публичный счётчик установок. Слушает 127.0.0.1:8099, HTTPS даёт Caddy на хосте:
+# Joblox Network: биржа исполнителей и публичный счётчик установок. Слушает 127.0.0.1:8099, HTTPS даёт Caddy на хосте:
 #
 #   joblox.example.com {
 #   	reverse_proxy 127.0.0.1:8099
@@ -18,6 +18,9 @@ services:
         VERSION: ${VERSION:-dev}
     command: ["hub"]
     restart: unless-stopped
+    env_file: # JOBLOX_HUB_ADMIN_TOKEN, JOBLOX_HUB_CONTACT: deploy/hub/.env, в git не попадает
+      - path: .env
+        required: false
     environment:
       JOBLOX_HUB_ADDR: :8099
       JOBLOX_HUB_DB: /data/hub.db

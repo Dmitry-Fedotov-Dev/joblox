@@ -22,6 +22,8 @@ type Reporter struct {
 	Version     string
 	Online      func() int
 	OrdersToday func(ctx context.Context) int
+	Listing     func() *Listing // the owner's market card, nil while it is not shown
+	Wake        <-chan struct{} // report soon (as soon as the hub allows): the card or the address changed
 	Every       time.Duration
 	HTTP        *http.Client
 	Log         *slog.Logger
@@ -38,6 +40,9 @@ func NewID() string {
 // Send posts one heartbeat.
 func (r *Reporter) Send(ctx context.Context) error {
 	b := Beat{ID: r.ID, Kind: strings.ToLower(r.Kind), Version: r.Version, Online: r.Online(), OrdersToday: r.OrdersToday(ctx)}
+	if r.Listing != nil {
+		b.Listing = r.Listing()
+	}
 	body, err := json.Marshal(b)
 	if err != nil {
 		return err
@@ -73,6 +78,7 @@ func (r *Reporter) Run(ctx context.Context) {
 	t := time.NewTicker(every)
 	defer t.Stop()
 	for {
+		last := time.Now()
 		if err := r.Send(ctx); err != nil && ctx.Err() == nil && time.Since(r.lastWarn) > time.Hour {
 			r.lastWarn = time.Now()
 			if r.Log != nil {
@@ -83,6 +89,13 @@ func (r *Reporter) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+		case <-r.Wake:
+			// the hub takes one beat a minute from an installation
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Until(last.Add(BeatEvery + 5*time.Second))):
+			}
 		}
 	}
 }

@@ -1,0 +1,63 @@
+{{define "top"}}<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.}}</title>
+<meta name="description" content="Такси, доставка, выпечка и другие услуги от исполнителей рядом с вами. Каждый исполнитель работает сам, со своего телефона.">
+<meta name="referrer" content="no-referrer">
+<style>
+:root { --bg: #f6f5f1; --panel: #fff; --fg: #15171c; --muted: #5d6472; --line: #e2e1db; --accent: #1f4fd6; --accent-fg: #fff; --soft: #eceae3; --ok: #1b7f4a; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f1115; --panel: #171a21; --fg: #eceef2; --muted: #a0a7b5; --line: #2a2f3a; --accent: #6f93ff; --accent-fg: #0f1115; --soft: #20242d; --ok: #4cc38a; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; }
+header.top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.brand { font-weight: 800; font-size: 20px; color: var(--fg); text-decoration: none; }
+h1 { font-size: 28px; line-height: 1.2; margin: 8px 0 4px; }
+h2 { font-size: 21px; margin: 28px 0 10px; }
+h3 { font-size: 17px; margin: 18px 0 6px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+a { color: var(--accent); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.card { display: flex; flex-direction: column; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; color: var(--fg); text-decoration: none; min-width: 0; }
+a.card:hover { border-color: var(--accent); }
+.card b { font-size: 17px; overflow-wrap: anywhere; }
+.card p { margin: 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.card .meta { font-size: 13px; color: var(--muted); }
+.card .go { margin-top: auto; padding-top: 8px; color: var(--accent); font-weight: 600; font-size: 15px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 1px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.empty { background: var(--soft); border-radius: 14px; padding: 14px 16px; color: var(--muted); }
+.cta { display: block; text-align: center; background: var(--accent); color: var(--accent-fg); text-decoration: none; font-weight: 700; font-size: 20px; border-radius: 16px; padding: 18px; margin: 36px 0 12px; }
+.roles .card { border-style: dashed; }
+.stats { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
+code, pre { font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+code { padding: 1px 5px; overflow-wrap: anywhere; }
+pre { padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+ol, ul { padding-left: 22px; }
+li { margin: 4px 0; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 4px 18px 14px; margin: 12px 0; }
+footer { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--muted); margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+<header class="top"><a class="brand" href="/">Joblox</a><span class="muted small">услуги от людей рядом с вами</span></header>
+{{end}}
+
+{{define "foot"}}
+<footer>
+  <a href="/">Биржа</a>
+  <a href="/start">Стать исполнителем</a>
+  <a href="/terms">Пользовательское соглашение</a>
+  <a href="/api">Открытое API</a>
+  <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Исходный код</a>
+  {{if .Contact}}<span>Пожаловаться на карточку: {{.Contact}}</span>{{end}}
+</footer>
+</main>
+</body>
+</html>
+{{end}}

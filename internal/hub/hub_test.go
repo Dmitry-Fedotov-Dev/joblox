@@ -107,31 +107,106 @@ func TestNewIDsPerAddressAreLimited(t *testing.T) {
 	}
 }
 
-func TestPublicPage(t *testing.T) {
-	_, srv, _ := newHub(t)
-	post(t, srv.URL, `{"id":"`+idA+`","kind":"bakery","version":"1","online":3,"orders_today":2}`)
-	resp, err := http.Get(srv.URL + "/")
+func get(t *testing.T, url string) (*http.Response, string) {
+	t.Helper()
+	resp, err := http.Get(url)
 	if err != nil {
 		t.Fatal(err)
 	}
 	body, _ := io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
-	if !strings.Contains(string(body), "Joblox Network") || !strings.Contains(string(body), "bakery") ||
-		!strings.Contains(resp.Header.Get("Content-Security-Policy"), "default-src 'none'") {
-		t.Fatal("public page")
+	return resp, string(body)
+}
+
+func TestPublicPages(t *testing.T) {
+	_, srv, _ := newHub(t)
+	post(t, srv.URL, `{"id":"`+idA+`","kind":"bakery","version":"1","online":3,"orders_today":2}`)
+	resp, body := get(t, srv.URL+"/")
+	for _, want := range []string{"Заказать такси", "Сделать доставку", "OpenLine Радио", "Agent Pay", "Стать исполнителем", "Водитель такси"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("market page has no %q", want)
+		}
+	}
+	if !strings.Contains(resp.Header.Get("Content-Security-Policy"), "default-src 'none'") {
+		t.Fatal("market page without CSP")
+	}
+	for path, want := range map[string]string{"/start": "Termux", "/terms": "Пользовательское соглашение", "/api": "/api/v1/market"} {
+		if resp, body := get(t, srv.URL+path); resp.StatusCode != http.StatusOK || !strings.Contains(body, want) {
+			t.Errorf("%s: %d, no %q", path, resp.StatusCode, want)
+		}
+	}
+}
+
+const card = `"listing":{"title":"Такси <b>Азамат</b>","place":"Чолпон-Ата","about":"Camry","contact":"+996 700","url":"https://abc-def.trycloudflare.com/o/secret"}`
+
+func TestListingOnTheMarket(t *testing.T) {
+	h, srv, clock := newHub(t)
+	h.AdminToken = "admintoken"
+	if code := post(t, srv.URL, `{"id":"`+idA+`","kind":"taxi","version":"1","online":2,"orders_today":0,`+card+`}`); code != http.StatusNoContent {
+		t.Fatalf("beat with a card: %d", code)
+	}
+	// a card with a non-https address is dropped, the beat still counts
+	if code := post(t, srv.URL, `{"id":"`+idB+`","kind":"taxi","version":"1","online":1,"orders_today":0,"listing":{"title":"x","url":"javascript:alert(1)"}}`); code != http.StatusNoContent {
+		t.Fatalf("beat with a bad card: %d", code)
+	}
+	cards, err := h.Market(context.Background(), "taxi")
+	if err != nil || len(cards) != 1 {
+		t.Fatalf("taxi cards: %+v %v", cards, err)
+	}
+	if c := cards[0]; c.Title != "Такси <b>Азамат</b>" || c.URL != "https://abc-def.trycloudflare.com/" || c.Online != 2 {
+		t.Fatalf("card: %+v", c)
+	}
+	_, body := get(t, srv.URL+"/")
+	if !strings.Contains(body, "Такси &lt;b&gt;Азамат&lt;/b&gt;") || strings.Contains(body, "<b>Азамат") {
+		t.Fatal("the card title is not escaped on the page")
+	}
+	_, js := get(t, srv.URL+"/api/v1/market?kind=taxi")
+	if !strings.Contains(js, "abc-def.trycloudflare.com") {
+		t.Fatalf("market api: %s", js)
+	}
+
+	hide := func(token string) int {
+		req, _ := http.NewRequest(http.MethodPost, srv.URL+"/api/v1/hide", strings.NewReader(`{"id":"`+idA+`","hidden":true}`))
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		return resp.StatusCode
+	}
+	if code := hide("wrong"); code != http.StatusForbidden {
+		t.Fatalf("hide with a wrong token: %d", code)
+	}
+	if code := hide("admintoken"); code != http.StatusNoContent {
+		t.Fatalf("hide: %d", code)
+	}
+	if cards, _ := h.Market(context.Background(), "taxi"); len(cards) != 0 {
+		t.Fatalf("hidden card still shown: %+v", cards)
+	}
+	if err := h.Hide(context.Background(), idA, false); err != nil {
+		t.Fatal(err)
+	}
+	*clock = clock.Add(ActiveWindow + time.Minute)
+	if cards, _ := h.Market(context.Background(), "taxi"); len(cards) != 0 {
+		t.Fatalf("offline card still shown: %+v", cards)
 	}
 }
 
 func TestReporter(t *testing.T) {
 	h, srv, _ := newHub(t)
 	r := &Reporter{URL: srv.URL + "/", ID: NewID(), Kind: "Bakery", Version: "1.2.3",
-		Online: func() int { return 4 }, OrdersToday: func(context.Context) int { return 9 }}
+		Online: func() int { return 4 }, OrdersToday: func(context.Context) int { return 9 },
+		Listing: func() *Listing { return &Listing{Title: "Пекарня у дома", URL: "https://bake.example.com"} }}
 	if err := r.Send(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	st, err := h.Stats(context.Background())
 	if err != nil || st.Installations != 1 || st.Online != 4 || st.OrdersToday != 9 || st.Kinds["bakery"] != 1 {
 		t.Fatalf("reported: %+v %v", st, err)
+	}
+	if cards, _ := h.Market(context.Background(), "bakery"); len(cards) != 1 || cards[0].Title != "Пекарня у дома" {
+		t.Fatalf("reported card: %+v", cards)
 	}
 	if err := r.Send(context.Background()); err == nil {
 		t.Fatal("second beat within a minute was accepted")
