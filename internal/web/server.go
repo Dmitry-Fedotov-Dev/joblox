@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/mail"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/metrics"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/order"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/mail"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/metrics"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 )
 
 //go:embed templates/*.html

@@ -3,7 +3,7 @@ package antifraud
 import (
 	"testing"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 )
 
 var cfg = profile.Antifraud{

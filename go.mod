@@ -1,4 +1,4 @@
-module github.com/Dmitry-Fedotov-Dev/openline-shop
+module github.com/Dmitry-Fedotov-Dev/joblox
 
 go 1.26.0
 

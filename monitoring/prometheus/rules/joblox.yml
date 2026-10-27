@@ -1,35 +1,35 @@
 groups:
-  - name: openline
+  - name: joblox
     rules:
-      - alert: OpenlineDown
-        expr: up{job="openline"} == 0
+      - alert: JobloxDown
+        expr: up{job="joblox"} == 0
         for: 2m
         labels: {severity: critical}
         annotations:
           summary: "Магазин не отвечает"
           description: "Prometheus не может забрать /metrics уже 2 минуты: процесс упал или сервер недоступен."
 
-      - alert: OpenlineErrors
+      - alert: JobloxErrors
         expr: |
-          sum(rate(openline_http_requests_total{code="5xx"}[5m]))
-            / clamp_min(sum(rate(openline_http_requests_total[5m])), 0.001) > 0.02
+          sum(rate(joblox_http_requests_total{code="5xx"}[5m]))
+            / clamp_min(sum(rate(joblox_http_requests_total[5m])), 0.001) > 0.02
         for: 5m
         labels: {severity: warning}
         annotations:
           summary: "Больше 2% запросов с ошибкой сервера"
           description: "Доля ответов 5xx за 5 минут выше 2%. Смотрите журнал процесса."
 
-      - alert: OpenlineSlow
+      - alert: JobloxSlow
         expr: |
-          histogram_quantile(0.95, sum by (le) (rate(openline_http_request_duration_seconds_bucket{route="GET /{$}"}[5m]))) > 0.5
+          histogram_quantile(0.95, sum by (le) (rate(joblox_http_request_duration_seconds_bucket{route="GET /{$}"}[5m]))) > 0.5
         for: 10m
         labels: {severity: warning}
         annotations:
           summary: "Витрина отвечает медленно"
           description: "95-й процентиль времени ответа главной страницы выше 0,5 с уже 10 минут."
 
-      - alert: OpenlineFraudWave
-        expr: sum(increase(openline_antifraud_decisions_total{action="block"}[15m])) > 30
+      - alert: JobloxFraudWave
+        expr: sum(increase(joblox_antifraud_decisions_total{action="block"}[15m])) > 30
         for: 0m
         labels: {severity: warning}
         annotations:

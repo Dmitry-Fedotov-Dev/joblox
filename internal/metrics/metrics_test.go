@@ -39,8 +39,8 @@ func TestPrometheusEndpoint(t *testing.T) {
 	rec := httptest.NewRecorder()
 	r.Handler().ServeHTTP(rec, httptest.NewRequest("GET", "/metrics", nil))
 	body, _ := io.ReadAll(rec.Body)
-	for _, want := range []string{`openline_http_requests_total{code="2xx",route="/"} 1`, `openline_antifraud_decisions_total{action="allow"} 1`,
-		`openline_order_transitions_total{to="done"} 1`, "openline_online_visitors", "go_goroutines"} {
+	for _, want := range []string{`joblox_http_requests_total{code="2xx",route="/"} 1`, `joblox_antifraud_decisions_total{action="allow"} 1`,
+		`joblox_order_transitions_total{to="done"} 1`, "joblox_online_visitors", "go_goroutines"} {
 		if !strings.Contains(string(body), want) {
 			t.Errorf("missing %s", want)
 		}

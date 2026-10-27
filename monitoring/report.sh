@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Сохраняет весь дашборд OpenLine Shop за один прогон одним высоким PNG: отчёт к прогону CI.
+# Сохраняет весь дашборд Joblox за один прогон одним высоким PNG: отчёт к прогону CI.
 #
 #   monitoring/report.sh <testid> <from> <to> <out.png> [grafana-url]
 #
@@ -14,12 +14,12 @@ if [ -z "$chrome" ]; then
 fi
 
 # высота страницы — из раскладки дашборда: ячейка сетки 30 px плюс отступ 8 px
-dashboard="$(dirname "$0")/grafana/dashboards/openline.json"
+dashboard="$(dirname "$0")/grafana/dashboards/joblox.json"
 height=$(python3 -c 'import json,sys
 d = json.load(open(sys.argv[1], encoding="utf-8"))
 print(max(p["gridPos"]["y"] + p["gridPos"]["h"] for p in d["panels"]) * 38 + 80)' "$dashboard")
 
-url="$grafana/d/openline/openline-shop?orgId=1&kiosk&theme=dark&var-testid=$testid&var-window=1m&from=${from}000&to=${to}000"
+url="$grafana/d/joblox/joblox-shop?orgId=1&kiosk&theme=dark&var-testid=$testid&var-window=1m&from=${from}000&to=${to}000"
 "$chrome" --headless=new --disable-gpu --hide-scrollbars --no-sandbox --window-size="1600,$height" \
   --run-all-compositor-stages-before-draw --virtual-time-budget=60000 \
   --screenshot="$out" "$url" 2>/dev/null

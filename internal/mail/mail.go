@@ -131,7 +131,7 @@ type Message struct {
 	Body    string    `json:"body"`
 }
 
-// Outbox keeps the last letters in memory instead of sending them (OPENLINE_ENV=dev and tests).
+// Outbox keeps the last letters in memory instead of sending them (JOBLOX_ENV=dev and tests).
 type Outbox struct {
 	mu   sync.Mutex
 	msgs []Message

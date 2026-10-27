@@ -1,10 +1,10 @@
-// Command openline runs a shop, a bakery, a taxi dispatch or any other order service described by a
+// Command joblox runs a shop, a bakery, a taxi dispatch or any other order service described by a
 // business profile. Everything is configured with environment variables (see docs/CONFIGURATION.md):
 //
-//	openline serve                 # the site, the operator bot, the dashboard
-//	openline check profile.yaml    # validate a profile (and OPENLINE_REQUISITES) and print its workflow
-//	openline health                # exit 0 when the local server answers /healthz (Docker HEALTHCHECK)
-//	openline version
+//	joblox serve                 # the site, the operator bot, the dashboard
+//	joblox check profile.yaml    # validate a profile (and JOBLOX_REQUISITES) and print its workflow
+//	joblox health                # exit 0 when the local server answers /healthz (Docker HEALTHCHECK)
+//	joblox version
 package main
 
 import (
@@ -21,13 +21,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/bot"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/mail"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/metrics"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/order"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/profile"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/store"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/web"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/bot"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/mail"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/metrics"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/store"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/web"
 )
 
 var version = "dev"
@@ -82,19 +82,19 @@ type Config struct {
 
 func loadConfig() (Config, error) {
 	c := Config{
-		Env: env("OPENLINE_ENV", "prod"), Profile: env("OPENLINE_PROFILE", ""), Requisites: env("OPENLINE_REQUISITES", ""),
-		DB: env("OPENLINE_DB", "data/openline.db"), Addr: env("OPENLINE_ADDR", ":8080"),
-		AdminAddr: env("OPENLINE_ADMIN_ADDR", "127.0.0.1:9180"), BaseURL: env("OPENLINE_BASE_URL", ""),
-		Trusted: env("OPENLINE_TRUSTED_PROXIES", "127.0.0.1,::1"), BotToken: env("TELEGRAM_TOKEN", ""),
+		Env: env("JOBLOX_ENV", "prod"), Profile: env("JOBLOX_PROFILE", ""), Requisites: env("JOBLOX_REQUISITES", ""),
+		DB: env("JOBLOX_DB", "data/joblox.db"), Addr: env("JOBLOX_ADDR", ":8080"),
+		AdminAddr: env("JOBLOX_ADMIN_ADDR", "127.0.0.1:9180"), BaseURL: env("JOBLOX_BASE_URL", ""),
+		Trusted: env("JOBLOX_TRUSTED_PROXIES", "127.0.0.1,::1"), BotToken: env("TELEGRAM_TOKEN", ""),
 	}
 	var errs []error
 	if c.Env != "prod" && c.Env != "dev" {
-		errs = append(errs, fmt.Errorf("OPENLINE_ENV must be prod or dev, not %q", c.Env))
+		errs = append(errs, fmt.Errorf("JOBLOX_ENV must be prod or dev, not %q", c.Env))
 	}
 	if c.Profile == "" {
-		errs = append(errs, errors.New("OPENLINE_PROFILE: path to the business profile, e.g. profiles/bakery.yaml"))
+		errs = append(errs, errors.New("JOBLOX_PROFILE: path to the business profile, e.g. profiles/bakery.yaml"))
 	}
-	secret := os.Getenv("OPENLINE_SECRET")
+	secret := os.Getenv("JOBLOX_SECRET")
 	switch {
 	case len(secret) >= 32:
 		c.Secret = []byte(secret)
@@ -102,16 +102,16 @@ func loadConfig() (Config, error) {
 		c.Secret = make([]byte, 32)
 		_, _ = rand.Read(c.Secret)
 	default:
-		errs = append(errs, errors.New("OPENLINE_SECRET: at least 32 random characters (openssl rand -hex 32)"))
+		errs = append(errs, errors.New("JOBLOX_SECRET: at least 32 random characters (openssl rand -hex 32)"))
 	}
 	if c.BaseURL == "" {
 		if c.Env == "dev" {
 			c.BaseURL = "http://localhost" + c.Addr
 		} else {
-			errs = append(errs, errors.New("OPENLINE_BASE_URL: the public address, e.g. https://shop.example.com"))
+			errs = append(errs, errors.New("JOBLOX_BASE_URL: the public address, e.g. https://shop.example.com"))
 		}
 	} else if c.Env == "prod" && !strings.HasPrefix(c.BaseURL, "https://") {
-		errs = append(errs, errors.New("OPENLINE_BASE_URL must be https:// in production: order links carry secrets"))
+		errs = append(errs, errors.New("JOBLOX_BASE_URL must be https:// in production: order links carry secrets"))
 	}
 	if host := env("SMTP_HOST", ""); host != "" {
 		port, err := strconv.Atoi(env("SMTP_PORT", "587"))
@@ -126,16 +126,16 @@ func loadConfig() (Config, error) {
 	} else if c.Env == "prod" {
 		errs = append(errs, errors.New("SMTP_HOST: production needs a mail relay for codes and statuses"))
 	}
-	for _, part := range strings.FieldsFunc(env("OPENLINE_OPERATORS", ""), func(r rune) bool { return r == ',' || r == ' ' }) {
+	for _, part := range strings.FieldsFunc(env("JOBLOX_OPERATORS", ""), func(r rune) bool { return r == ',' || r == ' ' }) {
 		id, err := strconv.ParseInt(part, 10, 64)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("OPENLINE_OPERATORS: %q is not a Telegram id", part))
+			errs = append(errs, fmt.Errorf("JOBLOX_OPERATORS: %q is not a Telegram id", part))
 			continue
 		}
 		c.Operators = append(c.Operators, id)
 	}
 	if c.BotToken != "" && len(c.Operators) == 0 {
-		errs = append(errs, errors.New("OPENLINE_OPERATORS: the bot needs at least one operator id"))
+		errs = append(errs, errors.New("JOBLOX_OPERATORS: the bot needs at least one operator id"))
 	}
 	if c.Env == "prod" && c.BotToken == "" {
 		errs = append(errs, errors.New("TELEGRAM_TOKEN: production needs the operator bot, otherwise nobody sees orders"))
@@ -157,7 +157,7 @@ func serve(log *slog.Logger) error {
 		return err
 	}
 	if p.AcceptsTransfer() && req == nil {
-		log.Warn("the profile takes transfers but OPENLINE_REQUISITES is empty: transfer is hidden from the checkout")
+		log.Warn("the profile takes transfers but JOBLOX_REQUISITES is empty: transfer is hidden from the checkout")
 	}
 	if err := os.MkdirAll(dirOf(cfg.DB), 0o750); err != nil {
 		return err
@@ -183,7 +183,7 @@ func serve(log *slog.Logger) error {
 	svc.Observe = rec
 	trusted, err := web.ParsePrefixes(cfg.Trusted)
 	if err != nil {
-		return fmt.Errorf("OPENLINE_TRUSTED_PROXIES: %w", err)
+		return fmt.Errorf("JOBLOX_TRUSTED_PROXIES: %w", err)
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: strings.HasPrefix(cfg.BaseURL, "https://"), Version: version}, log)
@@ -214,7 +214,7 @@ func serve(log *slog.Logger) error {
 			}
 		}(s)
 	}
-	log.Info("openline started", "version", version, "business", p.Business.Name, "addr", cfg.Addr, "admin", cfg.AdminAddr,
+	log.Info("joblox started", "version", version, "business", p.Business.Name, "addr", cfg.Addr, "admin", cfg.AdminAddr,
 		"env", cfg.Env, "requisites", req.Fingerprint())
 	select {
 	case <-ctx.Done():
@@ -226,7 +226,7 @@ func serve(log *slog.Logger) error {
 	defer cancel()
 	_ = public.Shutdown(shutdown)
 	_ = admin.Shutdown(shutdown)
-	log.Info("openline stopped")
+	log.Info("joblox stopped")
 	return nil
 }
 
@@ -255,7 +255,7 @@ func sweep(ctx context.Context, svc *order.Service, log *slog.Logger) {
 }
 
 func health() error {
-	addr := env("OPENLINE_ADDR", ":8080")
+	addr := env("JOBLOX_ADDR", ":8080")
 	if strings.HasPrefix(addr, ":") {
 		addr = "127.0.0.1" + addr
 	}
@@ -273,7 +273,7 @@ func health() error {
 
 func check(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: openline check profile.yaml [requisites.yaml]")
+		return errors.New("usage: joblox check profile.yaml [requisites.yaml]")
 	}
 	p, err := profile.Load(args[0])
 	if err != nil {

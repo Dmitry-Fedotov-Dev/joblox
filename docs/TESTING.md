@@ -21,7 +21,7 @@ CI гоняет то же и ещё сценарии k6 против живог�
 Против запущенного сервера в режиме `dev` (коды читаются из `/dev/outbox`):
 
 ```bash
-OPENLINE_ENV=dev OPENLINE_PROFILE=profiles/bakery.yaml OPENLINE_REQUISITES=deploy/requisites.example.yaml ./bin/openline serve &
+JOBLOX_ENV=dev JOBLOX_PROFILE=profiles/bakery.yaml JOBLOX_REQUISITES=deploy/requisites.example.yaml ./bin/joblox serve &
 k6 run -e BASE_URL=http://127.0.0.1:8080 k6/functional/checkout.js
 k6 run -e BASE_URL=http://127.0.0.1:8080 k6/functional/antifraud.js
 ```
@@ -32,14 +32,14 @@ k6 run -e BASE_URL=http://127.0.0.1:8080 k6/functional/antifraud.js
 ## Нагрузка
 
 ```bash
-OPENLINE_TRUSTED_PROXIES=127.0.0.1 OPENLINE_ENV=dev OPENLINE_PROFILE=profiles/bakery.yaml \
-  OPENLINE_REQUISITES=deploy/requisites.example.yaml ./bin/openline serve &
+JOBLOX_TRUSTED_PROXIES=127.0.0.1 JOBLOX_ENV=dev JOBLOX_PROFILE=profiles/bakery.yaml \
+  JOBLOX_REQUISITES=deploy/requisites.example.yaml ./bin/joblox serve &
 k6 run -e BASE_URL=http://127.0.0.1:8080 -e RATE=60 -e DURATION=1m --summary-export reports/summary.json k6/load.js
 python3 scripts/load_summary.py reports/summary.json "60 посетителей в секунду"
 ```
 
 Посетители заходят на витрину, часть смотрит страницы заказов, каждый десятый оформляет заказ. Каждый
 виртуальный посетитель приходит со своего адреса в `X-Forwarded-For`, поэтому серверу нужен
-`OPENLINE_TRUSTED_PROXIES=127.0.0.1`. Пороги: ошибок меньше 1%, p95 витрины меньше 300 мс, заказа меньше 800 мс.
+`JOBLOX_TRUSTED_PROXIES=127.0.0.1`. Пороги: ошибок меньше 1%, p95 витрины меньше 300 мс, заказа меньше 800 мс.
 
 В CI нагрузка идёт с Prometheus и Grafana, а весь дашборд за прогон сохраняется картинкой.

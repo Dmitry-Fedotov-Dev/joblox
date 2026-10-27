@@ -1,8 +1,8 @@
 {
-  "uid": "openline",
-  "title": "OpenLine Shop",
+  "uid": "joblox",
+  "title": "Joblox",
   "tags": [
-    "openline"
+    "joblox"
   ],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -23,7 +23,7 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "query": "label_values(up{job=\"openline\"}, instance)",
+        "query": "label_values(up{job=\"joblox\"}, instance)",
         "includeAll": true,
         "multi": true,
         "current": {
@@ -115,7 +115,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "min(up{job=\"openline\",instance=~\"$instance\"}) or vector(0)",
+          "expr": "min(up{job=\"joblox\",instance=~\"$instance\"}) or vector(0)",
           "legendFormat": "__auto",
           "range": true,
           "instant": false
@@ -180,7 +180,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(openline_online_visitors{instance=~\"$instance\"}) or vector(0)",
+          "expr": "sum(joblox_online_visitors{instance=~\"$instance\"}) or vector(0)",
           "legendFormat": "__auto",
           "range": true,
           "instant": false
@@ -241,7 +241,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(openline_http_requests_total{instance=~\"$instance\"}[$window])) or vector(0)",
+          "expr": "sum(rate(joblox_http_requests_total{instance=~\"$instance\"}[$window])) or vector(0)",
           "legendFormat": "__auto",
           "range": true,
           "instant": false
@@ -302,7 +302,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(openline_http_request_duration_seconds_bucket{route=\"GET /{$}\",instance=~\"$instance\"}[$window])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(joblox_http_request_duration_seconds_bucket{route=\"GET /{$}\",instance=~\"$instance\"}[$window])))",
           "legendFormat": "__auto",
           "range": true,
           "instant": false
@@ -352,7 +352,7 @@
     {
       "type": "stat",
       "title": "Ошибки 5xx",
-      "description": "Доля ответов с ошибкой сервера. Больше 2% — тревога OpenlineErrors.",
+      "description": "Доля ответов с ошибкой сервера. Больше 2% — тревога JobloxErrors.",
       "id": 6,
       "datasource": {
         "type": "prometheus",
@@ -371,7 +371,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(sum(rate(openline_http_requests_total{code=\"5xx\",instance=~\"$instance\"}[$window])) / clamp_min(sum(rate(openline_http_requests_total{instance=~\"$instance\"}[$window])), 0.001)) or vector(0)",
+          "expr": "(sum(rate(joblox_http_requests_total{code=\"5xx\",instance=~\"$instance\"}[$window])) / clamp_min(sum(rate(joblox_http_requests_total{instance=~\"$instance\"}[$window])), 0.001)) or vector(0)",
           "legendFormat": "__auto",
           "range": true,
           "instant": false
@@ -440,7 +440,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(increase(openline_antifraud_decisions_total{action=\"block\",instance=~\"$instance\"}[1h])) or vector(0)",
+          "expr": "sum(increase(joblox_antifraud_decisions_total{action=\"block\",instance=~\"$instance\"}[1h])) or vector(0)",
           "legendFormat": "__auto",
           "range": true,
           "instant": false
@@ -514,7 +514,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (route) (rate(openline_http_requests_total{instance=~\"$instance\"}[$window]))",
+          "expr": "sum by (route) (rate(joblox_http_requests_total{instance=~\"$instance\"}[$window]))",
           "legendFormat": "{{route}}",
           "range": true,
           "instant": false
@@ -573,7 +573,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, route) (rate(openline_http_request_duration_seconds_bucket{instance=~\"$instance\"}[$window])))",
+          "expr": "histogram_quantile(0.95, sum by (le, route) (rate(joblox_http_request_duration_seconds_bucket{instance=~\"$instance\"}[$window])))",
           "legendFormat": "p95 {{route}}",
           "range": true,
           "instant": false
@@ -584,7 +584,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.5, sum by (le, route) (rate(openline_http_request_duration_seconds_bucket{instance=~\"$instance\"}[$window])))",
+          "expr": "histogram_quantile(0.5, sum by (le, route) (rate(joblox_http_request_duration_seconds_bucket{instance=~\"$instance\"}[$window])))",
           "legendFormat": "p50 {{route}}",
           "range": true,
           "instant": false
@@ -643,7 +643,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (code) (rate(openline_http_requests_total{instance=~\"$instance\"}[$window]))",
+          "expr": "sum by (code) (rate(joblox_http_requests_total{instance=~\"$instance\"}[$window]))",
           "legendFormat": "{{code}}",
           "range": true,
           "instant": false
@@ -702,7 +702,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(openline_online_visitors{instance=~\"$instance\"})",
+          "expr": "sum(joblox_online_visitors{instance=~\"$instance\"})",
           "legendFormat": "онлайн",
           "range": true,
           "instant": false
@@ -774,7 +774,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (action) (increase(openline_antifraud_decisions_total{instance=~\"$instance\"}[$window]))",
+          "expr": "sum by (action) (increase(joblox_antifraud_decisions_total{instance=~\"$instance\"}[$window]))",
           "legendFormat": "{{action}}",
           "range": true,
           "instant": false
@@ -833,7 +833,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (to) (increase(openline_order_transitions_total{instance=~\"$instance\"}[$window]))",
+          "expr": "sum by (to) (increase(joblox_order_transitions_total{instance=~\"$instance\"}[$window]))",
           "legendFormat": "{{to}}",
           "range": true,
           "instant": false
@@ -916,7 +916,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "100 * rate(process_cpu_seconds_total{job=\"openline\",instance=~\"$instance\"}[$window])",
+          "expr": "100 * rate(process_cpu_seconds_total{job=\"joblox\",instance=~\"$instance\"}[$window])",
           "legendFormat": "магазин, % ядра",
           "range": true,
           "instant": false
@@ -986,7 +986,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "process_resident_memory_bytes{job=\"openline\",instance=~\"$instance\"}",
+          "expr": "process_resident_memory_bytes{job=\"joblox\",instance=~\"$instance\"}",
           "legendFormat": "магазин",
           "range": true,
           "instant": false

@@ -6,8 +6,8 @@ package antifraud
 import (
 	"strings"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 )
 
 type Action string

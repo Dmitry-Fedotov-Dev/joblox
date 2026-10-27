@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/antifraud"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/order"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/profile"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/store"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/antifraud"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/store"
 )
 
 type outbox struct {

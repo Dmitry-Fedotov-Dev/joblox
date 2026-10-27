@@ -5,17 +5,17 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 ARG VERSION=dev
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/openline ./cmd/openline
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/joblox ./cmd/joblox
 
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=build /out/openline /usr/local/bin/openline
+COPY --from=build /out/joblox /usr/local/bin/joblox
 COPY profiles /profiles
-ENV OPENLINE_DB=/data/openline.db \
-    OPENLINE_ADDR=:8080 \
-    OPENLINE_ADMIN_ADDR=:9180
+ENV JOBLOX_DB=/data/joblox.db \
+    JOBLOX_ADDR=:8080 \
+    JOBLOX_ADMIN_ADDR=:9180
 VOLUME /data
 EXPOSE 8080 9180
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["/usr/local/bin/openline", "health"]
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD ["/usr/local/bin/joblox", "health"]
 USER nonroot:nonroot
-ENTRYPOINT ["/usr/local/bin/openline"]
+ENTRYPOINT ["/usr/local/bin/joblox"]
 CMD ["serve"]

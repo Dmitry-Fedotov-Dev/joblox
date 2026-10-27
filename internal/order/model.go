@@ -8,8 +8,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/flow"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/flow"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
 )
 
 // Order is one customer request. Fields holds the checkout answers by field id.

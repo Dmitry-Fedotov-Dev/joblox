@@ -4,7 +4,7 @@
 держать на маленьком сервере.
 
 ```
-cmd/openline        запуск, настройки из окружения, команды serve, check, health, version
+cmd/joblox        запуск, настройки из окружения, команды serve, check, health, version
 internal/profile    профиль бизнеса: чтение YAML и проверка графа статусов
 internal/flow       движок статусов: какие переходы открыты, применение перехода
 internal/money      суммы в копейках

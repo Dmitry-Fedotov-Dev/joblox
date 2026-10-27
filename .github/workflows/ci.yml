@@ -54,12 +54,12 @@ jobs:
         with:
           go-version-file: go.mod
       - name: build
-        run: CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_SHA::7}" -o bin/openline ./cmd/openline
+        run: CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_SHA::7}" -o bin/joblox ./cmd/joblox
       - name: every profile is valid
         run: |
           for p in profiles/*.yaml; do
             echo "::group::$p"
-            ./bin/openline check "$p" deploy/requisites.example.yaml
+            ./bin/joblox check "$p" deploy/requisites.example.yaml
             echo "::endgroup::"
           done
       - name: static JS
@@ -71,17 +71,17 @@ jobs:
         uses: Dmitry-Fedotov-Dev/ci/actions/promtool@v1
         with:
           dir: monitoring/prometheus
-          rule-tests: tests/openline_test.yml
+          rule-tests: tests/joblox_test.yml
       - name: dashboard matches its generator
         uses: Dmitry-Fedotov-Dev/ci/actions/dashboards-sync@v1
         with:
-          pairs: monitoring/grafana/gen_dashboard.py monitoring/grafana/dashboards/openline.json
+          pairs: monitoring/grafana/gen_dashboard.py monitoring/grafana/dashboards/joblox.json
       - name: docker image builds
-        run: docker build --build-arg VERSION="${GITHUB_SHA::7}" -t openline-shop:ci .
+        run: docker build --build-arg VERSION="${GITHUB_SHA::7}" -t joblox-shop:ci .
       - uses: actions/upload-artifact@v7
         with:
-          name: openline-linux-amd64
-          path: bin/openline
+          name: joblox-linux-amd64
+          path: bin/joblox
 
   functional:
     # Сценарии k6 против живого сервера с профилем пекарни: путь клиента от витрины до реквизитов
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v7
         with:
-          name: openline-linux-amd64
+          name: joblox-linux-amd64
           path: bin
       - name: k6
         run: |
@@ -102,10 +102,10 @@ jobs:
           mv "k6-${K6_RELEASE}-linux-amd64/k6" bin/k6 && ./bin/k6 version
       - name: start the shop
         run: |
-          chmod +x bin/openline
+          chmod +x bin/joblox
           mkdir -p reports
-          OPENLINE_ENV=dev OPENLINE_PROFILE=profiles/bakery.yaml OPENLINE_REQUISITES=deploy/requisites.example.yaml \
-            OPENLINE_DB=reports/ci.db OPENLINE_ADDR=127.0.0.1:8080 ./bin/openline serve > reports/server.log 2>&1 &
+          JOBLOX_ENV=dev JOBLOX_PROFILE=profiles/bakery.yaml JOBLOX_REQUISITES=deploy/requisites.example.yaml \
+            JOBLOX_DB=reports/ci.db JOBLOX_ADDR=127.0.0.1:8080 ./bin/joblox serve > reports/server.log 2>&1 &
           timeout 30 bash -c 'until curl -sf http://127.0.0.1:8080/healthz >/dev/null; do sleep 1; done'
       - name: run scenarios
         run: |
@@ -146,7 +146,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v7
         with:
-          name: openline-linux-amd64
+          name: joblox-linux-amd64
           path: bin
       - name: k6
         run: |
@@ -154,12 +154,12 @@ jobs:
           mv "k6-${K6_RELEASE}-linux-amd64/k6" bin/k6
       - name: start monitoring and the shop
         run: |
-          chmod +x bin/openline
+          chmod +x bin/joblox
           mkdir -p reports
           docker compose -f monitoring/docker-compose.yml --profile linux-host up -d
-          OPENLINE_ENV=dev OPENLINE_PROFILE=profiles/bakery.yaml OPENLINE_REQUISITES=deploy/requisites.example.yaml \
-            OPENLINE_DB=reports/load.db OPENLINE_ADDR=127.0.0.1:8080 OPENLINE_TRUSTED_PROXIES=127.0.0.1 \
-            ./bin/openline serve > reports/server.log 2>&1 &
+          JOBLOX_ENV=dev JOBLOX_PROFILE=profiles/bakery.yaml JOBLOX_REQUISITES=deploy/requisites.example.yaml \
+            JOBLOX_DB=reports/load.db JOBLOX_ADDR=127.0.0.1:8080 JOBLOX_TRUSTED_PROXIES=127.0.0.1 \
+            ./bin/joblox serve > reports/server.log 2>&1 &
           timeout 30 bash -c 'until curl -sf http://127.0.0.1:8080/healthz >/dev/null; do sleep 1; done'
           timeout 90 bash -c 'until curl -sf http://127.0.0.1:3003/api/health >/dev/null; do sleep 2; done'
       - name: load test

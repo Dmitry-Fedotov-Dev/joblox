@@ -16,7 +16,7 @@
 3. Скопируйте репозиторий на сервер и заполните настройки:
 
 ```bash
-git clone https://github.com/Dmitry-Fedotov-Dev/openline-shop && cd openline-shop
+git clone https://github.com/Dmitry-Fedotov-Dev/joblox && cd joblox-shop
 cp deploy/.env.example deploy/.env && nano deploy/.env
 cp deploy/requisites.example.yaml deploy/requisites.yaml && nano deploy/requisites.yaml && chmod 600 deploy/requisites.yaml
 ```
@@ -36,8 +36,8 @@ Caddy сам получит сертификат для `DOMAIN`. Бот при�
 
 ## Без Docker
 
-Соберите бинарник (`CGO_ENABLED=0 go build -o bin/openline ./cmd/openline`), скопируйте на сервер и установите
-сервис по комментариям в [`deploy/openline.service`](../deploy/openline.service). HTTPS даст Caddy на хосте:
+Соберите бинарник (`CGO_ENABLED=0 go build -o bin/joblox ./cmd/joblox`), скопируйте на сервер и установите
+сервис по комментариям в [`deploy/joblox.service`](../deploy/joblox.service). HTTPS даст Caddy на хосте:
 [`deploy/Caddyfile.host`](../deploy/Caddyfile.host).
 
 ## Дашборд на сервере
@@ -52,11 +52,11 @@ ssh -N -L 9180:127.0.0.1:9180 root@сервер
 
 ## Резервные копии
 
-Все данные в одном файле SQLite (в Docker: том `openline_shop-data`). Безопасная копия без остановки:
+Все данные в одном файле SQLite (в Docker: том `joblox_shop-data`). Безопасная копия без остановки:
 
 ```bash
-docker run --rm -v openline_shop-data:/data -v "$PWD":/backup alpine \
-  sh -c 'apk add -q sqlite && sqlite3 /data/openline.db ".backup /backup/openline-$(date +%F).db"'
+docker run --rm -v joblox_shop-data:/data -v "$PWD":/backup alpine \
+  sh -c 'apk add -q sqlite && sqlite3 /data/joblox.db ".backup /backup/joblox-$(date +%F).db"'
 ```
 
 Храните копии вне сервера. Файл реквизитов и `.env` копируйте отдельно и так же бережно.
@@ -66,7 +66,7 @@ docker run --rm -v openline_shop-data:/data -v "$PWD":/backup alpine \
 Программа написана на Go и работает как обычный сервер, поэтому Cloudflare Workers и Pages её не запустят.
 Cloudflare можно поставить перед VPS как DNS и прокси (оранжевое облако):
 
-- добавьте диапазоны адресов Cloudflare в `OPENLINE_TRUSTED_PROXIES`, иначе лимиты будут считать всех
+- добавьте диапазоны адресов Cloudflare в `JOBLOX_TRUSTED_PROXIES`, иначе лимиты будут считать всех
   посетителей одним адресом;
 - учтите, что в некоторых странах Cloudflare блокируют, и тогда сайт станет недоступен для части клиентов.
 

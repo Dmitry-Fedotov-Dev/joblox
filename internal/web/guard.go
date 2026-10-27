@@ -122,7 +122,7 @@ func (l *Limiter) Allow(key string) bool {
 
 // ---------------------------------------------------------------- visitor cookie and CSRF
 
-const visitorCookie = "ol_v"
+const visitorCookie = "jx_v"
 
 func randomID() string {
 	b := make([]byte, 18)

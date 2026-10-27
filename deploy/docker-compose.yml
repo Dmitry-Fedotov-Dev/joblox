@@ -1,11 +1,11 @@
-# OpenLine Shop на одном VPS: магазин и Caddy (HTTPS от Let's Encrypt сам, без настройки).
+# Joblox на одном VPS: магазин и Caddy (HTTPS от Let's Encrypt сам, без настройки).
 #
 #   cp deploy/.env.example deploy/.env && nano deploy/.env        # домен, секрет, почта, бот
 #   cp deploy/requisites.example.yaml deploy/requisites.yaml       # ваши реквизиты, chmod 600
 #   docker compose -f deploy/docker-compose.yml up -d --build
 #
 # Дашборд и /metrics — только на 127.0.0.1:9180 сервера: ssh -L 9180:127.0.0.1:9180 root@сервер.
-name: openline
+name: joblox
 
 services:
   shop:
@@ -16,10 +16,10 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      OPENLINE_PROFILE: /profile.yaml
-      OPENLINE_REQUISITES: /run/secrets/requisites.yaml
+      JOBLOX_PROFILE: /profile.yaml
+      JOBLOX_REQUISITES: /run/secrets/requisites.yaml
       # Caddy стоит в той же сети Docker: его X-Forwarded-For принимается, остальных — нет
-      OPENLINE_TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1
+      JOBLOX_TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1
     volumes:
       - shop-data:/data
       - ${PROFILE_FILE:-../profiles/bakery.yaml}:/profile.yaml:ro

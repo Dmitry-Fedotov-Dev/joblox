@@ -13,7 +13,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
 )
 
 // Actors who may trigger a transition.
@@ -124,7 +124,7 @@ type Field struct {
 type Payment struct {
 	Methods          []string `yaml:"methods"`
 	RequireEmailCode bool     `yaml:"require_email_code"`
-	ReferencePrefix  string   `yaml:"reference_prefix"` // "OL" gives the payment reference OL-1042
+	ReferencePrefix  string   `yaml:"reference_prefix"` // "JX" gives the payment reference JX-1042
 	WindowHours      int      `yaml:"window_hours"`     // unpaid transfer orders expire after this
 }
 
@@ -221,7 +221,7 @@ func (p *Profile) defaults() {
 		p.Payment.Methods = []string{MethodTransfer}
 	}
 	if p.Payment.ReferencePrefix == "" {
-		p.Payment.ReferencePrefix = "OL"
+		p.Payment.ReferencePrefix = "JX"
 	}
 	if p.Payment.WindowHours == 0 {
 		p.Payment.WindowHours = 24

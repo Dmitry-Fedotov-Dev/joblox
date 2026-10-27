@@ -11,8 +11,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 )
 
 // FieldError is a checkout mistake the customer can fix; Field is the input id ("" for the cart).

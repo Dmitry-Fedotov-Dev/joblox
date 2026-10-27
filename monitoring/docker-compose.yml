@@ -1,4 +1,4 @@
-# Prometheus + Grafana для OpenLine Shop (необязательно: встроенный дашборд /admin работает и без них).
+# Prometheus + Grafana для Joblox (необязательно: встроенный дашборд /admin работает и без них).
 #
 #   docker compose -f monitoring/docker-compose.yml up -d                       # Prometheus и Grafana
 #   docker compose -f monitoring/docker-compose.yml --profile linux-host up -d  # плюс node-exporter (CPU, память сервера)
@@ -7,7 +7,7 @@
 # Сеть хостовая: /metrics магазина слушает только 127.0.0.1:9180 (адрес администратора), из моста
 # Docker его не видно. Порты выбраны так, чтобы стек жил рядом со стеками kontakt (9092/3002) и xk6-sip
 # (9091/3001) на одном сервере; имя проекта отличает контейнеры и тома.
-name: openline-monitoring
+name: joblox-monitoring
 
 services:
   prometheus:
@@ -55,7 +55,7 @@ services:
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/openline.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/joblox.json
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro

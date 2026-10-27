@@ -17,7 +17,7 @@ export function field(html, name) {
 }
 
 // A random documentation-range address per order: the server believes X-Forwarded-For only from
-// OPENLINE_TRUSTED_PROXIES, which CI sets to the load generator's loopback.
+// JOBLOX_TRUSTED_PROXIES, which CI sets to the load generator's loopback.
 export function clientIP() {
   return "198.51." + Math.floor(Math.random() * 100) + "." + (1 + Math.floor(Math.random() * 250));
 }

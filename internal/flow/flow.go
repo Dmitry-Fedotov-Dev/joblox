@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 )
 
 // Flags are the facts about an order that transitions may require.

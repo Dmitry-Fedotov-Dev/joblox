@@ -43,19 +43,19 @@ type Recorder struct {
 func New() *Recorder {
 	r := &Recorder{
 		reg: prometheus.NewRegistry(),
-		requests: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "openline_http_requests_total",
+		requests: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "joblox_http_requests_total",
 			Help: "HTTP requests by route and status class."}, []string{"route", "code"}),
-		durations: prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "openline_http_request_duration_seconds",
+		durations: prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "joblox_http_request_duration_seconds",
 			Help: "HTTP request duration by route.", Buckets: []float64{.0005, .001, .0025, .005, .01, .025, .05, .1, .25, .5, 1, 2.5}}, []string{"route"}),
-		decisions: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "openline_antifraud_decisions_total",
+		decisions: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "joblox_antifraud_decisions_total",
 			Help: "Anti-fraud decisions on checkout: allow, review, block."}, []string{"action"}),
-		moves: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "openline_order_transitions_total",
+		moves: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "joblox_order_transitions_total",
 			Help: "Orders entering each workflow state."}, []string{"to"}),
 		started:  time.Now(),
 		visitors: map[string]time.Time{},
 		now:      time.Now,
 	}
-	online := prometheus.NewGaugeFunc(prometheus.GaugeOpts{Name: "openline_online_visitors",
+	online := prometheus.NewGaugeFunc(prometheus.GaugeOpts{Name: "joblox_online_visitors",
 		Help: "Visitors seen in the last two minutes."}, func() float64 { return float64(r.Online()) })
 	r.reg.MustRegister(r.requests, r.durations, online, r.decisions, r.moves,
 		collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))

@@ -1,5 +1,5 @@
 // Functional scenario: the customer's whole path in the bakery profile against a running server
-// (OPENLINE_ENV=dev, so the email code is read from /dev/outbox).
+// (JOBLOX_ENV=dev, so the email code is read from /dev/outbox).
 //
 //   k6 run -e BASE_URL=http://127.0.0.1:8080 -e JUNIT=reports/checkout.xml k6/functional/checkout.js
 import http from "k6/http";

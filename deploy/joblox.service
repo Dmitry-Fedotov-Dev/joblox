@@ -1,0 +1,30 @@
+# Установка без Docker: бинарник в /usr/local/bin, данные в /var/lib/joblox, настройки в /etc/joblox.
+#   useradd --system --home /var/lib/joblox --shell /usr/sbin/nologin joblox
+#   install -m 755 bin/joblox /usr/local/bin/joblox
+#   install -d -o joblox -m 750 /var/lib/joblox /etc/joblox
+#   cp deploy/.env.example /etc/joblox/env && chmod 600 /etc/joblox/env   # и заполнить
+#   systemctl enable --now joblox
+# HTTPS — Caddy на хосте: deploy/Caddyfile.host.
+[Unit]
+Description=Joblox
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=joblox
+EnvironmentFile=/etc/joblox/env
+Environment=JOBLOX_DB=/var/lib/joblox/joblox.db
+Environment=JOBLOX_ADDR=127.0.0.1:8080
+Environment=JOBLOX_ADMIN_ADDR=127.0.0.1:9180
+ExecStart=/usr/local/bin/joblox serve
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/joblox
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

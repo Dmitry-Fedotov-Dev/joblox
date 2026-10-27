@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/order"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 )
 
 func sample() *order.Order {

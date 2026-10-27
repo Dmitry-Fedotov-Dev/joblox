@@ -1,4 +1,4 @@
-# Caddy на хосте перед systemd-сервисом openline (deploy/openline.service).
+# Caddy на хосте перед systemd-сервисом joblox (deploy/joblox.service).
 shop.example.com {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:8080

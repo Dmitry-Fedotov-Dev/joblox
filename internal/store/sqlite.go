@@ -13,8 +13,8 @@ import (
 
 	_ "modernc.org/sqlite" // database/sql driver "sqlite"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/order"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 )
 
 type SQLite struct {

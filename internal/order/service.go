@@ -17,10 +17,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/antifraud"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/flow"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/antifraud"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/flow"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 )
 
 // Mailer sends plain-text email to customers (codes and status changes).

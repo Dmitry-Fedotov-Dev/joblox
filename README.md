@@ -1,6 +1,6 @@
-# OpenLine Shop
+# Joblox
 
-[![CI](https://github.com/Dmitry-Fedotov-Dev/openline-shop/actions/workflows/ci.yml/badge.svg)](https://github.com/Dmitry-Fedotov-Dev/openline-shop/actions/workflows/ci.yml)
+[![CI](https://github.com/Dmitry-Fedotov-Dev/joblox/actions/workflows/ci.yml/badge.svg)](https://github.com/Dmitry-Fedotov-Dev/joblox/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Открытый конструктор сервисов оказания услуг: своя служба такси, курьерская доставка, грузоперевозки,
@@ -42,8 +42,8 @@
 Нужен Go 1.26 или новее.
 
 ```bash
-go build -o bin/openline ./cmd/openline
-OPENLINE_ENV=dev OPENLINE_PROFILE=profiles/bakery.yaml OPENLINE_REQUISITES=deploy/requisites.example.yaml ./bin/openline serve
+go build -o bin/joblox ./cmd/joblox
+JOBLOX_ENV=dev JOBLOX_PROFILE=profiles/bakery.yaml JOBLOX_REQUISITES=deploy/requisites.example.yaml ./bin/joblox serve
 ```
 
 - Витрина: http://localhost:8080
@@ -53,7 +53,7 @@ OPENLINE_ENV=dev OPENLINE_PROFILE=profiles/bakery.yaml OPENLINE_REQUISITES=deplo
 Проверить свой профиль и посмотреть граф статусов:
 
 ```bash
-./bin/openline check profiles/taxi.yaml
+./bin/joblox check profiles/taxi.yaml
 ```
 
 ## На сервер

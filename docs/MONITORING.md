@@ -21,11 +21,11 @@ Prometheus и Grafana, обновляется каждые 2 секунды.
 
 | Метрика | Что считает |
 |---|---|
-| `openline_http_requests_total{route, code}` | Запросы по шаблону адреса и классу ответа (2xx, 4xx, 5xx) |
-| `openline_http_request_duration_seconds{route}` | Время ответа, гистограмма |
-| `openline_online_visitors` | Онлайн |
-| `openline_antifraud_decisions_total{action}` | Решения антифрода: allow, review, block |
-| `openline_order_transitions_total{to}` | Заказы, вошедшие в статус |
+| `joblox_http_requests_total{route, code}` | Запросы по шаблону адреса и классу ответа (2xx, 4xx, 5xx) |
+| `joblox_http_request_duration_seconds{route}` | Время ответа, гистограмма |
+| `joblox_online_visitors` | Онлайн |
+| `joblox_antifraud_decisions_total{action}` | Решения антифрода: allow, review, block |
+| `joblox_order_transitions_total{to}` | Заказы, вошедшие в статус |
 | `go_*`, `process_*` | Среда Go и процесс |
 
 Стек рядом с магазином:
@@ -34,30 +34,30 @@ Prometheus и Grafana, обновляется каждые 2 секунды.
 docker compose -f monitoring/docker-compose.yml --profile linux-host up -d
 ```
 
-Grafana на http://127.0.0.1:3003, дашборд OpenLine Shop откроется сам. Порты (Prometheus 9093, Grafana 3003,
+Grafana на http://127.0.0.1:3003, дашборд Joblox откроется сам. Порты (Prometheus 9093, Grafana 3003,
 node-exporter 9102) выбраны так, чтобы стек жил на одном сервере рядом со стеками kontakt и xk6-sip.
 
 Дашборд правится в генераторе [`monitoring/grafana/gen_dashboard.py`](../monitoring/grafana/gen_dashboard.py),
 а не в JSON руками. CI сверяет JSON с генератором:
 
 ```bash
-python3 monitoring/grafana/gen_dashboard.py monitoring/grafana/dashboards/openline.json
+python3 monitoring/grafana/gen_dashboard.py monitoring/grafana/dashboards/joblox.json
 ```
 
 ## Тревоги
 
-[`monitoring/prometheus/rules/openline.yml`](../monitoring/prometheus/rules/openline.yml), с тестами на
-синтетических рядах ([`tests/openline_test.yml`](../monitoring/prometheus/tests/openline_test.yml)):
+[`monitoring/prometheus/rules/joblox.yml`](../monitoring/prometheus/rules/joblox.yml), с тестами на
+синтетических рядах ([`tests/joblox_test.yml`](../monitoring/prometheus/tests/joblox_test.yml)):
 
 | Тревога | Условие |
 |---|---|
-| OpenlineDown | `/metrics` не отвечает 2 минуты |
-| OpenlineErrors | Больше 2% ответов 5xx за 5 минут |
-| OpenlineSlow | p95 главной страницы выше 0,5 с 10 минут |
-| OpenlineFraudWave | Больше 30 отказов антифрода за 15 минут |
+| JobloxDown | `/metrics` не отвечает 2 минуты |
+| JobloxErrors | Больше 2% ответов 5xx за 5 минут |
+| JobloxSlow | p95 главной страницы выше 0,5 с 10 минут |
+| JobloxFraudWave | Больше 30 отказов антифрода за 15 минут |
 
 ```bash
-cd monitoring/prometheus && promtool test rules tests/openline_test.yml
+cd monitoring/prometheus && promtool test rules tests/joblox_test.yml
 ```
 
 ## Отчёт о нагрузке картинкой

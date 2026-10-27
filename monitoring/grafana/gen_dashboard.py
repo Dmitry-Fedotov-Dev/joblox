@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# Генератор monitoring/grafana/dashboards/openline.json — дашборд OpenLine Shop.
+# Генератор monitoring/grafana/dashboards/joblox.json — дашборд Joblox.
 # Правится здесь, а не в JSON руками; CI (dashboards-sync) сверяет JSON с генератором:
-#   python3 monitoring/grafana/gen_dashboard.py monitoring/grafana/dashboards/openline.json
+#   python3 monitoring/grafana/gen_dashboard.py monitoring/grafana/dashboards/joblox.json
 import json, sys
 
 DS = {"type": "prometheus", "uid": "prometheus"}
@@ -45,44 +45,44 @@ def ts(title, desc, exprs, x, w=12, h=8, unit="none", stack=False):
 
 W = "$window"
 I = 'instance=~"$instance"'
-J = f'job="openline",{I}'
+J = f'job="joblox",{I}'
 
 row("Сейчас")
 stat("Магазин", "Отвечает ли сервер: Prometheus забирает /metrics с адреса администратора.",
      f'min(up{{{J}}}) or vector(0)', 0, steps=[{"color": "red", "value": None}, {"color": "green", "value": 1}])
 stat("Онлайн", "Посетители, которых сервер видел за последние 2 минуты (случайная кука, не человек).",
-     f'sum(openline_online_visitors{{{I}}}) or vector(0)', 4, color="purple")
+     f'sum(joblox_online_visitors{{{I}}}) or vector(0)', 4, color="purple")
 stat("Запросов в секунду", "Все HTTP-запросы витрины.",
-     f'sum(rate(openline_http_requests_total{{{I}}}[{W}])) or vector(0)', 8, unit="reqps", dec=1)
+     f'sum(rate(joblox_http_requests_total{{{I}}}[{W}])) or vector(0)', 8, unit="reqps", dec=1)
 stat("Главная, p95", "95% запросов главной страницы быстрее этого времени.",
-     f'histogram_quantile(0.95, sum by (le) (rate(openline_http_request_duration_seconds_bucket{{route="GET /{{$}}",{I}}}[{W}])))',
+     f'histogram_quantile(0.95, sum by (le) (rate(joblox_http_request_duration_seconds_bucket{{route="GET /{{$}}",{I}}}[{W}])))',
      12, unit="s", dec=3, steps=[{"color": "green", "value": None}, {"color": "yellow", "value": 0.3}, {"color": "red", "value": 0.5}])
-stat("Ошибки 5xx", "Доля ответов с ошибкой сервера. Больше 2% — тревога OpenlineErrors.",
-     f'(sum(rate(openline_http_requests_total{{code="5xx",{I}}}[{W}])) / clamp_min(sum(rate(openline_http_requests_total{{{I}}}[{W}])), 0.001)) or vector(0)',
+stat("Ошибки 5xx", "Доля ответов с ошибкой сервера. Больше 2% — тревога JobloxErrors.",
+     f'(sum(rate(joblox_http_requests_total{{code="5xx",{I}}}[{W}])) / clamp_min(sum(rate(joblox_http_requests_total{{{I}}}[{W}])), 0.001)) or vector(0)',
      16, unit="percentunit", dec=2, steps=[{"color": "green", "value": None}, {"color": "yellow", "value": 0.005}, {"color": "red", "value": 0.02}])
 stat("Отклонено за час", "Попытки, которые антифрод не пропустил: боты, чёрный список, лимиты.",
-     f'sum(increase(openline_antifraud_decisions_total{{action="block",{I}}}[1h])) or vector(0)', 20, color="orange")
+     f'sum(increase(joblox_antifraud_decisions_total{{action="block",{I}}}[1h])) or vector(0)', 20, color="orange")
 y[0] += 4
 
 row("Трафик")
 ts("Запросы по адресам", "Запросы в секунду по шаблону адреса (GET /, POST /order, страница заказа …).",
-   [(f'sum by (route) (rate(openline_http_requests_total{{{I}}}[{W}]))', "{{route}}")], 0, unit="reqps", stack=True)
+   [(f'sum by (route) (rate(joblox_http_requests_total{{{I}}}[{W}]))', "{{route}}")], 0, unit="reqps", stack=True)
 ts("Время ответа", "p50 и p95 по адресам.",
-   [(f'histogram_quantile(0.95, sum by (le, route) (rate(openline_http_request_duration_seconds_bucket{{{I}}}[{W}])))', "p95 {{route}}"),
-    (f'histogram_quantile(0.5, sum by (le, route) (rate(openline_http_request_duration_seconds_bucket{{{I}}}[{W}])))', "p50 {{route}}", )],
+   [(f'histogram_quantile(0.95, sum by (le, route) (rate(joblox_http_request_duration_seconds_bucket{{{I}}}[{W}])))', "p95 {{route}}"),
+    (f'histogram_quantile(0.5, sum by (le, route) (rate(joblox_http_request_duration_seconds_bucket{{{I}}}[{W}])))', "p50 {{route}}", )],
    12, unit="s")
 y[0] += 8
 ts("Ответы по классам", "2xx, 3xx (переходы после форм), 4xx (ошибки формы, лимиты), 5xx (ошибки сервера).",
-   [(f'sum by (code) (rate(openline_http_requests_total{{{I}}}[{W}]))', "{{code}}")], 0, unit="reqps", stack=True)
+   [(f'sum by (code) (rate(joblox_http_requests_total{{{I}}}[{W}]))', "{{code}}")], 0, unit="reqps", stack=True)
 ts("Онлайн", "Посетители за последние 2 минуты.",
-   [(f'sum(openline_online_visitors{{{I}}})', "онлайн")], 12)
+   [(f'sum(joblox_online_visitors{{{I}}})', "онлайн")], 12)
 y[0] += 8
 
 row("Заказы")
 ts("Решения антифрода", "allow — сразу дальше, review — ждёт оператора, block — отклонено без создания заказа.",
-   [(f'sum by (action) (increase(openline_antifraud_decisions_total{{{I}}}[{W}]))', "{{action}}")], 0, stack=True)
+   [(f'sum by (action) (increase(joblox_antifraud_decisions_total{{{I}}}[{W}]))', "{{action}}")], 0, stack=True)
 ts("Переходы по статусам", "Сколько заказов вошло в каждый статус профиля.",
-   [(f'sum by (to) (increase(openline_order_transitions_total{{{I}}}[{W}]))', "{{to}}")], 12, stack=True)
+   [(f'sum by (to) (increase(joblox_order_transitions_total{{{I}}}[{W}]))', "{{to}}")], 12, stack=True)
 y[0] += 8
 
 row("Сервер")
@@ -103,11 +103,11 @@ ts("k6: время ответа p95", "Как его видит генерато
 y[0] += 8
 
 dash = {
-    "uid": "openline", "title": "OpenLine Shop", "tags": ["openline"], "timezone": "browser",
+    "uid": "joblox", "title": "Joblox", "tags": ["joblox"], "timezone": "browser",
     "schemaVersion": 39, "version": 1, "editable": True, "refresh": "10s",
     "time": {"from": "now-1h", "to": "now"},
     "templating": {"list": [
-        {"name": "instance", "label": "Сервер", "type": "query", "datasource": DS, "query": 'label_values(up{job="openline"}, instance)',
+        {"name": "instance", "label": "Сервер", "type": "query", "datasource": DS, "query": 'label_values(up{job="joblox"}, instance)',
          "includeAll": True, "multi": True, "current": {"text": "All", "value": "$__all"}, "refresh": 2, "allValue": ".*"},
         {"name": "window", "label": "Окно", "type": "custom", "query": "1m,5m,15m", "current": {"text": "1m", "value": "1m"},
          "options": [{"text": v, "value": v, "selected": v == "1m"} for v in ("1m", "5m", "15m")]},
@@ -117,7 +117,7 @@ dash = {
     "panels": panels,
 }
 
-out = sys.argv[1] if len(sys.argv) > 1 else "monitoring/grafana/dashboards/openline.json"
+out = sys.argv[1] if len(sys.argv) > 1 else "monitoring/grafana/dashboards/joblox.json"
 with open(out, "w", encoding="utf-8", newline="\n") as f:
     json.dump(dash, f, ensure_ascii=False, indent=2)
     f.write("\n")
