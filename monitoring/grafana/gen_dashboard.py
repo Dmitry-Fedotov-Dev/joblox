@@ -98,8 +98,8 @@ row("Нагрузочный тест (k6)")
 K = 'testid=~"$testid"'
 ts("k6: запросы в секунду", "Запросы генератора нагрузки (k6 -o experimental-prometheus-rw).",
    [(f'sum(rate(k6_http_reqs_total{{{K}}}[{W}]))', "запросов в секунду")], 0, unit="reqps")
-ts("k6: время ответа p95", "Как его видит генератор нагрузки, по имени запроса.",
-   [(f'histogram_quantile(0.95, sum by (le, name) (rate(k6_http_req_duration_seconds{{{K}}}[{W}])))', "{{name}}")], 12, unit="s")
+ts("k6: время ответа p95", "Как его видит генератор нагрузки, по имени запроса (K6_PROMETHEUS_RW_TREND_STATS).",
+   [(f'max by (name) (k6_http_req_duration_p95{{{K}}})', "{{name}}")], 12, unit="s")
 y[0] += 8
 
 dash = {

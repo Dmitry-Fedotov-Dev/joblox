@@ -26,7 +26,6 @@ type Recorder struct {
 	reg       *prometheus.Registry
 	requests  *prometheus.CounterVec
 	durations *prometheus.HistogramVec
-	online    prometheus.Gauge
 	decisions *prometheus.CounterVec
 	moves     *prometheus.CounterVec
 
@@ -47,9 +46,7 @@ func New() *Recorder {
 		requests: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "openline_http_requests_total",
 			Help: "HTTP requests by route and status class."}, []string{"route", "code"}),
 		durations: prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "openline_http_request_duration_seconds",
-			Help: "HTTP request duration by route.", Buckets: []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5}}, []string{"route"}),
-		online: prometheus.NewGauge(prometheus.GaugeOpts{Name: "openline_online_visitors",
-			Help: "Visitors seen in the last two minutes."}),
+			Help: "HTTP request duration by route.", Buckets: []float64{.0005, .001, .0025, .005, .01, .025, .05, .1, .25, .5, 1, 2.5}}, []string{"route"}),
 		decisions: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "openline_antifraud_decisions_total",
 			Help: "Anti-fraud decisions on checkout: allow, review, block."}, []string{"action"}),
 		moves: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "openline_order_transitions_total",
@@ -58,7 +55,9 @@ func New() *Recorder {
 		visitors: map[string]time.Time{},
 		now:      time.Now,
 	}
-	r.reg.MustRegister(r.requests, r.durations, r.online, r.decisions, r.moves,
+	online := prometheus.NewGaugeFunc(prometheus.GaugeOpts{Name: "openline_online_visitors",
+		Help: "Visitors seen in the last two minutes."}, func() float64 { return float64(r.Online()) })
+	r.reg.MustRegister(r.requests, r.durations, online, r.decisions, r.moves,
 		collectors.NewGoCollector(), collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 	return r
 }
@@ -113,6 +112,15 @@ func (r *Recorder) prune(now time.Time) {
 	}
 }
 
+// Online counts visitors seen in the last two minutes; Prometheus reads it on every scrape.
+func (r *Recorder) Online() int {
+	now := r.now()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.prune(now)
+	return len(r.visitors)
+}
+
 // Live is what the built-in dashboard shows.
 type Live struct {
 	Online    int       `json:"online"`
@@ -162,7 +170,6 @@ func (r *Recorder) Live() Live {
 	}
 	lat := append([]float64(nil), r.lat[:n]...)
 	r.mu.Unlock()
-	r.online.Set(float64(online))
 	sort.Float64s(lat)
 	pct := func(p float64) float64 {
 		if len(lat) == 0 {

@@ -181,7 +181,7 @@ jobs:
         run: |
           python3 scripts/load_summary.py reports/summary.json \
             "60 посетителей в секунду в течение минуты, каждый десятый оформляет заказ." \
-            "Дашборд прогона целиком — \`dashboard.png\` в артефакте **load-report**." | tee reports/summary.md >> "$GITHUB_STEP_SUMMARY"
+            "Дашборд прогона целиком: \`dashboard.png\` в артефакте **load-report**." | tee reports/summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: keep reports
         if: always()
         uses: actions/upload-artifact@v7
