@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -409,3 +410,13 @@ func (p *Profile) Item(id string) (Item, bool) {
 
 // AcceptsTransfer reports whether customers may pay by bank transfer to the owner's requisites.
 func (p *Profile) AcceptsTransfer() bool { return slices.Contains(p.Payment.Methods, MethodTransfer) }
+
+// Display renders a stored checkout value for people: dates as 28.10.2026 10:00, the rest as is.
+func (f Field) Display(v string) string {
+	if f.Type == FieldDatetime {
+		if t, err := time.Parse("2006-01-02T15:04", v); err == nil {
+			return t.Format("02.01.2006 15:04")
+		}
+	}
+	return v
+}

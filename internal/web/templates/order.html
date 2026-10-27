@@ -1,0 +1,66 @@
+{{define "content"}}
+<section class="card" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
+  <p class="eyebrow">Заказ №{{.O.ID}} · {{.Ref}}</p>
+  <h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>
+  {{if .Waiting}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
+  {{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
+
+  {{if .O.Lines}}
+  <table class="lines">
+    {{range .O.Lines}}<tr><td>{{.Title}} × {{.Qty}}</td><td class="num">{{money .Sum}}</td></tr>{{end}}
+    {{range .O.Fees}}<tr><td>{{.Title}}</td><td class="num">{{money .Sum}}</td></tr>{{end}}
+    <tr class="sum"><td>Итого</td><td class="num">{{money .O.Total}} {{cur .Business.Currency}}</td></tr>
+  </table>
+  {{else if .O.Priced}}
+  <p class="big">К оплате: {{money .O.Total}} {{cur .Business.Currency}}</p>
+  {{end}}
+
+  <dl class="facts">
+    {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</dd>{{end}}
+    <dt>Оплата</dt><dd>{{.MethodTitle}}{{if .O.Paid}}, оплачено{{end}}</dd>
+  </dl>
+</section>
+
+{{if .NeedCode}}
+<section class="card">
+  <h2>Подтвердите email</h2>
+  <p class="muted">Мы отправили код на {{.O.Email}}. Без подтверждения заказ не будет выполнен{{if eq .O.Method "transfer"}}, а реквизиты не появятся{{end}}.</p>
+  <form method="post" action="/o/{{.O.Token}}/code" class="inline">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label class="sr" for="code">Код из письма</label>
+    <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="123456" required>
+    <button type="submit">Подтвердить</button>
+  </form>
+  {{if .CodeError}}<p class="field-error">{{.CodeError}}</p>{{end}}
+  <form method="post" action="/o/{{.O.Token}}/resend"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="link" type="submit">Отправить код ещё раз</button></form>
+</section>
+{{end}}
+
+{{with .Requisites}}
+<section class="card pay">
+  <h2>{{if .Title}}{{.Title}}{{else}}Реквизиты для оплаты{{end}}</h2>
+  <dl class="facts">
+    <dt>Получатель</dt><dd>{{.Recipient}}</dd>
+    {{range .Lines}}<dt>{{.Label}}</dt><dd class="copy">{{.Value}}</dd>{{end}}
+    <dt>Сумма</dt><dd class="copy">{{$.O.Total.Plain}}</dd>
+    <dt>Назначение платежа</dt><dd class="copy">{{$.Purpose}}</dd>
+  </dl>
+  <p class="muted small">Укажите сумму и назначение платежа точно как здесь: по ним оператор находит оплату. Реквизиты действуют только для этого заказа.</p>
+  {{if .Note}}<p class="muted small">{{.Note}}</p>{{end}}
+  {{if $.P.Texts.Rules}}<p class="muted small">{{$.P.Texts.Rules}}</p>{{end}}
+</section>
+{{end}}
+
+{{if .Actions}}
+<section class="card actions">
+  {{range .Actions}}
+  <form method="post" action="/o/{{$.O.Token}}/t/{{.ID}}">
+    <input type="hidden" name="csrf" value="{{$.CSRF}}">
+    <button type="submit" class="{{if or (eq .To "cancelled") (eq .To "rejected")}}secondary{{end}}">{{.Title}}</button>
+  </form>
+  {{end}}
+</section>
+{{end}}
+
+<p class="muted small">Сохраните ссылку на эту страницу: статус обновляется здесь автоматически. Письма приходят на {{.O.Email}}.</p>
+{{end}}

@@ -131,7 +131,7 @@ func (b *Bot) card(o *order.Order) (string, *Keyboard) {
 	}
 	for _, f := range p.Checkout.Fields {
 		if v := o.Fields[f.ID]; v != "" {
-			fmt.Fprintf(&s, "%s: %s%s\n", html.EscapeString(f.Label), html.EscapeString(v), unit(f.Unit))
+			fmt.Fprintf(&s, "%s: %s%s\n", html.EscapeString(f.Label), html.EscapeString(f.Display(v)), unit(f.Unit))
 		}
 	}
 	method := "перевод"

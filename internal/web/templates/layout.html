@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}{{if ne .Title .Business.Name}} · {{.Business.Name}}{{end}}</title>
+  <meta name="description" content="{{.Business.Description}}">
+  <meta name="referrer" content="same-origin">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/">{{.Business.Name}}</a>
+      {{if .Business.Contact}}<span class="contact">{{.Business.Contact}}</span>{{end}}
+    </div>
+  </header>
+  <main class="wrap">
+    {{if .Paused}}<p class="banner warn" role="status">Приём новых заказов временно приостановлен.</p>{{end}}
+    {{block "content" .}}{{end}}
+  </main>
+  <footer class="wrap foot">
+    <span>{{.Business.Name}}</span>
+    <span>Работает на <a href="https://github.com/Dmitry-Fedotov-Dev/openline-shop">OpenLine Shop</a></span>
+  </footer>
+  {{block "scripts" .}}<script src="/static/app.js" defer></script>{{end}}
+</body>
+</html>

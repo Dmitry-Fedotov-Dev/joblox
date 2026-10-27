@@ -1,0 +1,42 @@
+{{define "content"}}
+<section class="dash">
+  <div class="dash-head">
+    <h1>Дашборд</h1>
+    <span class="muted small">версия {{.Version}} · реквизиты <code>{{.Finger}}</code></span>
+  </div>
+
+  <h2>Сейчас</h2>
+  <div class="tiles">
+    <div class="tile accent"><span>Онлайн</span><b data-k="online">—</b><small>посетителей за 2 минуты</small></div>
+    <div class="tile"><span>Запросов в секунду</span><b data-k="rps">—</b><small data-k="rps_more"></small></div>
+    <div class="tile"><span>Время ответа</span><b data-k="p95">—</b><small data-k="p50"></small></div>
+    <div class="tile"><span>Ошибки 5xx</span><b data-k="errors">—</b><small>за 5 минут</small></div>
+  </div>
+  <figure class="chart"><svg data-k="series" viewBox="0 0 600 120" preserveAspectRatio="none" role="img" aria-label="Запросы в секунду за 2 минуты"></svg>
+    <figcaption class="muted small">Запросы в секунду за последние 2 минуты</figcaption></figure>
+
+  <h2>Сервер</h2>
+  <div class="tiles">
+    <div class="tile"><span>Процессор</span><b data-k="cpu">—</b><small data-k="load"></small></div>
+    <div class="tile"><span>Память сервера</span><b data-k="mem">—</b><small data-k="mem_total"></small></div>
+    <div class="tile"><span>Процесс</span><b data-k="proc">—</b><small data-k="goroutines"></small></div>
+    <div class="tile"><span>Работает</span><b data-k="uptime">—</b><small data-k="paused"></small></div>
+  </div>
+
+  <h2>Заказы за сутки</h2>
+  <div class="tiles">
+    <div class="tile"><span>Новых</span><b data-k="today">{{.Stats.Today}}</b></div>
+    <div class="tile"><span>Открыто</span><b data-k="open">{{.Stats.Open}}</b></div>
+    <div class="tile warn"><span>На проверке</span><b data-k="review">{{.Stats.Review}}</b></div>
+    <div class="tile"><span>Оплачено</span><b data-k="paid">{{.Stats.PaidToday}}</b><small><span data-k="revenue">{{money .Stats.RevenueDay}}</span> {{.Currency}}</small></div>
+  </div>
+
+  <h2>Открытые заказы</h2>
+  <table class="lines" data-k="list">
+    <tr><th>№</th><th>Статус</th><th>Сумма</th><th>Создан</th></tr>
+    {{range .Orders}}<tr><td>{{.ID}}</td><td>{{.State}}{{if .Review}} ⚠️{{end}}{{if .Paid}} · оплачен{{end}}</td><td class="num">{{.Total}}</td><td>{{.At}}</td></tr>{{end}}
+  </table>
+  <p class="muted small">Дашборд доступен только с сервера: <code>ssh -L 9180:127.0.0.1:9180 сервер</code>, затем http://localhost:9180/admin. Метрики для Prometheus: /metrics.</p>
+</section>
+{{end}}
+{{define "scripts"}}<script src="/static/admin.js" defer></script>{{end}}
