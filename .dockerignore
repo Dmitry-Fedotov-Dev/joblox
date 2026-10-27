@@ -1,0 +1,7 @@
+.git
+bin
+data
+reports
+*.db
+.env
+requisites.yaml

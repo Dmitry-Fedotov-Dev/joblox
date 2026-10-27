@@ -1,0 +1,52 @@
+# OpenLine Shop на одном VPS: магазин и Caddy (HTTPS от Let's Encrypt сам, без настройки).
+#
+#   cp deploy/.env.example deploy/.env && nano deploy/.env        # домен, секрет, почта, бот
+#   cp deploy/requisites.example.yaml deploy/requisites.yaml       # ваши реквизиты, chmod 600
+#   docker compose -f deploy/docker-compose.yml up -d --build
+#
+# Дашборд и /metrics — только на 127.0.0.1:9180 сервера: ssh -L 9180:127.0.0.1:9180 root@сервер.
+name: openline
+
+services:
+  shop:
+    build:
+      context: ..
+      args:
+        VERSION: ${VERSION:-dev}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      OPENLINE_PROFILE: /profile.yaml
+      OPENLINE_REQUISITES: /run/secrets/requisites.yaml
+      # Caddy стоит в той же сети Docker: его X-Forwarded-For принимается, остальных — нет
+      OPENLINE_TRUSTED_PROXIES: 172.16.0.0/12,127.0.0.1
+    volumes:
+      - shop-data:/data
+      - ${PROFILE_FILE:-../profiles/bakery.yaml}:/profile.yaml:ro
+      - ./requisites.yaml:/run/secrets/requisites.yaml:ro
+    ports:
+      - "127.0.0.1:9180:9180"
+    mem_limit: 256m
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on: [shop]
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    mem_limit: 128m
+
+volumes:
+  shop-data:
+  caddy-data:
+  caddy-config:

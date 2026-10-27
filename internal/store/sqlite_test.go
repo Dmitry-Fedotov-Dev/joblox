@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -37,7 +38,7 @@ func TestRoundTripAndJournal(t *testing.T) {
 	if _, err := s.db.Exec(`DELETE FROM events`); err == nil {
 		t.Fatal("journal row was deleted")
 	}
-	if _, err := s.ByToken(ctx, "missing"); err != order.ErrNotFound {
+	if _, err := s.ByToken(ctx, "missing"); !errors.Is(err, order.ErrNotFound) {
 		t.Fatalf("missing: %v", err)
 	}
 }

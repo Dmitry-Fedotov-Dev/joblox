@@ -1,0 +1,66 @@
+# Prometheus + Grafana для OpenLine Shop (необязательно: встроенный дашборд /admin работает и без них).
+#
+#   docker compose -f monitoring/docker-compose.yml up -d                       # Prometheus и Grafana
+#   docker compose -f monitoring/docker-compose.yml --profile linux-host up -d  # плюс node-exporter (CPU, память сервера)
+#   Дашборд: http://127.0.0.1:3003 (без входа — только для этой машины; снаружи — через ssh -L)
+#
+# Сеть хостовая: /metrics магазина слушает только 127.0.0.1:9180 (адрес администратора), из моста
+# Docker его не видно. Порты выбраны так, чтобы стек жил рядом со стеками kontakt (9092/3002) и xk6-sip
+# (9091/3001) на одном сервере; имя проекта отличает контейнеры и тома.
+name: openline-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    network_mode: host
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.listen-address=127.0.0.1:${PROMETHEUS_PORT:-9093}
+      # нагрузочный тест пишет сюда метрики k6 (k6 -o experimental-prometheus-rw)
+      - --web.enable-remote-write-receiver
+      - --enable-feature=native-histograms
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    restart: unless-stopped
+    profiles: ["linux-host"]
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=127.0.0.1:9102
+    volumes:
+      - /:/host:ro,rslave
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SERVER_HTTP_ADDR: 127.0.0.1
+      GF_SERVER_HTTP_PORT: "${GRAFANA_PORT:-3003}"
+      PROMETHEUS_HOST: 127.0.0.1
+      PROMETHEUS_PORT: "${PROMETHEUS_PORT:-9093}"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/openline.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  prometheus-data:
+  grafana-data:

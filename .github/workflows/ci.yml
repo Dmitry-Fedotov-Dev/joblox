@@ -1,0 +1,190 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Устроено как CI kontakt и xk6-sip: общие шаги — из github.com/Dmitry-Fedotov-Dev/ci (версия @v1),
+# здесь только своё: профили, сценарии k6 против живого сервера и нагрузка с дашбордом.
+
+env:
+  K6_RELEASE: v2.3.0 # не K6_VERSION: эту переменную k6 читает сам
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # дважды и с -race: переходы, лимиты и счётчики должны быть устойчивы к гонкам
+    uses: Dmitry-Fedotov-Dev/ci/.github/workflows/go.yml@v1
+    with:
+      test-flags: -race -count=2
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: Dmitry-Fedotov-Dev/ci/actions/go-lint@v1
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: govulncheck and gosec
+        uses: Dmitry-Fedotov-Dev/ci/actions/go-security@v1
+        with:
+          gosec-fail: true
+          lang: ru
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: gosec-report
+          path: gosec.json
+          if-no-files-found: ignore
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: build
+        run: CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_SHA::7}" -o bin/openline ./cmd/openline
+      - name: every profile is valid
+        run: |
+          for p in profiles/*.yaml; do
+            echo "::group::$p"
+            ./bin/openline check "$p" deploy/requisites.example.yaml
+            echo "::endgroup::"
+          done
+      - name: static JS
+        # страницы вшиты в бинарник: синтаксическая ошибка дошла бы до браузера молча
+        uses: Dmitry-Fedotov-Dev/ci/actions/inline-js@v1
+        with:
+          paths: internal/web/static internal/web/templates
+      - name: prometheus config and alert rules
+        uses: Dmitry-Fedotov-Dev/ci/actions/promtool@v1
+        with:
+          dir: monitoring/prometheus
+          rule-tests: tests/openline_test.yml
+      - name: dashboard matches its generator
+        uses: Dmitry-Fedotov-Dev/ci/actions/dashboards-sync@v1
+        with:
+          pairs: monitoring/grafana/gen_dashboard.py monitoring/grafana/dashboards/openline.json
+      - name: docker image builds
+        run: docker build --build-arg VERSION="${GITHUB_SHA::7}" -t openline-shop:ci .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: openline-linux-amd64
+          path: bin/openline
+
+  functional:
+    # Сценарии k6 против живого сервера с профилем пекарни: путь клиента от витрины до реквизитов
+    # и защиты (CSRF, ловушка для ботов, лимиты). Каждый шаг — отдельная проверка в JUnit-отчёте.
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      SCENARIOS: checkout antifraud
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
+        with:
+          name: openline-linux-amd64
+          path: bin
+      - name: k6
+        run: |
+          curl -fsSL "https://github.com/grafana/k6/releases/download/${K6_RELEASE}/k6-${K6_RELEASE}-linux-amd64.tar.gz" | tar xz
+          mv "k6-${K6_RELEASE}-linux-amd64/k6" bin/k6 && ./bin/k6 version
+      - name: start the shop
+        run: |
+          chmod +x bin/openline
+          mkdir -p reports
+          OPENLINE_ENV=dev OPENLINE_PROFILE=profiles/bakery.yaml OPENLINE_REQUISITES=deploy/requisites.example.yaml \
+            OPENLINE_DB=reports/ci.db OPENLINE_ADDR=127.0.0.1:8080 ./bin/openline serve > reports/server.log 2>&1 &
+          timeout 30 bash -c 'until curl -sf http://127.0.0.1:8080/healthz >/dev/null; do sleep 1; done'
+      - name: run scenarios
+        run: |
+          failed=0
+          for s in $SCENARIOS; do
+            echo "::group::$s"
+            if ! ./bin/k6 run -q -e BASE_URL=http://127.0.0.1:8080 -e JUNIT="reports/$s.xml" "k6/functional/$s.js"; then
+              echo "::error title=functional::$s failed"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $failed
+      - name: summary
+        if: always()
+        uses: Dmitry-Fedotov-Dev/ci/actions/k6-summary@v1
+        with:
+          kind: functional
+          reports: reports
+          scenarios: ${{ env.SCENARIOS }}
+          output: reports/summary.md
+      - name: keep reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: functional-reports
+          path: reports/
+          if-no-files-found: ignore
+
+  load:
+    # Минута нагрузки на витрину и оформление заказов с Prometheus и Grafana: пороги k6 решают исход,
+    # весь дашборд за окно прогона сохраняется PNG рядом со сводкой.
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      TESTID: ci-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
+        with:
+          name: openline-linux-amd64
+          path: bin
+      - name: k6
+        run: |
+          curl -fsSL "https://github.com/grafana/k6/releases/download/${K6_RELEASE}/k6-${K6_RELEASE}-linux-amd64.tar.gz" | tar xz
+          mv "k6-${K6_RELEASE}-linux-amd64/k6" bin/k6
+      - name: start monitoring and the shop
+        run: |
+          chmod +x bin/openline
+          mkdir -p reports
+          docker compose -f monitoring/docker-compose.yml --profile linux-host up -d
+          OPENLINE_ENV=dev OPENLINE_PROFILE=profiles/bakery.yaml OPENLINE_REQUISITES=deploy/requisites.example.yaml \
+            OPENLINE_DB=reports/load.db OPENLINE_ADDR=127.0.0.1:8080 OPENLINE_TRUSTED_PROXIES=127.0.0.1 \
+            ./bin/openline serve > reports/server.log 2>&1 &
+          timeout 30 bash -c 'until curl -sf http://127.0.0.1:8080/healthz >/dev/null; do sleep 1; done'
+          timeout 90 bash -c 'until curl -sf http://127.0.0.1:3003/api/health >/dev/null; do sleep 2; done'
+      - name: load test
+        env:
+          K6_PROMETHEUS_RW_SERVER_URL: http://127.0.0.1:9093/api/v1/write
+          K6_PROMETHEUS_RW_TREND_STATS: p(50),p(95),max
+        run: |
+          echo "START=$(date +%s)" >> "$GITHUB_ENV"
+          ./bin/k6 run -q -o experimental-prometheus-rw --tag testid="$TESTID" \
+            -e BASE_URL=http://127.0.0.1:8080 -e RATE=60 -e DURATION=1m \
+            --summary-export reports/summary.json k6/load.js | tee reports/k6.txt
+      - name: dashboard report
+        if: always()
+        run: |
+          sleep 15 # последний remote write и сбор
+          bash monitoring/report.sh "$TESTID" $((START - 30)) $(($(date +%s) - 10)) reports/dashboard.png
+      - name: summary
+        if: always()
+        run: |
+          python3 scripts/load_summary.py reports/summary.json \
+            "60 посетителей в секунду в течение минуты, каждый десятый оформляет заказ." \
+            "Дашборд прогона целиком — \`dashboard.png\` в артефакте **load-report**." | tee reports/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: keep reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: load-report
+          path: reports/
+          if-no-files-found: ignore

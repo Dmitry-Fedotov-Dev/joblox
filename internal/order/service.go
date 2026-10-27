@@ -296,7 +296,7 @@ func (s *Service) RequisitesVisible(o *Order) bool {
 func (s *Service) Transition(ctx context.Context, o *Order, id, actor, actorID string) error {
 	t, err := s.Flow.Apply(id, o.State, actor, o.Flags())
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrForbidden, err)
+		return fmt.Errorf("%w: %w", ErrForbidden, err)
 	}
 	from := o.State
 	now := s.Now()

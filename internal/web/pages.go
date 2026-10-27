@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/money"
 	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/order"
 	"github.com/Dmitry-Fedotov-Dev/openline-shop/internal/profile"
 )
@@ -378,5 +377,5 @@ func (s *Server) adminLive(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	_ = json.NewEncoder(w).Encode(map[string]any{"live": s.rec.Live(), "orders": st, "open": list,
-		"revenue": money.Amount(st.RevenueDay).String(), "paused": s.svc.Paused()})
+		"revenue": st.RevenueDay.String(), "paused": s.svc.Paused()})
 }

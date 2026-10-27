@@ -3,6 +3,7 @@
 //
 //	openline serve                 # the site, the operator bot, the dashboard
 //	openline check profile.yaml    # validate a profile (and OPENLINE_REQUISITES) and print its workflow
+//	openline health                # exit 0 when the local server answers /healthz (Docker HEALTHCHECK)
 //	openline version
 package main
 
@@ -43,10 +44,12 @@ func main() {
 		err = serve(log)
 	case "check":
 		err = check(os.Args[2:])
+	case "health":
+		err = health()
 	case "version":
 		fmt.Println(version)
 	default:
-		err = fmt.Errorf("unknown command %q: serve, check, version", cmd)
+		err = fmt.Errorf("unknown command %q: serve, check, health, version", cmd)
 	}
 	if err != nil {
 		log.Error(err.Error())
@@ -249,6 +252,23 @@ func sweep(ctx context.Context, svc *order.Service, log *slog.Logger) {
 			}
 		}
 	}
+}
+
+func health() error {
+	addr := env("OPENLINE_ADDR", ":8080")
+	if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
+	}
+	c := &http.Client{Timeout: 3 * time.Second}
+	resp, err := c.Get("http://" + addr + "/healthz") // #nosec G107 -- our own listen address from the configuration
+	if err != nil {
+		return err
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("healthz: %s", resp.Status)
+	}
+	return nil
 }
 
 func check(args []string) error {

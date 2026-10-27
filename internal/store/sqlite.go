@@ -348,7 +348,7 @@ func (s *SQLite) List(ctx context.Context, f order.Filter, finals []string) ([]*
 		limit = 50
 	}
 	args = append(args, limit)
-	rows, err := s.db.QueryContext(ctx, `SELECT `+columns+` FROM orders WHERE `+strings.Join(where, " AND ")+
+	rows, err := s.db.QueryContext(ctx, `SELECT `+columns+` FROM orders WHERE `+strings.Join(where, " AND ")+ // #nosec G202 -- only placeholders and fixed fragments are concatenated, values go as arguments
 		` ORDER BY id DESC LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
@@ -377,7 +377,7 @@ func (s *SQLite) Counts(ctx context.Context, email, clientHash string, total mon
 		(SELECT COUNT(*) FROM orders WHERE email=? AND total=? AND created_at>=?)`
 	args := append([]any{clientHash, hour, email, day, email}, fa...)
 	args = append(args, email, email, int64(total), hour)
-	err := s.db.QueryRowContext(ctx, q, args...).Scan(&c.ByClientHour, &c.ByEmailDay, &c.OpenUnpaid, &c.PaidByEmail, &c.DuplicateHour)
+	err := s.db.QueryRowContext(ctx, q, args...).Scan(&c.ByClientHour, &c.ByEmailDay, &c.OpenUnpaid, &c.PaidByEmail, &c.DuplicateHour) // #nosec G202 -- only placeholders and fixed fragments are concatenated, values go as arguments
 	return c, err
 }
 
@@ -386,7 +386,7 @@ func (s *SQLite) Stale(ctx context.Context, states []string, before time.Time) (
 		return nil, nil
 	}
 	args := append(anySlice(states), unix(before))
-	rows, err := s.db.QueryContext(ctx, `SELECT `+columns+` FROM orders WHERE state IN (`+placeholders(len(states))+
+	rows, err := s.db.QueryContext(ctx, `SELECT `+columns+` FROM orders WHERE state IN (`+placeholders(len(states))+ // #nosec G202 -- only placeholders and fixed fragments are concatenated, values go as arguments
 		`) AND paid=0 AND updated_at<? ORDER BY id LIMIT 500`, args...)
 	if err != nil {
 		return nil, err
@@ -414,7 +414,7 @@ func (s *SQLite) IsBlocked(ctx context.Context, values ...string) (bool, error) 
 		return false, nil
 	}
 	var n int
-	err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM blocklist WHERE value IN (`+placeholders(len(nonEmpty))+`)`,
+	err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM blocklist WHERE value IN (`+placeholders(len(nonEmpty))+`)`, // #nosec G202 -- only placeholders and fixed fragments are concatenated, values go as arguments
 		anySlice(nonEmpty)...).Scan(&n)
 	return n > 0, err
 }
@@ -444,7 +444,7 @@ func (s *SQLite) Stats(ctx context.Context, since time.Time, finals []string) (o
 	args := append([]any{from}, fa...)
 	args = append(args, fa...)
 	args = append(args, from, from)
-	err := s.db.QueryRowContext(ctx, q, args...).Scan(&st.Today, &st.Open, &st.Review, &st.PaidToday, &revenue)
+	err := s.db.QueryRowContext(ctx, q, args...).Scan(&st.Today, &st.Open, &st.Review, &st.PaidToday, &revenue) // #nosec G202 -- only placeholders and fixed fragments are concatenated, values go as arguments
 	st.RevenueDay = money.Amount(revenue)
 	return st, err
 }

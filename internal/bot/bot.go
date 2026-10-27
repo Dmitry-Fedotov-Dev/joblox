@@ -329,14 +329,14 @@ func (b *Bot) button(ctx context.Context, cq *CallbackQuery) {
 // ---------------------------------------------------------------- commands
 
 const help = `Команды:
-/orders — открытые заказы
-/review — заказы на проверке
-/order N — карточка заказа
-/price N 1500 — назвать цену заказа по запросу
-/paid N [комментарий] — отметить оплату
-/block email|телефон — в чёрный список, /unblock — убрать
-/stats — заказы и выручка за сутки
-/pause [причина] — остановить приём заказов, /resume — возобновить`
+/orders: открытые заказы
+/review: заказы на проверке
+/order N: карточка заказа
+/price N 1500: назвать цену заказа по запросу
+/paid N [комментарий]: отметить оплату
+/block email или телефон: в чёрный список, /unblock убирает
+/stats: заказы и выручка за сутки
+/pause [причина]: остановить приём заказов, /resume возобновляет`
 
 func (b *Bot) command(ctx context.Context, m *Message) {
 	cmd, args, _ := strings.Cut(strings.TrimSpace(m.Text), " ")
@@ -448,12 +448,12 @@ func (b *Bot) command(ctx context.Context, m *Message) {
 		if reason == "" {
 			reason = "без причины"
 		}
-		b.broadcast(ctx, "⏸ Приём заказов остановлен: "+html.EscapeString(reason)+". /resume — возобновить.", nil)
+		b.broadcast(ctx, "⏸ Приём заказов остановлен: "+html.EscapeString(reason)+". Возобновить: /resume.", nil)
 	case "/resume":
 		b.svc.Resume()
 		b.broadcast(ctx, "▶️ Приём заказов возобновлён.", nil)
 	default:
-		say("Не понял. /help — список команд.")
+		say("Не понял. Список команд: /help.")
 	}
 }
 

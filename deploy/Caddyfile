@@ -1,0 +1,18 @@
+# Caddy получает сертификат для DOMAIN сам. DOMAIN задаётся в deploy/.env.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy shop:8080
+	header -Server
+	log {
+		output stdout
+		# адреса посетителей в журнал не пишем
+		format filter {
+			wrap console
+			fields {
+				request>remote_ip delete
+				request>client_ip delete
+				request>headers>X-Forwarded-For delete
+			}
+		}
+	}
+}
