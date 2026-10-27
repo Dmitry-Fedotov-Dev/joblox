@@ -79,7 +79,7 @@ Caddy сам получит сертификат HTTPS. Подробно, вкл
 - [Мониторинг](docs/MONITORING.md): встроенный дашборд, Prometheus, Grafana, тревоги
 - [Тесты](docs/TESTING.md): модульные, функциональные сценарии k6, нагрузка
 - [Архитектура](docs/ARCHITECTURE.md): пакеты, данные, масштабирование
-- [Joblox Network](docs/NETWORK.md): общий счётчик установок по желанию владельца, открытое API
+- [Joblox Network](docs/NETWORK.md): общий счётчик установок на https://joblox.openline.one, по желанию владельца
 
 ## Лицензия
 
