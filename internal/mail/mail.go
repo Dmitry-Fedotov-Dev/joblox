@@ -112,10 +112,8 @@ func Compose(from, to, subject, body string) []byte {
 			domain = d
 		}
 	}
-	name, addr := from, ""
 	if i := strings.LastIndex(from, "<"); i > 0 {
-		name, addr = strings.TrimSpace(from[:i]), from[i:]
-		from = mime.QEncoding.Encode("utf-8", name) + " " + addr
+		from = mime.QEncoding.Encode("utf-8", strings.TrimSpace(from[:i])) + " " + from[i:]
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\nMessage-ID: <%s@%s>\r\n", from, to,

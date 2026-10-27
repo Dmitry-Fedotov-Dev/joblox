@@ -76,7 +76,12 @@ func (s *site) get(t *testing.T, path string) (int, string) {
 	return resp.StatusCode, string(b)
 }
 
-func (s *site) post(t *testing.T, path string, form url.Values) (*http.Response, string) {
+type reply struct {
+	StatusCode int
+	Header     http.Header
+}
+
+func (s *site) post(t *testing.T, path string, form url.Values) (reply, string) {
 	t.Helper()
 	resp, err := s.client.PostForm(s.http.URL+path, form)
 	if err != nil {
@@ -84,7 +89,7 @@ func (s *site) post(t *testing.T, path string, form url.Values) (*http.Response,
 	}
 	defer resp.Body.Close()
 	b, _ := io.ReadAll(resp.Body)
-	return resp, string(b)
+	return reply{StatusCode: resp.StatusCode, Header: resp.Header}, string(b)
 }
 
 func match(t *testing.T, re *regexp.Regexp, body string) string {

@@ -34,6 +34,9 @@ tests:
         alertname: OpenlineErrors
         exp_alerts:
           - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: "Больше 2% запросов с ошибкой сервера"
+              description: "Доля ответов 5xx за 5 минут выше 2%. Смотрите журнал процесса."
 
   - name: a quiet shop raises nothing
     interval: 1m
@@ -60,3 +63,6 @@ tests:
         alertname: OpenlineFraudWave
         exp_alerts:
           - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: "Волна отклонённых заказов"
+              description: "Антифрод отклонил больше 30 попыток за 15 минут. Возможна атака: проверьте /orders в боте, при необходимости /pause."

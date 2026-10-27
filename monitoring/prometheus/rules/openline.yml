@@ -17,7 +17,7 @@ groups:
         labels: {severity: warning}
         annotations:
           summary: "Больше 2% запросов с ошибкой сервера"
-          description: "Доля ответов 5xx за 5 минут {{ $value | humanizePercentage }}. Смотрите журнал процесса."
+          description: "Доля ответов 5xx за 5 минут выше 2%. Смотрите журнал процесса."
 
       - alert: OpenlineSlow
         expr: |
