@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="60">
+<title>Joblox Network</title>
+<meta name="description" content="Сколько установок Joblox работает сейчас и сколько людей на их сайтах.">
+<style>
+:root { --bg: #f6f5f1; --panel: #fff; --fg: #15171c; --muted: #5d6472; --line: #e2e1db; --accent: #1f4fd6; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f1115; --panel: #171a21; --fg: #eceef2; --muted: #a0a7b5; --line: #2a2f3a; --accent: #6f93ff; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 32px 16px 48px; }
+h1 { font-size: 30px; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 32px 0 12px; }
+.muted { color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 24px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.tile span { color: var(--muted); font-size: 14px; }
+.tile b { display: block; font-size: 40px; font-variant-numeric: tabular-nums; color: var(--accent); line-height: 1.2; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+td, th { padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: left; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+code, pre { font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+code { padding: 1px 5px; }
+pre { padding: 12px; overflow-x: auto; }
+a { color: var(--accent); }
+ul { padding-left: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Joblox Network</h1>
+  <p class="muted">Открытый конструктор сервисов оказания услуг: такси, доставка, курьеры, пекарни, магазины.
+    Здесь видно, сколько установок работает прямо сейчас. Обновляется раз в минуту.</p>
+
+  <div class="tiles">
+    <div class="tile"><span>Установок работает</span><b>{{.Installations}}</b></div>
+    <div class="tile"><span>Людей на их сайтах</span><b>{{.Online}}</b></div>
+    <div class="tile"><span>Заказов за сутки</span><b>{{.OrdersToday}}</b></div>
+  </div>
+
+  {{if .KindRows}}
+  <h2>По видам бизнеса</h2>
+  <table>
+    {{range .KindRows}}<tr><td>{{.Kind}}</td><td class="num">{{.Count}}</td></tr>{{end}}
+  </table>
+  {{end}}
+
+  <h2>Что сюда приходит</h2>
+  <p>Только от установок, владелец которых сам включил участие (переменная <code>JOBLOX_NETWORK_URL</code>).
+    Раз в 5 минут установка присылает случайный номер, вид бизнеса, версию программы, число людей онлайн и число
+    заказов за сутки.</p>
+  <p>Сюда не приходит и здесь не хранится: названия и адреса бизнесов, товары, цены, клиенты, платежи,
+    IP-адреса. Списка установок нет. Числа присылают сами установки, сеть их не проверяет, поэтому это счётчик
+    для интереса, а не статистика.</p>
+
+  <h2>Открытое API</h2>
+<pre>GET /api/v1/stats
+{"installations": 12, "online": 340, "orders_today": 95, "kinds": {"bakery": 4, "taxi": 3}, "updated_at": "..."}
+
+POST /api/v1/beat
+{"id": "32 hex", "kind": "bakery", "version": "1.0.0", "online": 7, "orders_today": 3}</pre>
+  <p class="muted">Любой сайт может показывать счётчики: <code>/api/v1/stats</code> отдаётся с CORS для всех.
+    Сервер сети тоже открытый: <code>joblox hub</code>, можно поднять свой.</p>
+
+  <p class="muted">Joblox распространяется по лицензии MIT, как есть. Каждый владелец установки сам отвечает за
+    свой бизнес и соблюдение законов своей страны. <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Исходный код</a></p>
+  <p class="muted">Обновлено {{.UpdatedAt.Format "02.01.2006 15:04"}} UTC</p>
+</main>
+</body>
+</html>

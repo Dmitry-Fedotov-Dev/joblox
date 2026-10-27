@@ -15,6 +15,7 @@ internal/mail       SMTP и почтовый ящик в памяти для р�
 internal/bot        бот операторов в Telegram
 internal/web        витрина, страница заказа, защита, дашборд; шаблоны и статика вшиты в бинарник
 internal/metrics    Prometheus и живая сводка для дашборда
+internal/hub        Joblox Network: сервер счётчика (joblox hub) и отправка чисел из установки
 profiles/           готовые профили
 k6/                 функциональные сценарии и нагрузка
 monitoring/         Prometheus, тревоги с тестами, генератор дашборда Grafana

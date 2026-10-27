@@ -100,6 +100,7 @@ var migrations = []string{
 		note TEXT NOT NULL,
 		created_at INTEGER NOT NULL
 	);`,
+	`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`,
 }
 
 func (s *SQLite) migrate(ctx context.Context) error {
@@ -427,6 +428,21 @@ func (s *SQLite) Block(ctx context.Context, value, note string) error {
 
 func (s *SQLite) Unblock(ctx context.Context, value string) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM blocklist WHERE value=?`, value)
+	return err
+}
+
+// Meta reads a value of the installation (the Joblox Network id); "" when it is not set.
+func (s *SQLite) Meta(ctx context.Context, key string) (string, error) {
+	var v string
+	err := s.db.QueryRowContext(ctx, `SELECT value FROM meta WHERE key=?`, key).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return v, err
+}
+
+func (s *SQLite) SetMeta(ctx context.Context, key, value string) error {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO meta (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`, key, value)
 	return err
 }
 

@@ -64,6 +64,23 @@ func TestReopenKeepsSchema(t *testing.T) {
 	}
 }
 
+func TestMeta(t *testing.T) {
+	s, err := Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	ctx := context.Background()
+	if v, err := s.Meta(ctx, "network_id"); err != nil || v != "" {
+		t.Fatalf("empty meta: %q %v", v, err)
+	}
+	_ = s.SetMeta(ctx, "network_id", "a")
+	_ = s.SetMeta(ctx, "network_id", "b")
+	if v, _ := s.Meta(ctx, "network_id"); v != "b" {
+		t.Fatalf("meta: %q", v)
+	}
+}
+
 func TestBlocklistAndCounts(t *testing.T) {
 	s, err := Open(":memory:")
 	if err != nil {

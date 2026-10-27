@@ -1,0 +1,36 @@
+# Joblox Network: публичный счётчик установок. Слушает 127.0.0.1:8099, HTTPS даёт Caddy на хосте:
+#
+#   joblox.example.com {
+#   	reverse_proxy 127.0.0.1:8099
+#   	log {
+#   		output discard   # адреса установок не пишем
+#   	}
+#   }
+#
+#   docker compose -f deploy/hub/docker-compose.yml up -d --build
+name: joblox-hub
+
+services:
+  hub:
+    build:
+      context: ../..
+      args:
+        VERSION: ${VERSION:-dev}
+    command: ["hub"]
+    restart: unless-stopped
+    environment:
+      JOBLOX_HUB_ADDR: :8099
+      JOBLOX_HUB_DB: /data/hub.db
+    volumes:
+      - hub-data:/data
+    ports:
+      - "127.0.0.1:8099:8099"
+    mem_limit: 96m
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    healthcheck:
+      disable: true # the image's check targets the shop port
+
+volumes:
+  hub-data:

@@ -20,6 +20,9 @@
 | `SMTP_INSECURE` | | `1` разрешает SMTP без шифрования, только для сервера на localhost |
 | `TELEGRAM_TOKEN` | | Токен бота от @BotFather |
 | `JOBLOX_OPERATORS` | | Telegram-id операторов через запятую. Бот отвечает только им |
+| `JOBLOX_NETWORK_URL` | | Адрес Joblox Network. Пусто: установка ничего никуда не отправляет. См. [NETWORK.md](NETWORK.md) |
+| `JOBLOX_HUB_ADDR` | `127.0.0.1:8099` | Только для `joblox hub`: адрес сервера сети |
+| `JOBLOX_HUB_DB` | `data/hub.db` | Только для `joblox hub`: база сервера сети |
 
 ## Как узнать свой Telegram-id
 

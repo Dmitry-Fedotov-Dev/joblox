@@ -4,6 +4,7 @@
 //	joblox serve                 # the site, the operator bot, the dashboard
 //	joblox check profile.yaml    # validate a profile (and JOBLOX_REQUISITES) and print its workflow
 //	joblox health                # exit 0 when the local server answers /healthz (Docker HEALTHCHECK)
+//	joblox hub                   # Joblox Network: the public counter of installations (JOBLOX_HUB_ADDR, JOBLOX_HUB_DB)
 //	joblox version
 package main
 
@@ -22,6 +23,7 @@ import (
 	"time"
 
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/bot"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/hub"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/mail"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/metrics"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
@@ -46,10 +48,12 @@ func main() {
 		err = check(os.Args[2:])
 	case "health":
 		err = health()
+	case "hub":
+		err = runHub(log)
 	case "version":
 		fmt.Println(version)
 	default:
-		err = fmt.Errorf("unknown command %q: serve, check, health, version", cmd)
+		err = fmt.Errorf("unknown command %q: serve, check, health, hub, version", cmd)
 	}
 	if err != nil {
 		log.Error(err.Error())
@@ -201,6 +205,28 @@ func serve(log *slog.Logger) error {
 		b.Started(ctx, version)
 	}
 	go sweep(ctx, svc, log)
+	if url := env("JOBLOX_NETWORK_URL", ""); url != "" {
+		id, err := st.Meta(ctx, "network_id")
+		if err != nil {
+			return err
+		}
+		if id == "" {
+			id = hub.NewID()
+			if err := st.SetMeta(ctx, "network_id", id); err != nil {
+				return err
+			}
+		}
+		rep := &hub.Reporter{URL: url, ID: id, Kind: p.Business.Kind, Version: version, Online: rec.Online, Log: log,
+			OrdersToday: func(ctx context.Context) int {
+				s, err := st.Stats(ctx, time.Now().Add(-24*time.Hour), svc.Finals())
+				if err != nil {
+					return 0
+				}
+				return s.Today
+			}}
+		go rep.Run(ctx)
+		log.Info("joblox network on: anonymous counters go to " + url)
+	}
 
 	public := &http.Server{Addr: cfg.Addr, Handler: site.Handler(), ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second, MaxHeaderBytes: 32 << 10}
@@ -228,6 +254,23 @@ func serve(log *slog.Logger) error {
 	_ = admin.Shutdown(shutdown)
 	log.Info("joblox stopped")
 	return nil
+}
+
+func runHub(log *slog.Logger) error {
+	path := env("JOBLOX_HUB_DB", "data/hub.db")
+	if err := os.MkdirAll(dirOf(path), 0o750); err != nil {
+		return err
+	}
+	h, err := hub.Open(path, log)
+	if err != nil {
+		return err
+	}
+	defer h.Close()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	addr := env("JOBLOX_HUB_ADDR", "127.0.0.1:8099")
+	log.Info("joblox network hub started", "addr", addr, "version", version)
+	return h.Run(ctx, addr)
 }
 
 func dirOf(path string) string {
