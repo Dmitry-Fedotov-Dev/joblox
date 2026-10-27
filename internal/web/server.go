@@ -33,6 +33,9 @@ type Config struct {
 	Dev           bool           // local run: shows the outbox at /dev/outbox instead of sending mail
 	Version       string
 	Owner         *Owner // the owner's area on the public site (`joblox up`); nil on servers run by hand
+	// CallURL is a voice service that pairs two people by a room in the link (Контакт, https://openline.one/):
+	// an open order gets a "call" button for the customer and the performer. Empty: no button.
+	CallURL string
 }
 
 type Server struct {

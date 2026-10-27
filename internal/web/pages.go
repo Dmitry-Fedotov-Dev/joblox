@@ -181,6 +181,7 @@ type orderView struct {
 	Waiting     string
 	MethodTitle string
 	P           *profile.Profile
+	Call        string
 }
 
 func (s *Server) loadOrder(w http.ResponseWriter, r *http.Request) (*order.Order, bool) {
@@ -213,6 +214,7 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 		v.Purpose = s.svc.Req.PurposeFor(v.Ref, o.Total.Plain())
 	}
 	v.Actions = s.svc.Flow.Open(o.State, profile.ActorCustomer, o.Flags())
+	v.Call = s.callLink(o)
 	switch {
 	case st.Final:
 	case !o.Priced:

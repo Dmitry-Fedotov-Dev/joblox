@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"errors"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -125,6 +126,7 @@ type ownerView struct {
 	Countries  any
 	Currency   string
 	Portal     []hub.Card
+	SiteQR     template.HTML
 }
 
 type ownerOrder struct {
@@ -139,6 +141,7 @@ type ownerOrder struct {
 	Quote   bool
 	Actions []profile.Transition
 	Final   bool
+	Call    string
 }
 
 func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, error) {
@@ -150,6 +153,9 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	v.Form = SetupInput{Kind: Kinds[0].ID, Country: Countries[0].ID, Show: true}
 	if ow.Portal != nil {
 		v.Portal = ow.Portal(r.Context())
+	}
+	if strings.HasPrefix(site, "https://") {
+		v.SiteQR = qrSVG(site)
 	}
 	if s.outbox != nil {
 		v.Letters = s.outbox.Messages()
@@ -179,6 +185,7 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 			}
 		}
 		oo.Actions = s.svc.Flow.Open(o.State, profile.ActorOperator, o.Flags())
+		oo.Call = s.callLink(o)
 		v.Orders = append(v.Orders, oo)
 	}
 	return v, nil
@@ -335,6 +342,16 @@ func (s *Server) ownerAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/owner#o"+strconv.FormatInt(id, 10), http.StatusSeeOther)
+}
+
+// callLink is the voice room of an open order: the customer and the performer open the same link and
+// talk one to one, without phone numbers. The room comes from the order's secret token, so nobody else
+// can guess it, and the button is gone once the order is closed.
+func (s *Server) callLink(o *order.Order) string {
+	if s.cfg.CallURL == "" || s.svc.IsFinal(o.State) {
+		return ""
+	}
+	return strings.TrimRight(s.cfg.CallURL, "/") + "/?call=" + s.sign("call", o.Token)[:24]
 }
 
 // ---------------------------------------------------------------- terms

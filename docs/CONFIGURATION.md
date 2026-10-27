@@ -22,6 +22,7 @@
 | `TELEGRAM_TOKEN` | | Токен бота от @BotFather |
 | `JOBLOX_OPERATORS` | | Telegram-id операторов через запятую. Бот отвечает только им |
 | `JOBLOX_NETWORK_URL` | | Адрес Joblox Network. Пусто или `off`: установка ничего никуда не отправляет. `joblox up` ставит https://joblox.openline.one сам. См. [NETWORK.md](NETWORK.md) |
+| `JOBLOX_CALL_URL` | | Звонок внутри заказа: клиент и исполнитель открывают одну ссылку и говорят без номеров, пока заказ открыт. `joblox up` ставит https://openline.one/ (Контакт) сам. Пусто или `off`: кнопки нет |
 | `JOBLOX_HOME` | `joblox-data` рядом с программой | Только для `joblox up`: папка с профилем, базой, ключами и `joblox.env` |
 | `CLOUDFLARE_TUNNEL_TOKEN` | | Только для `joblox up`: токен своего туннеля Cloudflare. Вместе с `JOBLOX_BASE_URL` даёт постоянный адрес на своём домене вместо временного |
 | `JOBLOX_NO_BROWSER` | | Только для `joblox up`: не открывать браузер, только напечатать мастер-ссылку |

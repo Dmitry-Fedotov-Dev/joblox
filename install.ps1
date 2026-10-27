@@ -6,6 +6,7 @@
 # Joblox на рабочий стол и запускает её: сайт получает публичную ссылку через Cloudflare, а в браузере
 # открывается кабинет владельца. Запустить снова: ярлык Joblox.
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue' # полоса прогресса в PowerShell 5.1 замедляет скачивание в разы
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $repo = 'Dmitry-Fedotov-Dev/joblox'

@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -40,6 +41,9 @@ import (
 
 // DefaultNetwork is the market a new installation reports to; JOBLOX_NETWORK_URL=off turns it off.
 const DefaultNetwork = "https://joblox.openline.one"
+
+// DefaultCall is Контакт: an open order gets a voice call by link; JOBLOX_CALL_URL=off turns it off.
+const DefaultCall = "https://openline.one/"
 
 // settings are the owner's answers in the setup.
 type settings struct {
@@ -98,6 +102,7 @@ func up(log *slog.Logger) error {
 	setDefault("JOBLOX_PROFILE", l.path("profile.yaml"))
 	setDefault("JOBLOX_DB", l.path("joblox.db"))
 	setDefault("JOBLOX_NETWORK_URL", DefaultNetwork)
+	setDefault("JOBLOX_CALL_URL", DefaultCall)
 	if _, err := os.Stat(l.path("requisites.yaml")); err == nil {
 		setDefault("JOBLOX_REQUISITES", l.path("requisites.yaml"))
 	}
@@ -154,6 +159,9 @@ func up(log *slog.Logger) error {
 	market := strings.TrimRight(env("JOBLOX_NETWORK_URL", ""), "/")
 	if market == "off" {
 		market = ""
+	}
+	if market != "" {
+		go checkClock(ctx, market)
 	}
 	owner := &web.Owner{Key: l.key, MarketURL: market, DataDir: dir, Configured: l.configured, Setup: l.setup,
 		Shown: l.shown, SetShown: l.setShown}
@@ -518,6 +526,36 @@ func loadEnvFile(path string) error {
 }
 
 // ---------------------------------------------------------------- the device
+
+// checkClock compares the device clock with the market's: a clock hours off makes every https
+// certificate look expired or not yet valid, and the card never reaches the market (seen on Windows with
+// a stopped time service). The check reads the Date header without trusting the certificate's dates.
+func checkClock(ctx context.Context, market string) {
+	tr := &http.Transport{TLSClientConfig: &tls.Config{
+		// only the time comparison: the request carries nothing and its answer is not used otherwise
+		InsecureSkipVerify: true, // #nosec G402 -- a wrong clock is exactly what breaks verification here
+	}}
+	c := &http.Client{Timeout: 10 * time.Second, Transport: tr}
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, market+"/healthz", nil)
+	if err != nil {
+		return
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		return
+	}
+	_ = resp.Body.Close()
+	at, err := http.ParseTime(resp.Header.Get("Date"))
+	if err != nil {
+		return
+	}
+	if skew := time.Since(at); skew > 5*time.Minute || skew < -5*time.Minute {
+		fmt.Printf("\nВНИМАНИЕ: часы на этом устройстве расходятся с точным временем на %s.\n"+
+			"Из-за этого не работают защищённые соединения: карточка не попадёт на биржу, письма не уйдут.\n"+
+			"Включите синхронизацию времени (Windows: Параметры, Время и язык, Синхронизировать) и перезапустите программу.\n\n",
+			skew.Abs().Round(time.Minute))
+	}
+}
 
 func openBrowser(url string) {
 	if os.Getenv("JOBLOX_NO_BROWSER") != "" { // a server, or a test run

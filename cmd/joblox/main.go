@@ -236,7 +236,8 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 		return fmt.Errorf("JOBLOX_TRUSTED_PROXIES: %w", err)
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
-		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner}, log)
+		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
+		CallURL: callURL()}, log)
 	if err != nil {
 		return err
 	}
@@ -332,6 +333,15 @@ func runHub(log *slog.Logger) error {
 	addr := env("JOBLOX_HUB_ADDR", "127.0.0.1:8099")
 	log.Info("joblox network hub started", "addr", addr, "version", version)
 	return h.Run(ctx, addr)
+}
+
+// callURL is the voice service for calls inside an order; empty or off: no call button.
+func callURL() string {
+	u := env("JOBLOX_CALL_URL", "")
+	if u == "off" || !strings.HasPrefix(u, "https://") {
+		return ""
+	}
+	return u
 }
 
 func dirOf(path string) string {

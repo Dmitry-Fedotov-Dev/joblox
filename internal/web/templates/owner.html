@@ -61,8 +61,10 @@
   </div>
 
   <div class="card">
-    <p class="eyebrow">Ссылка для клиентов</p>
+    <p class="eyebrow">Ваш сайт работает</p>
+    <a class="cta button" href="{{.SiteURL}}" target="_blank" rel="noopener">Перейти в ваше приложение</a>
     <p class="big copy">{{.SiteURL}}</p>
+    {{if .SiteQR}}<div class="qr-box">{{.SiteQR}}<p class="muted small">Покажите QR-код клиенту: камера телефона откроет ваш сайт. Или перешлите ссылку в WhatsApp и Telegram.</p></div>{{end}}
     {{if .Temporary}}<p class="muted small">Ссылка временная: после перезапуска программы она станет другой. Карточка на бирже обновится сама, а тем, кому вы отправляли ссылку, отправьте новую. Постоянный адрес: ниже, «Свой домен».</p>{{end}}
     <form method="post" action="/owner/market" class="actions">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
@@ -95,6 +97,7 @@
       {{if .CanPay}}<form method="post" action="/owner/o/{{.O.ID}}/paid"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Оплата получена</button></form>{{end}}
       {{$id := .O.ID}}
       {{range .Actions}}<form method="post" action="/owner/o/{{$id}}/t-{{.ID}}"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="secondary">{{.Title}}</button></form>{{end}}
+      {{if .Call}}<a class="button secondary" href="{{.Call}}" target="_blank" rel="noopener">Позвонить клиенту</a>{{end}}
       <form method="post" action="/owner/o/{{.O.ID}}/block"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="link">В чёрный список</button></form>
     </div>
   </article>

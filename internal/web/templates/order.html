@@ -51,6 +51,13 @@
 </section>
 {{end}}
 
+{{if .Call}}
+<section class="card">
+  <a class="cta button" href="{{.Call}}" target="_blank" rel="noopener">Позвонить исполнителю</a>
+  <p class="hint">Звонок через интернет, без номеров: «{{.Business.Name}}» откроет ту же ссылку у себя. Работает, пока заказ открыт.</p>
+</section>
+{{end}}
+
 {{if .Actions}}
 <section class="card actions">
   {{range .Actions}}

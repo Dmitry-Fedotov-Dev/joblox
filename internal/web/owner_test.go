@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -53,8 +54,39 @@ func ownerSite(t *testing.T) (*site, *fakeOwner) {
 			f.shown = v
 			return nil
 		}}
+	s.srv.cfg.CallURL = "https://call.example/"
+	s.svc.SetBaseURL("https://shop.example")
 	s.http.Config.Handler = s.srv.Handler() // routes depend on the owner config
 	return s, f
+}
+
+var callRe = regexp.MustCompile(`https://call\.example/\?call=([a-z0-9]{24})"`)
+
+func TestCallLinkAndQR(t *testing.T) {
+	s, f := ownerSite(t)
+	f.setups = []SetupInput{{Kind: "bakery"}} // the cabinet, not the setup
+	s.get(t, "/owner/enter?k=masterkey0123456789")
+	resp, _ := s.post(t, "/order", s.bakeryForm(t))
+	link := resp.Header.Get("Location")
+	_, page := s.get(t, link)
+	room := match(t, callRe, page)
+	if !strings.Contains(page, "Позвонить исполнителю") {
+		t.Fatal("no call button for the customer")
+	}
+	_, owner := s.get(t, "/owner")
+	if match(t, callRe, owner) != room || !strings.Contains(owner, "Позвонить клиенту") {
+		t.Fatal("the performer's call room differs from the customer's")
+	}
+	if !strings.Contains(owner, `<svg class="qr"`) || !strings.Contains(owner, "Перейти в ваше приложение") {
+		t.Fatal("no QR code or big button for the site")
+	}
+	_, order := s.get(t, link)
+	if resp, _ := s.post(t, link+"/t/cancel", url.Values{"csrf": {match(t, csrfRe, order)}}); resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("cancel: %d", resp.StatusCode)
+	}
+	if _, page := s.get(t, link); strings.Contains(page, "?call=") {
+		t.Fatal("a closed order still offers a call")
+	}
 }
 
 func TestOwnerNeedsTheMasterLink(t *testing.T) {
