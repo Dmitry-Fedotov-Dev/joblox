@@ -1,0 +1,54 @@
+# Грузоперевозки: клиент описывает груз и маршрут, диспетчер называет цену, клиент платит,
+# затем перевозка. Цена по запросу, потому что зависит от машины, грузчиков и времени.
+business:
+  name: Грузоперевозки «Кузов»
+  kind: freight
+  description: Переезды и доставка грузов по городу и области. Машины от 1,5 до 5 т.
+  currency: RUB
+  timezone: Europe/Moscow
+  contact: "+7 900 000-00-03"
+
+pricing:
+  mode: quote
+  min_total: 1500
+
+checkout:
+  fields:
+    - {id: name, label: Контактное лицо, type: text, required: true, max_len: 80}
+    - {id: company, label: Организация, type: text, max_len: 120, hint: Если оплата от юрлица}
+    - {id: phone, label: Телефон, type: phone, required: true}
+    - {id: email, label: Email, type: email, required: true}
+    - {id: from_address, label: Адрес загрузки, type: textarea, required: true, max_len: 300}
+    - {id: to_address, label: Адрес выгрузки, type: textarea, required: true, max_len: 300}
+    - {id: cargo, label: Что везём, type: textarea, required: true, max_len: 500}
+    - {id: weight_kg, label: Примерный вес, type: number, required: true, min: 1, max: 20000, unit: кг}
+    - {id: loaders, label: Грузчики, type: select, required: true, options: [Не нужны, "1", "2", "3 и больше"]}
+    - {id: date, label: Дата и время, type: datetime, required: true}
+
+payment:
+  methods: [transfer, cash]
+  require_email_code: true
+  reference_prefix: GR
+  window_hours: 24
+
+workflow:
+  initial: request
+  states:
+    - {id: request, title: Заявка, customer: "Заявка получена, диспетчер рассчитывает цену"}
+    - {id: quoted, title: Цена названа, customer: "Цена рассчитана, подтвердите заказ"}
+    - {id: booked, title: Заказ подтверждён, customer: "Машина забронирована"}
+    - {id: in_transit, title: В пути, customer: "Груз в пути"}
+    - {id: done, title: Выполнен, customer: "Перевозка выполнена", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true}
+    - {id: expired, title: Истёк, customer: "Заявка закрыта без подтверждения", final: true}
+  transitions:
+    - {id: quote, title: Цена названа, from: request, to: quoted, by: operator, requires: [priced, approved], notify: true}
+    - {id: book, title: Подтвердить заказ, from: quoted, to: booked, by: customer, requires: [verified]}
+    - {id: load, title: Загрузили, from: booked, to: in_transit, by: operator, notify: true}
+    - {id: unload, title: Доставлено, from: in_transit, to: done, by: operator, requires: [paid], notify: true}
+    - {id: cancel, title: Отменить, from: [request, quoted, booked], to: cancelled, by: [customer, operator], notify: true}
+    - {id: expire, title: Истёк срок, from: quoted, to: expired, by: system}
+
+antifraud:
+  max_orders_per_ip_hour: 3
+  review_above: 100000

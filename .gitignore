@@ -1,0 +1,11 @@
+/bin/
+/data/
+*.db
+*.db-wal
+*.db-shm
+/reports/
+.env
+requisites.yaml
+!deploy/requisites.example.yaml
+gosec.json
+coverage.out

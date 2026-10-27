@@ -1,0 +1,52 @@
+# Курьерская доставка посылок по городу: откуда, куда, вес. Цена по тарифу: подача плюс рубли за килограмм.
+business:
+  name: Курьер «Быстро»
+  kind: delivery
+  description: Доставка документов и посылок по городу в день заказа.
+  currency: RUB
+  timezone: Europe/Moscow
+  contact: "+7 900 000-00-01"
+
+catalog:
+  - {id: standard, title: Доставка в течение дня, price: 400, unit: заказ, max_qty: 1}
+  - {id: express, title: Срочная доставка за 2 часа, price: 900, unit: заказ, max_qty: 1}
+
+pricing:
+  mode: catalog
+  fees:
+    - {id: weight, title: Вес, per_field: weight_kg, rate: 30}
+
+checkout:
+  fields:
+    - {id: name, label: Отправитель, type: text, required: true, max_len: 80}
+    - {id: phone, label: Телефон отправителя, type: phone, required: true}
+    - {id: email, label: Email, type: email, required: true}
+    - {id: pickup_address, label: Откуда забрать, type: textarea, required: true, max_len: 300}
+    - {id: dropoff_address, label: Куда доставить, type: textarea, required: true, max_len: 300}
+    - {id: recipient_phone, label: Телефон получателя, type: phone, required: true}
+    - {id: weight_kg, label: Вес, type: number, required: true, min: 0.1, max: 30, unit: кг}
+
+payment:
+  methods: [transfer, cash]
+  require_email_code: true
+  reference_prefix: KR
+  window_hours: 3
+
+workflow:
+  initial: new
+  states:
+    - {id: new, title: Новый, customer: "Заявка принята, ищем курьера"}
+    - {id: assigned, title: Курьер назначен, customer: "Курьер едет за посылкой"}
+    - {id: picked_up, title: Посылка у курьера, customer: "Посылка в пути"}
+    - {id: delivered, title: Доставлено, customer: "Посылка доставлена", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заявка отменена", final: true}
+    - {id: expired, title: Истёк, customer: "Заявка закрыта без подтверждения", final: true}
+  transitions:
+    - {id: assign, title: Назначить курьера, from: new, to: assigned, by: operator, requires: [approved], notify: true}
+    - {id: pick_up, title: Забрал, from: assigned, to: picked_up, by: operator, notify: true}
+    - {id: deliver, title: Доставил, from: picked_up, to: delivered, by: operator, requires: [paid], notify: true}
+    - {id: cancel, title: Отменить, from: [new, assigned], to: cancelled, by: [customer, operator], notify: true}
+    - {id: expire, title: Истёк срок, from: new, to: expired, by: system}
+
+antifraud:
+  new_customer_review_above: 3000

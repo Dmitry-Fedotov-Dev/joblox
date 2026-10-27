@@ -1,0 +1,58 @@
+# Такси по предварительному заказу: клиент указывает маршрут и примерное расстояние,
+# цена по тарифу (посадка плюс рубли за километр), оплата водителю или переводом.
+business:
+  name: Такси «Трасса»
+  kind: taxi
+  description: Поездки по городу и в аэропорт по предварительному заказу.
+  currency: RUB
+  timezone: Europe/Moscow
+  contact: "+7 900 000-00-02"
+
+catalog:
+  - {id: economy, title: Эконом, description: посадка, price: 150, unit: поездка, max_qty: 1}
+  - {id: comfort, title: Комфорт, description: посадка, price: 250, unit: поездка, max_qty: 1}
+
+pricing:
+  mode: catalog
+  fees:
+    - {id: distance, title: Расстояние, per_field: distance_km, rate: 28}
+
+checkout:
+  fields:
+    - {id: name, label: Имя, type: text, required: true, max_len: 80}
+    - {id: phone, label: Телефон, type: phone, required: true}
+    - {id: email, label: Email, type: email, required: true}
+    - {id: from_address, label: Откуда, type: text, required: true, max_len: 200}
+    - {id: to_address, label: Куда, type: text, required: true, max_len: 200}
+    - {id: distance_km, label: Расстояние, type: number, required: true, min: 1, max: 300, unit: км, hint: "По карте, примерно"}
+    - {id: ride_at, label: Время подачи, type: datetime, required: true}
+    - {id: passengers, label: Пассажиров, type: select, required: true, options: ["1", "2", "3", "4"]}
+
+payment:
+  methods: [cash, transfer]
+  require_email_code: true
+  reference_prefix: TX
+  window_hours: 2
+
+workflow:
+  initial: new
+  states:
+    - {id: new, title: Новый, customer: "Заказ получен, подбираем машину"}
+    - {id: confirmed, title: Подтверждён, customer: "Машина назначена на указанное время"}
+    - {id: on_the_way, title: Водитель в пути, customer: "Водитель едет к вам"}
+    - {id: riding, title: В поездке, customer: "Поездка началась"}
+    - {id: finished, title: Завершён, customer: "Поездка завершена. Спасибо!", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true}
+    - {id: expired, title: Истёк, customer: "Заказ закрыт без подтверждения", final: true}
+  transitions:
+    - {id: confirm, title: Подтвердить, from: new, to: confirmed, by: operator, requires: [approved], notify: true}
+    - {id: go, title: Выехал, from: confirmed, to: on_the_way, by: operator, notify: true}
+    - {id: start, title: Посадка, from: on_the_way, to: riding, by: operator}
+    - {id: finish, title: Завершить, from: riding, to: finished, by: operator, requires: [paid], notify: true}
+    - {id: cancel, title: Отменить, from: [new, confirmed], to: cancelled, by: [customer, operator], notify: true}
+    - {id: expire, title: Истёк срок, from: new, to: expired, by: system}
+
+antifraud:
+  max_orders_per_ip_hour: 4
+  max_open_unpaid_per_email: 1
+  new_customer_review_above: 5000

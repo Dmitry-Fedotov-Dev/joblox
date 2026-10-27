@@ -1,0 +1,58 @@
+# Агентская оплата зарубежных услуг и IT-сервисов (схема Agent Pay): клиент присылает счёт поставщика,
+# оператор проверяет компанию и счёт, называет сумму в рублях, клиент платит по безналу, агент оплачивает
+# поставщика и выдаёт документы. Каждый новый клиент проходит ручную проверку.
+business:
+  name: Агентская оплата услуг
+  kind: agent
+  description: Оплата закупок зарубежных услуг и IT-сервисов для ООО и ИП. Безналичная оплата на рублёвый счёт.
+  currency: RUB
+  timezone: Europe/Moscow
+  contact: pay@example.com
+
+pricing:
+  mode: quote
+  min_total: 3000
+
+checkout:
+  fields:
+    - {id: company, label: Организация или ИП, type: text, required: true, max_len: 200}
+    - {id: inn, label: ИНН, type: text, required: true, max_len: 12}
+    - {id: email, label: Email бухгалтерии, type: email, required: true}
+    - {id: phone, label: Телефон, type: phone, required: true}
+    - {id: vendor, label: Поставщик, type: text, required: true, max_len: 120, hint: Название сервиса}
+    - {id: invoice_url, label: Ссылка на счёт поставщика, type: url, required: true, hint: Страница счёта в кабинете поставщика}
+    - {id: invoice_amount, label: Сумма счёта поставщика, type: number, required: true, min: 1, max: 1000000}
+    - {id: invoice_currency, label: Валюта счёта, type: select, required: true, options: [USD, EUR]}
+
+payment:
+  methods: [transfer]
+  require_email_code: true
+  reference_prefix: AG
+  window_hours: 24
+
+workflow:
+  initial: request
+  states:
+    - {id: request, title: Заявка, customer: "Заявка на проверке у оператора"}
+    - {id: quoted, title: Сумма названа, customer: "Сумма к оплате рассчитана, оплатите счёт"}
+    - {id: vendor_paid, title: Поставщик оплачен, customer: "Поставщик оплачен, готовим документы"}
+    - {id: completed, title: Документы выданы, customer: "Документы отправлены на почту", final: true}
+    - {id: rejected, title: Отклонена, customer: "Заявка отклонена", final: true}
+    - {id: expired, title: Истекла, customer: "Оплата не поступила вовремя, заявка закрыта", final: true}
+  transitions:
+    - {id: quote, title: Сумма названа, from: request, to: quoted, by: operator, requires: [priced, approved], notify: true}
+    - {id: vendor_paid, title: Поставщик оплачен, from: quoted, to: vendor_paid, by: operator, requires: [paid], notify: true}
+    - {id: complete, title: Документы выданы, from: vendor_paid, to: completed, by: operator, notify: true}
+    - {id: reject, title: Отклонить, from: [request, quoted], to: rejected, by: operator, notify: true}
+    - {id: withdraw, title: Отозвать заявку, from: request, to: rejected, by: customer}
+    - {id: expire, title: Истёк срок оплаты, from: quoted, to: expired, by: system}
+
+antifraud:
+  review_all: true
+  max_orders_per_ip_hour: 3
+  block_disposable_email: true
+
+texts:
+  intro: Укажите поставщика и приложите ссылку на счёт, выставленный на вашу компанию. Оператор проверит заявку и назовёт сумму в рублях.
+  payment_note: Оплата только с расчётного счёта организации. Назначение платежа укажите без изменений.
+  rules: Возврат выполняется только на счёт, с которого поступила оплата.

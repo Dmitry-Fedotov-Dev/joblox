@@ -1,0 +1,60 @@
+# Интернет-магазин: каталог, корзина, доставка курьером или самовывоз со склада.
+business:
+  name: Магазин «Мастерская»
+  kind: shop
+  description: Товары ручной работы с доставкой по городу.
+  currency: RUB
+  timezone: Europe/Moscow
+  contact: shop@example.com
+
+catalog:
+  - {id: mug, title: Кружка керамическая, price: 900, unit: шт, max_qty: 10}
+  - {id: board, title: Разделочная доска из дуба, price: 2400, unit: шт, max_qty: 5}
+  - {id: candle, title: Свеча соевая, price: 650, unit: шт, max_qty: 20}
+
+pricing:
+  mode: catalog
+  min_total: 500
+  fees:
+    - {id: courier, title: Доставка курьером, amount: 350, free_from: 5000, when: delivery=Курьером}
+
+checkout:
+  fields:
+    - {id: name, label: Получатель, type: text, required: true, max_len: 80}
+    - {id: phone, label: Телефон, type: phone, required: true}
+    - {id: email, label: Email, type: email, required: true}
+    - {id: delivery, label: Получение, type: select, required: true, options: [Курьером, Самовывоз со склада]}
+    - {id: address, label: Адрес доставки, type: textarea, max_len: 300, hint: Для доставки курьером}
+
+payment:
+  methods: [transfer]
+  require_email_code: true
+  reference_prefix: MS
+  window_hours: 24
+
+workflow:
+  initial: new
+  states:
+    - {id: new, title: Новый, customer: "Заказ оформлен, ждёт оплаты"}
+    - {id: packing, title: Собирается, customer: "Оплата получена, заказ собирается"}
+    - {id: shipped, title: Передан в доставку, customer: "Заказ в пути"}
+    - {id: done, title: Получен, customer: "Заказ получен. Спасибо!", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true}
+    - {id: expired, title: Истёк, customer: "Оплата не поступила вовремя, заказ закрыт", final: true}
+  transitions:
+    - {id: pack, title: Собирать, from: new, to: packing, by: operator, requires: [paid, approved], notify: true}
+    - {id: ship, title: Отправлен, from: packing, to: shipped, by: operator, notify: true}
+    - {id: deliver, title: Получен, from: shipped, to: done, by: operator, notify: true}
+    - {id: cancel, title: Отменить, from: new, to: cancelled, by: [customer, operator], notify: true}
+    - {id: cancel_paid, title: Отменить с возвратом, from: packing, to: cancelled, by: operator, notify: true}
+    - {id: expire, title: Истёк срок оплаты, from: new, to: expired, by: system}
+
+antifraud:
+  new_customer_review_above: 15000
+  review_above: 50000
+  block_disposable_email: true
+
+texts:
+  intro: Оформите заказ, оплатите переводом по реквизитам из письма и страницы заказа.
+  payment_note: Реквизиты действуют только для этого заказа. Назначение платежа укажите без изменений.
+  rules: Возврат при отмене выполняется только на счёт, с которого поступила оплата.

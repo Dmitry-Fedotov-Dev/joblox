@@ -1,0 +1,58 @@
+# Пекарня на вынос: заказ из каталога, самовывоз к выбранному времени,
+# оплата переводом заранее или на месте при получении.
+business:
+  name: Пекарня «Колос»
+  kind: bakery
+  description: Свежий хлеб и выпечка с самовывозом. Заказ за 2 часа до получения.
+  currency: RUB
+  timezone: Europe/Moscow
+  contact: "+7 900 000-00-00, ул. Садовая, 5"
+
+catalog:
+  - {id: baton, title: Батон нарезной, price: 89, unit: шт, max_qty: 20}
+  - {id: borodinsky, title: Хлеб бородинский, price: 110, unit: шт, max_qty: 20}
+  - {id: croissant, title: Круассан с маслом, price: 120, unit: шт, max_qty: 30}
+  - {id: pie_cabbage, title: Пирог с капустой, description: 800 г, price: 650, unit: шт, max_qty: 5}
+
+pricing:
+  mode: catalog
+  min_total: 200
+
+checkout:
+  fields:
+    - {id: name, label: Имя, type: text, required: true, max_len: 80}
+    - {id: phone, label: Телефон, type: phone, required: true}
+    - {id: email, label: Email для подтверждения, type: email, required: true}
+    - {id: pickup_at, label: Когда заберёте, type: datetime, required: true, hint: Не раньше чем через 2 часа}
+    - {id: comment, label: Комментарий, type: textarea, max_len: 500}
+
+payment:
+  methods: [transfer, cash]
+  require_email_code: true
+  reference_prefix: KL
+  window_hours: 4
+
+workflow:
+  initial: new
+  states:
+    - {id: new, title: Новый, customer: "Заказ получен, ждёт подтверждения пекарни"}
+    - {id: accepted, title: Принят, customer: "Пекарня приняла заказ и готовит его"}
+    - {id: ready, title: Готов к выдаче, customer: "Заказ готов, можно забирать"}
+    - {id: done, title: Выдан, customer: "Заказ выдан. Спасибо!", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true}
+    - {id: expired, title: Истёк, customer: "Заказ не подтверждён вовремя и закрыт", final: true}
+  transitions:
+    - {id: accept, title: Принять, from: new, to: accepted, by: operator, requires: [approved], notify: true}
+    - {id: ready, title: Готов, from: accepted, to: ready, by: operator, notify: true}
+    - {id: hand_over, title: Выдан, from: ready, to: done, by: operator, requires: [paid]}
+    - {id: cancel, title: Отменить, from: [new, accepted], to: cancelled, by: [customer, operator], notify: true}
+    - {id: expire, title: Истёк срок, from: new, to: expired, by: system}
+
+antifraud:
+  max_orders_per_ip_hour: 5
+  max_open_unpaid_per_email: 2
+  new_customer_review_above: 3000
+
+texts:
+  intro: Выберите выпечку, укажите время самовывоза. Оплатить можно переводом заранее или на месте.
+  payment_note: Перевод принимается только по реквизитам на странице вашего заказа. Возврат при отмене выполняется на тот же счёт.
