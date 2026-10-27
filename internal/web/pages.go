@@ -321,6 +321,7 @@ type adminView struct {
 	Stats    order.Stats
 	Currency string
 	Finger   string
+	Owner    bool // opened from the owner's area through the public site, not over SSH
 }
 
 type adminOrder struct {
@@ -365,7 +366,7 @@ func (s *Server) adminPage(w http.ResponseWriter, r *http.Request) {
 		finger = s.svc.Req.Fingerprint()
 	}
 	s.render(w, "admin", http.StatusOK, adminView{Title: "Дашборд", Paused: s.svc.Paused(), Business: s.svc.P.Business, Version: s.cfg.Version,
-		Orders: list, Stats: st, Currency: currencySign(s.svc.P.Business.Currency), Finger: finger})
+		Orders: list, Stats: st, Currency: currencySign(s.svc.P.Business.Currency), Finger: finger, Owner: s.isOwner(r)})
 }
 
 func (s *Server) adminLive(w http.ResponseWriter, r *http.Request) {

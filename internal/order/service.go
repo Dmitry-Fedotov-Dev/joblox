@@ -77,21 +77,22 @@ type Service struct {
 	Notify  Notifier
 	Observe Observer
 	Req     *Requisites
-	BaseURL string
 	Now     func() time.Time
 	Log     *slog.Logger
 	secret  []byte
 	finals  []string
 	paused  atomic.Bool
+	baseURL atomic.Pointer[string] // changes while running when a temporary tunnel address is renewed
 }
 
 // New wires the service. secret keys the email codes and the client hashes; keep it in the environment.
 func New(p *profile.Profile, st Store, mailer Mailer, req *Requisites, secret []byte, baseURL string) *Service {
 	s := &Service{
 		P: p, Flow: flow.New(p.Workflow), Store: st, Mail: mailer, Notify: NopNotifier{}, Observe: NopObserver{},
-		Req: req, BaseURL: strings.TrimRight(baseURL, "/"), Now: func() time.Time { return time.Now().UTC() },
+		Req: req, Now: func() time.Time { return time.Now().UTC() },
 		Log: slog.Default(), secret: secret,
 	}
+	s.SetBaseURL(baseURL)
 	for _, st := range p.Workflow.States {
 		if st.Final {
 			s.finals = append(s.finals, st.ID)
@@ -107,7 +108,15 @@ func (s *Service) IsFinal(state string) bool { return slices.Contains(s.finals, 
 func (s *Service) Pause()               { s.paused.Store(true) }
 func (s *Service) Resume()              { s.paused.Store(false) }
 func (s *Service) Paused() bool         { return s.paused.Load() }
-func (s *Service) Link(o *Order) string { return s.BaseURL + "/o/" + o.Token }
+func (s *Service) Link(o *Order) string { return s.BaseURL() + "/o/" + o.Token }
+
+// BaseURL is the public address the links in letters are built from.
+func (s *Service) BaseURL() string { return *s.baseURL.Load() }
+
+func (s *Service) SetBaseURL(u string) {
+	u = strings.TrimRight(u, "/")
+	s.baseURL.Store(&u)
+}
 
 // Reference is what the payer writes in the payment purpose: the prefix and the order number.
 func (s *Service) Reference(o *Order) string {

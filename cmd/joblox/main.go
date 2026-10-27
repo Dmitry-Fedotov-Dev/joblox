@@ -1,6 +1,7 @@
 // Command joblox runs a shop, a bakery, a taxi dispatch or any other order service described by a
 // business profile. Everything is configured with environment variables (see docs/CONFIGURATION.md):
 //
+//	joblox up                    # everything on this computer or phone, published through Cloudflare (the default)
 //	joblox serve                 # the site, the operator bot, the dashboard
 //	joblox check profile.yaml    # validate a profile (and JOBLOX_REQUISITES) and print its workflow
 //	joblox health                # exit 0 when the local server answers /healthz (Docker HEALTHCHECK)
@@ -9,11 +10,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,12 +39,19 @@ var version = "dev"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	// started without arguments, by a double click or from the installer: the owner's quick start
+	implicit := len(os.Args) == 1 && os.Getenv("JOBLOX_PROFILE") == ""
 	cmd := "serve"
+	if implicit {
+		cmd = "up"
+	}
 	if len(os.Args) > 1 {
 		cmd = os.Args[1]
 	}
 	var err error
 	switch cmd {
+	case "up":
+		err = up(log)
 	case "serve":
 		err = serve(log)
 	case "check":
@@ -53,10 +63,14 @@ func main() {
 	case "version":
 		fmt.Println(version)
 	default:
-		err = fmt.Errorf("unknown command %q: serve, check, health, hub, version", cmd)
+		err = fmt.Errorf("unknown command %q: up, serve, check, health, hub, version", cmd)
 	}
 	if err != nil {
 		log.Error(err.Error())
+		if implicit { // keep the window open, otherwise a double-clicked program vanishes with its error
+			fmt.Fprintln(os.Stderr, "Нажмите Enter, чтобы закрыть окно.")
+			_, _ = bufio.NewReader(os.Stdin).ReadString('\n')
+		}
 		os.Exit(1)
 	}
 }
@@ -84,7 +98,9 @@ type Config struct {
 	Operators  []int64
 }
 
-func loadConfig() (Config, error) {
+// loadConfig reads the environment. quick is `joblox up`: no mail, no bot and a base address that is not
+// known yet are fine there, because the owner works in the browser and the tunnel brings the address.
+func loadConfig(quick bool) (Config, error) {
 	c := Config{
 		Env: env("JOBLOX_ENV", "prod"), Profile: env("JOBLOX_PROFILE", ""), Requisites: env("JOBLOX_REQUISITES", ""),
 		DB: env("JOBLOX_DB", "data/joblox.db"), Addr: env("JOBLOX_ADDR", ":8080"),
@@ -108,7 +124,12 @@ func loadConfig() (Config, error) {
 	default:
 		errs = append(errs, errors.New("JOBLOX_SECRET: at least 32 random characters (openssl rand -hex 32)"))
 	}
-	if c.BaseURL == "" {
+	if quick && os.Getenv("JOBLOX_ADMIN_ADDR") == "" {
+		c.AdminAddr = "" // the owner sees the dashboard in the browser, no second port
+	}
+	if c.BaseURL == "" && quick {
+		c.BaseURL = "http://127.0.0.1" // replaced by the tunnel address as soon as it is up
+	} else if c.BaseURL == "" {
 		if c.Env == "dev" {
 			c.BaseURL = "http://localhost" + c.Addr
 		} else {
@@ -127,7 +148,7 @@ func loadConfig() (Config, error) {
 		if c.SMTP.From == "" {
 			errs = append(errs, errors.New("SMTP_FROM: the sender, e.g. Пекарня <shop@example.com>"))
 		}
-	} else if c.Env == "prod" {
+	} else if c.Env == "prod" && !quick {
 		errs = append(errs, errors.New("SMTP_HOST: production needs a mail relay for codes and statuses"))
 	}
 	for _, part := range strings.FieldsFunc(env("JOBLOX_OPERATORS", ""), func(r rune) bool { return r == ',' || r == ' ' }) {
@@ -141,17 +162,36 @@ func loadConfig() (Config, error) {
 	if c.BotToken != "" && len(c.Operators) == 0 {
 		errs = append(errs, errors.New("JOBLOX_OPERATORS: the bot needs at least one operator id"))
 	}
-	if c.Env == "prod" && c.BotToken == "" {
+	if c.Env == "prod" && c.BotToken == "" && !quick {
 		errs = append(errs, errors.New("TELEGRAM_TOKEN: production needs the operator bot, otherwise nobody sees orders"))
 	}
 	return c, errors.Join(errs...)
 }
 
 func serve(log *slog.Logger) error {
-	cfg, err := loadConfig()
+	cfg, err := loadConfig(false)
 	if err != nil {
 		return err
 	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	return run(ctx, log, cfg, runOptions{})
+}
+
+// runOptions are what `joblox up` adds to a plain `joblox serve`.
+type runOptions struct {
+	Listener      net.Listener // the public listener; nil listens on cfg.Addr
+	Owner         *web.Owner
+	SecureCookies bool                 // the site is reached over https even while BaseURL is still local
+	Listing       func() *hub.Listing  // the market card for the heartbeat
+	Wake          <-chan struct{}      // send the heartbeat now: the address or the card changed
+	Started       func(*order.Service) // called once the service is built
+	Restart       <-chan struct{}      // stop and return errRestart: the owner changed the profile
+}
+
+var errRestart = errors.New("restart")
+
+func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) error {
 	p, err := profile.Load(cfg.Profile)
 	if err != nil {
 		return err
@@ -179,7 +219,13 @@ func serve(log *slog.Logger) error {
 	} else {
 		outbox = &mail.Outbox{}
 		mailer = outbox
-		log.Warn("no SMTP_HOST: letters go to /dev/outbox (dev only)")
+		if opt.Owner != nil {
+			// nobody could receive a code: the owner sees the letters in the browser instead
+			p.Payment.RequireEmailCode = false
+			log.Info("no SMTP_HOST: letters are kept for the owner's area, email codes are off")
+		} else {
+			log.Warn("no SMTP_HOST: letters go to /dev/outbox (dev only)")
+		}
 	}
 	svc := order.New(p, st, mailer, req, cfg.Secret, cfg.BaseURL)
 	svc.Log = log
@@ -190,12 +236,14 @@ func serve(log *slog.Logger) error {
 		return fmt.Errorf("JOBLOX_TRUSTED_PROXIES: %w", err)
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
-		SecureCookies: strings.HasPrefix(cfg.BaseURL, "https://"), Version: version}, log)
+		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner}, log)
 	if err != nil {
 		return err
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	if opt.Started != nil {
+		opt.Started(svc)
+	}
+	ctx, stop := context.WithCancel(ctx)
 	defer stop()
 
 	if cfg.BotToken != "" {
@@ -205,7 +253,7 @@ func serve(log *slog.Logger) error {
 		b.Started(ctx, version)
 	}
 	go sweep(ctx, svc, log)
-	if url := env("JOBLOX_NETWORK_URL", ""); url != "" {
+	if url := env("JOBLOX_NETWORK_URL", ""); url != "" && url != "off" {
 		id, err := st.Meta(ctx, "network_id")
 		if err != nil {
 			return err
@@ -217,6 +265,7 @@ func serve(log *slog.Logger) error {
 			}
 		}
 		rep := &hub.Reporter{URL: url, ID: id, Kind: p.Business.Kind, Version: version, Online: rec.Online, Log: log,
+			Listing: opt.Listing, Wake: opt.Wake,
 			OrdersToday: func(ctx context.Context) int {
 				s, err := st.Stats(ctx, time.Now().Add(-24*time.Hour), svc.Finals())
 				if err != nil {
@@ -233,17 +282,28 @@ func serve(log *slog.Logger) error {
 	admin := &http.Server{Addr: cfg.AdminAddr, Handler: site.AdminHandler(), ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second}
 	errc := make(chan error, 2)
-	for _, s := range []*http.Server{public, admin} {
-		go func(s *http.Server) {
-			if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				errc <- err
-			}
-		}(s)
+	listen := func(s *http.Server, ln net.Listener) {
+		var err error
+		if ln != nil {
+			err = s.Serve(ln)
+		} else {
+			err = s.ListenAndServe()
+		}
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errc <- err
+		}
+	}
+	go listen(public, opt.Listener)
+	if cfg.AdminAddr != "" {
+		go listen(admin, nil)
 	}
 	log.Info("joblox started", "version", version, "business", p.Business.Name, "addr", cfg.Addr, "admin", cfg.AdminAddr,
 		"env", cfg.Env, "requisites", req.Fingerprint())
+	var result error
 	select {
 	case <-ctx.Done():
+	case <-opt.Restart:
+		result = errRestart
 	case err := <-errc:
 		stop()
 		return err
@@ -253,7 +313,7 @@ func serve(log *slog.Logger) error {
 	_ = public.Shutdown(shutdown)
 	_ = admin.Shutdown(shutdown)
 	log.Info("joblox stopped")
-	return nil
+	return result
 }
 
 func runHub(log *slog.Logger) error {
@@ -266,6 +326,7 @@ func runHub(log *slog.Logger) error {
 		return err
 	}
 	defer h.Close()
+	h.AdminToken, h.Contact = os.Getenv("JOBLOX_HUB_ADMIN_TOKEN"), env("JOBLOX_HUB_CONTACT", "")
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	addr := env("JOBLOX_HUB_ADDR", "127.0.0.1:8099")

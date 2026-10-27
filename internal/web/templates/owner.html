@@ -1,0 +1,164 @@
+{{define "content"}}
+{{if not .Configured}}
+<section>
+  <p class="eyebrow">Первый запуск</p>
+  <h1>Кем вы будете?</h1>
+  <p class="lead">Выберите роль и заполните карточку. Через минуту у вас будет свой сайт для заказов.</p>
+  {{if .FormError}}<p class="banner error" role="alert">{{.FormError}}</p>{{end}}
+  <form method="post" action="/owner/setup" class="card">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <fieldset class="field">
+      <legend>Роль</legend>
+      {{$kind := .Form.Kind}}
+      {{range .Kinds}}
+      <label class="radio"><input type="radio" name="kind" value="{{.ID}}"{{if eq .ID $kind}} checked{{end}}> <span><b>{{.Title}}</b> <span class="muted small">{{.Hint}}</span></span></label>
+      {{end}}
+    </fieldset>
+    <div class="field">
+      <label for="name">Название <span class="req">*</span></label>
+      <input id="name" name="name" value="{{.Form.Name}}" maxlength="60" required placeholder="Такси Азамат">
+    </div>
+    <div class="field">
+      <label for="contact">Телефон или мессенджер <span class="req">*</span></label>
+      <input id="contact" name="contact" value="{{.Form.Contact}}" maxlength="40" required placeholder="+996 700 000 000">
+    </div>
+    <div class="field">
+      <label for="place">Где работаете</label>
+      <input id="place" name="place" value="{{.Form.Place}}" maxlength="40" placeholder="Чолпон-Ата и побережье">
+    </div>
+    <div class="field">
+      <label for="about">Коротко о себе</label>
+      <textarea id="about" name="about" maxlength="160" rows="2" placeholder="Toyota Camry, 4 места, аэропорт и межгород">{{.Form.About}}</textarea>
+    </div>
+    <fieldset class="field">
+      <legend>Страна</legend>
+      {{$c := .Form.Country}}
+      {{range .Countries}}
+      <label class="radio"><input type="radio" name="country" value="{{.ID}}"{{if eq .ID $c}} checked{{end}}> {{.Title}} ({{.Currency}})</label>
+      {{end}}
+    </fieldset>
+    <div class="field">
+      <label for="pay">Куда клиенту переводить деньги</label>
+      <input id="pay" name="pay" value="{{.Form.Pay}}" maxlength="200" placeholder="Mbank +996 700 000 000, Азамат Т.">
+      <p class="hint">Клиент увидит это только на странице своего заказа, после вашей проверки, с номером заказа для назначения платежа. Пусто: только оплата при получении.</p>
+    </div>
+    <label class="radio"><input type="checkbox" name="show" value="1"{{if .Form.Show}} checked{{end}}> Показать на бирже{{if .MarketURL}} <a href="{{.MarketURL}}" target="_blank" rel="noopener">{{.MarketURL}}</a>{{end}}</label>
+    <p class="hint">Там будут видны название, место, описание, контакт и ссылка на ваш сайт, пока программа включена.</p>
+    <label class="radio"><input type="checkbox" name="terms" value="1" required> Я принимаю <a href="{{if .MarketURL}}{{.MarketURL}}/terms{{else}}/terms{{end}}" target="_blank" rel="noopener">пользовательское соглашение</a> и сам отвечаю за свои услуги</label>
+    <button class="cta" type="submit">Запустить</button>
+  </form>
+</section>
+{{else}}
+<section class="dash">
+  <div class="dash-head">
+    <h1>Кабинет</h1>
+    <span class="actions">
+      <a href="/">Мой сайт</a>
+      {{if .MarketURL}}<a href="{{.MarketURL}}" target="_blank" rel="noopener">Биржа</a>{{end}}
+      <a href="/admin">Нагрузка</a>
+    </span>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Ссылка для клиентов</p>
+    <p class="big copy">{{.SiteURL}}</p>
+    {{if .Temporary}}<p class="muted small">Ссылка временная: после перезапуска программы она станет другой. Карточка на бирже обновится сама, а тем, кому вы отправляли ссылку, отправьте новую. Постоянный адрес: ниже, «Свой домен».</p>{{end}}
+    <form method="post" action="/owner/market" class="actions">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      {{if .Shown}}<span>Карточка на бирже показана.</span><button class="secondary" name="show" value="0">Скрыть с биржи</button>
+      {{else}}<span>Карточка на бирже скрыта.</span><button class="secondary" name="show" value="1">Показать на бирже</button>{{end}}
+    </form>
+    <form method="post" action="/owner/pause" class="actions">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      {{if .Paused}}<button>Возобновить приём заказов</button>{{else}}<button class="secondary">Остановить приём заказов</button>{{end}}
+    </form>
+  </div>
+
+  <h2>Заказы <a class="small" href="/owner">обновить</a></h2>
+  {{if not .Orders}}<p class="muted">Открытых заказов нет. Новые появятся здесь сами.</p>{{end}}
+  {{$csrf := .CSRF}}
+  {{range .Orders}}
+  <article class="card" id="o{{.O.ID}}">
+    <h2>№{{.O.ID}} · {{.State}}</h2>
+    <dl class="facts">
+      {{range .O.Lines}}<dt>{{.Title}} × {{.Qty}}</dt><dd>{{money .Sum}}</dd>{{end}}
+      <dt>Сумма</dt><dd><b>{{.Total}}</b></dd>
+      {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}
+      <dt>Оплата</dt><dd>{{.Method}}, {{if .O.Paid}}оплачен{{else}}не оплачен{{end}}</dd>
+      {{if .Risk}}<dt>Проверка</dt><dd>{{.Risk}}</dd>{{end}}
+    </dl>
+    {{if .Review}}<p class="banner warn">Заказ ждёт вашей проверки.</p>{{end}}
+    <div class="actions">
+      {{if .Review}}<form method="post" action="/owner/o/{{.O.ID}}/approve"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Одобрить</button></form>{{end}}
+      {{if .Quote}}<form method="post" action="/owner/o/{{.O.ID}}/price" class="inline"><input type="hidden" name="csrf" value="{{$csrf}}"><input name="total" inputmode="decimal" placeholder="Цена" required aria-label="Цена"><button>Назвать цену</button></form>{{end}}
+      {{if .CanPay}}<form method="post" action="/owner/o/{{.O.ID}}/paid"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Оплата получена</button></form>{{end}}
+      {{$id := .O.ID}}
+      {{range .Actions}}<form method="post" action="/owner/o/{{$id}}/t-{{.ID}}"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="secondary">{{.Title}}</button></form>{{end}}
+      <form method="post" action="/owner/o/{{.O.ID}}/block"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="link">В чёрный список</button></form>
+    </div>
+  </article>
+  {{end}}
+
+  {{if .NoMail}}
+  <h2>Письма клиентам</h2>
+  <p class="muted small">Почта не подключена, поэтому письма не уходят, а хранятся здесь до перезапуска. Коды подтверждения email выключены. Как подключить: ниже, «Почта».</p>
+  {{range .Letters}}<details class="card"><summary>{{.To}}: {{.Subject}}</summary><pre class="small">{{.Body}}</pre></details>{{else}}<p class="muted small">Писем пока нет.</p>{{end}}
+  {{end}}
+
+  <h2>Инструкции</h2>
+  <p class="muted small">Файлы программы лежат в папке <code>{{.DataDir}}</code>. Настройки пишутся в файл <code>joblox.env</code> в этой папке, после правки перезапустите программу.</p>
+
+  <details class="card"><summary><b>Свой домен вместо временной ссылки</b></summary>
+    <ol>
+      <li>Купите домен у любого регистратора (около 10 долларов в год) и добавьте его в бесплатный аккаунт <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">Cloudflare</a>.</li>
+      <li>В Cloudflare откройте Zero Trust, затем Networks, Tunnels, «Create a tunnel», тип Cloudflared. Назовите его, например, joblox.</li>
+      <li>Скопируйте токен из команды установки (длинная строка после <code>--token</code>). Саму команду запускать не нужно.</li>
+      <li>В Public Hostname укажите адрес, например <code>taxi.example.com</code>, тип HTTP, адрес <code>localhost:8080</code>.</li>
+      <li>Допишите в <code>joblox.env</code>:<pre>CLOUDFLARE_TUNNEL_TOKEN=токен
+JOBLOX_BASE_URL=https://taxi.example.com</pre></li>
+      <li>Перезапустите программу. Ссылка станет постоянной, биржа покажет новый адрес сама.</li>
+    </ol>
+    <p class="muted small">Есть свой сервер (VPS)? Тогда программу лучше запустить на нём: <a href="https://github.com/Dmitry-Fedotov-Dev/joblox/blob/main/docs/DEPLOY.md" target="_blank" rel="noopener">инструкция</a>.</p>
+  </details>
+
+  <details class="card"><summary><b>Оплата</b></summary>
+    <p>Клиент переводит деньги вам напрямую по реквизитам, которые вы указали при запуске: номер телефона в банке или кошельке, карта. На странице заказа он видит их вместе с номером заказа для назначения платежа, только после вашей проверки.</p>
+    <p>Пришли деньги: нажмите «Оплата получена» у заказа. Joblox деньги не принимает и не хранит. Автоматически узнать о переводе программа не может: у переводов по номеру телефона нет открытого API для этого.</p>
+    <p>Реквизиты лежат в файле <code>requisites.yaml</code>. Поменять: исправьте файл или удалите <code>settings.json</code> и пройдите запуск заново.</p>
+  </details>
+
+  <details class="card"><summary><b>Почта</b></summary>
+    <p>С почтой клиенты получают письма о статусе заказа, а коды подтверждения email защищают от фальшивых заказов. Подойдёт любой SMTP: Gmail с паролем приложения, Яндекс, Mail.ru, Brevo. Допишите в <code>joblox.env</code>:</p>
+    <pre>SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@gmail.com
+SMTP_PASSWORD=пароль приложения
+SMTP_FROM=Такси Азамат &lt;you@gmail.com&gt;</pre>
+  </details>
+
+  <details class="card"><summary><b>Заказы в Telegram</b></summary>
+    <p>Бот присылает каждый новый заказ с кнопками. Создайте бота у @BotFather и допишите в <code>joblox.env</code>:</p>
+    <pre>TELEGRAM_TOKEN=токен от BotFather
+JOBLOX_OPERATORS=ваш Telegram id</pre>
+    <p class="muted small">Свой id узнаете, написав боту после перезапуска: он ответит числом.</p>
+  </details>
+
+  <details class="card"><summary><b>Цены, каталог, поля заказа</b></summary>
+    <p>Всё описано в файле <code>profile.yaml</code>: товары и тарифы, поля формы, статусы заказа. Откройте его в любом редакторе, поправьте и перезапустите программу. <a href="https://github.com/Dmitry-Fedotov-Dev/joblox/blob/main/docs/PROFILES.md" target="_blank" rel="noopener">Описание профиля</a>.</p>
+  </details>
+
+  <details class="card"><summary><b>Работа на телефоне</b></summary>
+    <ul>
+      <li>Сайт работает, пока включены телефон, интернет и Termux. Держите телефон на зарядке.</li>
+      <li>Termux не должен засыпать: в его уведомлении нажмите «Acquire wakelock», а в настройках Android отключите для Termux экономию батареи.</li>
+      <li>Запустить снова: откройте Termux и наберите <code>joblox up</code>.</li>
+    </ul>
+  </details>
+
+  <details class="card"><summary><b>Счётчик Joblox Network</b></summary>
+    <p>Раз в 5 минут программа сообщает бирже случайный номер установки, вид услуг, версию и два числа: людей на сайте и заказов за сутки. Карточка уходит, только если она показана на бирже. Заказы, клиенты и деньги никуда не уходят. Выключить всё: строка <code>JOBLOX_NETWORK_URL=off</code> в <code>joblox.env</code>.</p>
+  </details>
+</section>
+{{end}}
+{{end}}
+{{define "scripts"}}{{if .Configured}}<script src="/static/owner.js" defer></script>{{end}}{{end}}

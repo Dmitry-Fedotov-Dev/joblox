@@ -32,6 +32,7 @@ type Config struct {
 	SecureCookies bool           // the site is served over HTTPS
 	Dev           bool           // local run: shows the outbox at /dev/outbox instead of sending mail
 	Version       string
+	Owner         *Owner // the owner's area on the public site (`joblox up`); nil on servers run by hand
 }
 
 type Server struct {
@@ -60,7 +61,7 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		"inc":   func(i int) int { return i + 1 },
 	}
 	s.tpl = map[string]*template.Template{}
-	for _, page := range []string{"shop", "order", "message", "admin"} {
+	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms"} {
 		t, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, "templates/layout.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, err
@@ -103,6 +104,10 @@ func (s *Server) Handler() http.Handler {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
+	mux.HandleFunc("GET /terms", s.terms)
+	if s.cfg.Owner != nil {
+		s.ownerRoutes(mux)
+	}
 	if s.cfg.Dev && s.outbox != nil {
 		mux.HandleFunc("GET /dev/outbox", func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
