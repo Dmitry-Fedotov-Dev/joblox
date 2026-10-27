@@ -76,8 +76,17 @@ jobs:
         uses: Dmitry-Fedotov-Dev/ci/actions/dashboards-sync@v1
         with:
           pairs: monitoring/grafana/gen_dashboard.py monitoring/grafana/dashboards/joblox.json
-      - name: docker image builds
-        run: docker build --build-arg VERSION="${GITHUB_SHA::7}" -t joblox-shop:ci .
+      - name: docker image builds and runs
+        # the image runs as nonroot: check that it can write its databases on a fresh volume
+        run: |
+          docker build --build-arg VERSION="${GITHUB_SHA::7}" -t joblox:ci .
+          docker volume create joblox-ci-data
+          docker run -d --name hub -p 127.0.0.1:8099:8099 -v joblox-ci-data:/data \
+            -e JOBLOX_HUB_ADDR=:8099 -e JOBLOX_HUB_DB=/data/hub.db joblox:ci hub
+          docker run -d --name shop -p 127.0.0.1:18080:8080 -v joblox-ci-data:/data -e JOBLOX_ENV=dev \
+            -e JOBLOX_PROFILE=/profiles/bakery.yaml -e JOBLOX_DB=/data/shop.db joblox:ci
+          timeout 30 bash -c 'until curl -sf http://127.0.0.1:8099/healthz && curl -sf http://127.0.0.1:18080/healthz; do sleep 1; done' \
+            || { docker logs hub; docker logs shop; exit 1; }
       - uses: actions/upload-artifact@v7
         with:
           name: joblox-linux-amd64
