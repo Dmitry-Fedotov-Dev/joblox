@@ -107,32 +107,38 @@ func TestNewIDsPerAddressAreLimited(t *testing.T) {
 	}
 }
 
-func get(t *testing.T, url string) (*http.Response, string) {
+type page struct {
+	code   int
+	header http.Header
+	body   string
+}
+
+func get(t *testing.T, url string) page {
 	t.Helper()
 	resp, err := http.Get(url)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
-	_ = resp.Body.Close()
-	return resp, string(body)
+	return page{resp.StatusCode, resp.Header, string(body)}
 }
 
 func TestPublicPages(t *testing.T) {
 	_, srv, _ := newHub(t)
 	post(t, srv.URL, `{"id":"`+idA+`","kind":"bakery","version":"1","online":3,"orders_today":2}`)
-	resp, body := get(t, srv.URL+"/")
+	home := get(t, srv.URL+"/")
 	for _, want := range []string{"Заказать такси", "Сделать доставку", "OpenLine Радио", "Agent Pay", "Стать исполнителем", "Водитель такси"} {
-		if !strings.Contains(body, want) {
+		if !strings.Contains(home.body, want) {
 			t.Errorf("market page has no %q", want)
 		}
 	}
-	if !strings.Contains(resp.Header.Get("Content-Security-Policy"), "default-src 'none'") {
+	if !strings.Contains(home.header.Get("Content-Security-Policy"), "default-src 'none'") {
 		t.Fatal("market page without CSP")
 	}
 	for path, want := range map[string]string{"/start": "Termux", "/terms": "Пользовательское соглашение", "/api": "/api/v1/market"} {
-		if resp, body := get(t, srv.URL+path); resp.StatusCode != http.StatusOK || !strings.Contains(body, want) {
-			t.Errorf("%s: %d, no %q", path, resp.StatusCode, want)
+		if p := get(t, srv.URL+path); p.code != http.StatusOK || !strings.Contains(p.body, want) {
+			t.Errorf("%s: %d, no %q", path, p.code, want)
 		}
 	}
 }
@@ -156,11 +162,11 @@ func TestListingOnTheMarket(t *testing.T) {
 	if c := cards[0]; c.Title != "Такси <b>Азамат</b>" || c.URL != "https://abc-def.trycloudflare.com/" || c.Online != 2 {
 		t.Fatalf("card: %+v", c)
 	}
-	_, body := get(t, srv.URL+"/")
+	body := get(t, srv.URL+"/").body
 	if !strings.Contains(body, "Такси &lt;b&gt;Азамат&lt;/b&gt;") || strings.Contains(body, "<b>Азамат") {
 		t.Fatal("the card title is not escaped on the page")
 	}
-	_, js := get(t, srv.URL+"/api/v1/market?kind=taxi")
+	js := get(t, srv.URL+"/api/v1/market?kind=taxi").body
 	if !strings.Contains(js, "abc-def.trycloudflare.com") {
 		t.Fatalf("market api: %s", js)
 	}
