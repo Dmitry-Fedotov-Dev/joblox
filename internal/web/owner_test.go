@@ -1,11 +1,14 @@
 package web
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/hub"
 )
 
 // fakeOwner records what the owner's area asks of the launcher; handlers run on the server's goroutines.
@@ -41,6 +44,9 @@ func ownerSite(t *testing.T) (*site, *fakeOwner) {
 			return nil
 		},
 		Shown: f.Shown,
+		Portal: func(context.Context) []hub.Card {
+			return []hub.Card{{Kind: "call", Title: "Трубка: Контакт", URL: "https://openline.one/", Badge: "OpenLine"}}
+		},
 		SetShown: func(v bool) error {
 			f.mu.Lock()
 			defer f.mu.Unlock()
@@ -69,7 +75,7 @@ func TestOwnerNeedsTheMasterLink(t *testing.T) {
 	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/owner" {
 		t.Fatalf("enter: %d %s", resp.StatusCode, resp.Header.Get("Location"))
 	}
-	if code, page := s.get(t, "/owner"); code != 200 || !strings.Contains(page, "Кем вы будете?") {
+	if code, page := s.get(t, "/owner"); code != 200 || !strings.Contains(page, "Кем вы будете?") || !strings.Contains(page, "Трубка: Контакт") {
 		t.Fatalf("setup page: %d", code)
 	}
 }

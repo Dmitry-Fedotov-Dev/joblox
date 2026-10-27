@@ -1,7 +1,8 @@
 {{define "content"}}
 {{if not .Configured}}
+{{template "portal" .}}
 <section>
-  <p class="eyebrow">Первый запуск</p>
+  <p class="eyebrow">Стать исполнителем</p>
   <h1>Кем вы будете?</h1>
   <p class="lead">Выберите роль и заполните карточку. Через минуту у вас будет свой сайт для заказов.</p>
   {{if .FormError}}<p class="banner error" role="alert">{{.FormError}}</p>{{end}}
@@ -155,9 +156,27 @@ JOBLOX_OPERATORS=ваш Telegram id</pre>
     </ul>
   </details>
 
+  {{template "portal" .}}
+
   <details class="card"><summary><b>Счётчик Joblox Network</b></summary>
     <p>Раз в 5 минут программа сообщает бирже случайный номер установки, вид услуг, версию и два числа: людей на сайте и заказов за сутки. Карточка уходит, только если она показана на бирже. Заказы, клиенты и деньги никуда не уходят. Выключить всё: строка <code>JOBLOX_NETWORK_URL=off</code> в <code>joblox.env</code>.</p>
   </details>
+</section>
+{{end}}
+{{end}}
+{{define "portal"}}
+{{if .Portal}}
+<section>
+  <h2>Портал Joblox{{if .MarketURL}} <a class="small" href="{{.MarketURL}}" target="_blank" rel="noopener">открыть биржу</a>{{end}}</h2>
+  <div class="tiles">
+    {{range .Portal}}
+    <a class="tile" href="{{.URL}}" target="_blank" rel="noopener ugc">
+      <span>{{if .Badge}}{{.Badge}}{{else}}на связи{{if .Place}} · {{.Place}}{{end}}{{end}}</span>
+      <b class="small">{{.Title}}</b>
+      <small>{{.About}}</small>
+    </a>
+    {{end}}
+  </div>
 </section>
 {{end}}
 {{end}}

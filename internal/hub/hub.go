@@ -326,7 +326,7 @@ func (h *Hub) home(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		k := c.Kind
-		if _, ok := kindTitles[k]; !ok || k == "agent" || k == "radio" {
+		if _, ok := kindTitles[k]; !ok || k == "agent" || k == "radio" || k == "call" {
 			k = "other"
 		}
 		byKind[k] = append(byKind[k], c)

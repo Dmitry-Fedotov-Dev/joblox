@@ -36,6 +36,8 @@ type Card struct {
 
 // Featured are the author's projects. They stand in the same grid as everyone else's cards.
 var Featured = []Card{
+	{Kind: "call", Title: "Трубка: Контакт", About: "Позвоните клиенту или другу по ссылке и говорите один на один. Только голос, без регистрации и номеров.",
+		URL: "https://openline.one/", Badge: "OpenLine"},
 	{Kind: "radio", Title: "OpenLine Радио", About: "Открытое радио в браузере: крутите ручку между станциями или займите свою волну с микрофоном и музыкой.",
 		URL: "https://openline.one/radio/", Badge: "OpenLine"},
 	{Kind: "agent", Title: "Agent Pay", About: "Оплата зарубежных услуг и IT-сервисов для ООО и ИП через агента, с полным комплектом документов для бухгалтерии.",
@@ -59,7 +61,7 @@ var Sections = []struct{ Kind, Action string }{
 
 var kindTitles = map[string]string{
 	"taxi": "Такси", "bakery": "Пекарни", "delivery": "Доставка", "freight": "Грузоперевозки", "shop": "Магазины",
-	"agent": "Оплата услуг", "radio": "Радио", "other": "Другое",
+	"agent": "Оплата услуг", "radio": "Радио", "call": "Связь", "other": "Другое",
 }
 
 // KindTitle is the Russian name of a kind of business.

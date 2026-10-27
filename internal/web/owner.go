@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"crypto/hmac"
 	"errors"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/hub"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/mail"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
@@ -24,6 +26,9 @@ type Owner struct {
 	Setup      func(SetupInput) error // writes the profile and restarts the shop; a SetupError goes back to the form
 	Shown      func() bool            // the card is on the market
 	SetShown   func(bool) error
+	// Portal returns the market's cards to show in the owner's area: who is already working, the network's
+	// own services. Nil or an empty answer hides the block.
+	Portal func(context.Context) []hub.Card
 }
 
 // SetupInput is the "become a performer" form.
@@ -119,6 +124,7 @@ type ownerView struct {
 	Kinds      any
 	Countries  any
 	Currency   string
+	Portal     []hub.Card
 }
 
 type ownerOrder struct {
@@ -142,6 +148,9 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 		Temporary: strings.Contains(site, ".trycloudflare.com"), MarketURL: ow.MarketURL, Shown: ow.Shown(), DataDir: ow.DataDir,
 		NoMail: s.outbox != nil, Kinds: Kinds, Countries: Countries, Currency: currencySign(s.svc.P.Business.Currency)}
 	v.Form = SetupInput{Kind: Kinds[0].ID, Country: Countries[0].ID, Show: true}
+	if ow.Portal != nil {
+		v.Portal = ow.Portal(r.Context())
+	}
 	if s.outbox != nil {
 		v.Letters = s.outbox.Messages()
 		if len(v.Letters) > 10 {

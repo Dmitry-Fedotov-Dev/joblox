@@ -13,8 +13,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -155,6 +157,9 @@ func up(log *slog.Logger) error {
 	}
 	owner := &web.Owner{Key: l.key, MarketURL: market, DataDir: dir, Configured: l.configured, Setup: l.setup,
 		Shown: l.shown, SetShown: l.setShown}
+	if market != "" {
+		owner.Portal = (&portal{url: market}).cards
+	}
 	for {
 		cfg, err := loadConfig(true)
 		if err != nil {
@@ -213,6 +218,50 @@ func (l *launcher) ready(url string) {
 	if l.opened.CompareAndSwap(false, true) {
 		openBrowser(master)
 	}
+}
+
+// ---------------------------------------------------------------- portal
+
+// portal fetches the market's cards for the owner's area: the program opens on a portal where somebody
+// is already working. A minute of cache; an unreachable market just hides the block.
+type portal struct {
+	url  string
+	mu   sync.Mutex
+	at   time.Time
+	last []hub.Card
+}
+
+func (p *portal) cards(ctx context.Context) []hub.Card {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if time.Since(p.at) < time.Minute {
+		return p.last
+	}
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.url+"/api/v1/market", nil)
+	if err != nil {
+		return p.last
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return p.last
+	}
+	defer resp.Body.Close()
+	var out struct {
+		Cards []hub.Card `json:"cards"`
+	}
+	if resp.StatusCode != http.StatusOK || json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out) != nil {
+		return p.last
+	}
+	var safe []hub.Card
+	for _, c := range out.Cards { // links from the network open in the owner's browser: https only
+		if strings.HasPrefix(c.URL, "https://") {
+			safe = append(safe, c)
+		}
+	}
+	p.last, p.at = safe, time.Now()
+	return p.last
 }
 
 // ---------------------------------------------------------------- settings
