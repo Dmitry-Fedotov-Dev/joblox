@@ -53,15 +53,22 @@ var Roles = []Card{
 	{Kind: "shop", Title: "Продавец", About: "Свой каталог с корзиной, доставка или самовывоз.", URL: "/start#shop", Invite: true},
 }
 
-// Sections are the order in which the app offers services to a customer.
-var Sections = []struct{ Kind, Action string }{
-	{"taxi", "Заказать такси"}, {"delivery", "Сделать доставку"}, {"bakery", "Свежая выпечка"},
-	{"freight", "Перевезти груз"}, {"shop", "Купить"}, {"other", "Другие услуги"},
-}
-
 var kindTitles = map[string]string{
 	"taxi": "Такси", "bakery": "Пекарни", "delivery": "Доставка", "freight": "Грузоперевозки", "shop": "Магазины",
 	"agent": "Оплата услуг", "radio": "Радио", "call": "Связь", "other": "Другое",
+}
+
+var kindIcons = map[string]string{
+	"taxi": "🚕", "delivery": "📦", "bakery": "🥐", "freight": "🚚", "shop": "🛍️",
+	"agent": "💳", "radio": "📻", "call": "📞",
+}
+
+// KindIcon is the tile's picture: an emoji, so it needs no image files and looks native on every phone.
+func KindIcon(kind string) string {
+	if i, ok := kindIcons[kind]; ok {
+		return i
+	}
+	return "✨"
 }
 
 // KindTitle is the Russian name of a kind of business.

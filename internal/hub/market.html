@@ -1,51 +1,27 @@
 {{template "top" "Joblox: такси, доставка и услуги рядом"}}
 <h1>Что нужно?</h1>
-<p class="stats"><span>На связи исполнителей: <b>{{.Installations}}</b></span><span>Заказов за сутки: <b>{{.OrdersToday}}</b></span></p>
+<p class="stats"><span>На связи: <b>{{.Installations}}</b></span><span>Заказов за сутки: <b>{{.OrdersToday}}</b></span></p>
 
-{{range .Sections}}
-<h2 id="{{.Kind}}">{{.Action}}</h2>
-{{if .Cards}}
-<div class="cards">
-  {{range .Cards}}
-  <a class="card" href="{{.URL}}" rel="nofollow noopener ugc">
-    <span class="meta"><span class="dot"></span>на связи{{if .Place}} · {{.Place}}{{end}}</span>
-    <b>{{.Title}}</b>
-    {{if .About}}<p>{{.About}}</p>{{end}}
-    {{if .Contact}}<span class="meta">{{.Contact}}</span>{{end}}
-    <span class="go">Заказать</span>
-  </a>
-  {{end}}
-</div>
-{{else}}
-<p class="empty">Сейчас никого на связи. <a href="/start#{{.Kind}}">Станьте первым</a></p>
-{{end}}
-{{end}}
+<nav class="chips" aria-label="Виды услуг">
+  {{range .Chips}}<a class="chip{{if .On}} on{{end}}" href="/{{if .Kind}}?kind={{.Kind}}{{end}}">{{if .Kind}}{{kindIcon .Kind}} {{end}}{{.Title}}</a>{{end}}
+</nav>
 
-{{if .More}}
-<h2>Связь, радио и другие сервисы</h2>
-<div class="cards">
-  {{range .More}}
-  <a class="card" href="{{.URL}}" rel="noopener">
-    <span class="badge">{{.Badge}}</span>
+<div class="tiles">
+  {{range .Tiles}}
+  <a class="tile k-{{.Kind}}" href="{{.URL}}" rel="{{if .Badge}}noopener{{else}}nofollow noopener ugc{{end}}">
+    <span class="icon" aria-hidden="true">{{kindIcon .Kind}}</span>
     <b>{{.Title}}</b>
-    <p>{{.About}}</p>
-    <span class="go">Открыть</span>
+    <small>{{if .Badge}}{{.About}}{{else}}{{if .Place}}{{.Place}} · {{end}}{{if .About}}{{.About}}{{else}}{{kindTitle .Kind}}{{end}}{{end}}</small>
+    {{if .Badge}}<span class="tag">{{.Badge}}</span>{{else}}<span class="tag live"><span class="dot"></span>на связи</span>{{end}}
   </a>
-  {{end}}
-</div>
-{{end}}
-
-<a class="cta" href="/start">Стать исполнителем</a>
-<p class="muted small">Займите свою роль: приложение запускается на вашем телефоне или компьютере, заказы приходят прямо к вам, деньги клиент переводит вам напрямую.</p>
-<div class="cards roles">
-  {{range .Roles}}
-  <a class="card" href="{{.URL}}">
-    <b>{{.Title}}</b>
-    <p>{{.About}}</p>
-    <span class="go">Как начать</span>
-  </a>
+  {{else}}
+  <p class="empty">Здесь пока никого нет. Станьте первым: кнопка внизу.</p>
   {{end}}
 </div>
 
-<p class="muted small">Каждый исполнитель работает сам и сам отвечает за свои услуги. Joblox только показывает ссылки на их сайты и не принимает деньги. Подробно в <a href="/terms">пользовательском соглашении</a>.</p>
+<p class="muted small fine">Каждый исполнитель работает сам и сам отвечает за свои услуги. Joblox только показывает ссылки и не принимает деньги. <a href="/terms">Пользовательское соглашение</a>.</p>
+
+<div class="sticky">
+  <a class="cta" href="/start">Стать исполнителем</a>
+</div>
 {{template "foot" .}}

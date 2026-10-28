@@ -129,7 +129,7 @@ func Open(path string, log *slog.Logger) (*Hub, error) {
 		_ = db.Close()
 		return nil, err
 	}
-	page, err := template.New("").Funcs(template.FuncMap{"kindTitle": KindTitle}).ParseFS(pageFS, "*.html")
+	page, err := template.New("").Funcs(template.FuncMap{"kindTitle": KindTitle, "kindIcon": KindIcon}).ParseFS(pageFS, "*.html")
 	if err != nil {
 		_ = db.Close()
 		return nil, err
@@ -302,49 +302,44 @@ func (h *Hub) stats(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(st)
 }
 
-type section struct {
-	Kind, Action, Title string
-	Cards               []Card
+type chip struct {
+	Kind, Title string
+	On          bool
 }
 
+// home is the market as a customer sees it: one grid of tiles with everything that is available right now
+// (performers on line first, then the network's own services), chips to filter by kind, and the sticky
+// «Стать исполнителем» button.
 func (h *Hub) home(w http.ResponseWriter, r *http.Request) {
 	st, err := h.Stats(r.Context())
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	cards, err := h.Market(r.Context(), "")
+	all, err := h.Market(r.Context(), "")
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	byKind := map[string][]Card{}
-	var more []Card
-	for _, c := range cards {
-		if c.Badge != "" {
-			more = append(more, c)
-			continue
+	kind := r.URL.Query().Get("kind")
+	seen := map[string]bool{}
+	chips := []chip{{Kind: "", Title: "Все", On: kind == ""}}
+	var tiles []Card
+	for _, c := range all {
+		if !seen[c.Kind] {
+			seen[c.Kind] = true
+			chips = append(chips, chip{Kind: c.Kind, Title: KindTitle(c.Kind), On: c.Kind == kind})
 		}
-		k := c.Kind
-		if _, ok := kindTitles[k]; !ok || k == "agent" || k == "radio" || k == "call" {
-			k = "other"
+		if kind == "" || c.Kind == kind {
+			tiles = append(tiles, c)
 		}
-		byKind[k] = append(byKind[k], c)
-	}
-	var sections []section
-	for _, s := range Sections {
-		if len(byKind[s.Kind]) == 0 && s.Kind == "other" {
-			continue
-		}
-		sections = append(sections, section{Kind: s.Kind, Action: s.Action, Title: KindTitle(s.Kind), Cards: byKind[s.Kind]})
 	}
 	h.render(w, "market.html", struct {
 		Stats
-		Sections []section
-		More     []Card
-		Roles    []Card
-		Contact  string
-	}{st, sections, more, Roles, h.Contact})
+		Chips   []chip
+		Tiles   []Card
+		Contact string
+	}{st, chips, tiles, h.Contact})
 }
 
 func (h *Hub) static(page string) http.HandlerFunc {

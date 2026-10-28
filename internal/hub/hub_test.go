@@ -128,13 +128,17 @@ func TestPublicPages(t *testing.T) {
 	_, srv, _ := newHub(t)
 	post(t, srv.URL, `{"id":"`+idA+`","kind":"bakery","version":"1","online":3,"orders_today":2}`)
 	home := get(t, srv.URL+"/")
-	for _, want := range []string{"Заказать такси", "Сделать доставку", "OpenLine Радио", "Agent Pay", "Стать исполнителем", "Водитель такси"} {
+	for _, want := range []string{"OpenLine Радио", "Agent Pay", "Трубка: Контакт", `class="sticky"`, "Стать исполнителем", `href="/?kind=radio"`} {
 		if !strings.Contains(home.body, want) {
 			t.Errorf("market page has no %q", want)
 		}
 	}
 	if !strings.Contains(home.header.Get("Content-Security-Policy"), "default-src 'none'") {
 		t.Fatal("market page without CSP")
+	}
+	radio := get(t, srv.URL+"/?kind=radio").body
+	if !strings.Contains(radio, "OpenLine Радио") || strings.Contains(radio, "Agent Pay") || !strings.Contains(radio, `class="chip on"`) {
+		t.Error("the radio chip does not filter the tiles")
 	}
 	for path, want := range map[string]string{"/start": "Termux", "/terms": "Пользовательское соглашение", "/api": "/api/v1/market"} {
 		if p := get(t, srv.URL+path); p.code != http.StatusOK || !strings.Contains(p.body, want) {
