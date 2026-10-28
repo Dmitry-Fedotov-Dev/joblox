@@ -7,6 +7,7 @@ package tunnel
 import (
 	"archive/tar"
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
@@ -22,6 +23,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -56,7 +58,8 @@ func exeName() string {
 }
 
 // Ensure returns a cloudflared to run: the one in dir, the one on PATH, or a fresh download into dir.
-func Ensure(ctx context.Context, dir string, log *slog.Logger) (string, error) {
+// progress, when set, is told how many bytes of the download have arrived (total is -1 when unknown).
+func Ensure(ctx context.Context, dir string, log *slog.Logger, progress func(done, total int64)) (string, error) {
 	local := filepath.Join(dir, exeName())
 	if _, err := os.Stat(local); err == nil {
 		return local, nil
@@ -70,51 +73,118 @@ func Ensure(ctx context.Context, dir string, log *slog.Logger) (string, error) {
 		return "", fmt.Errorf("no cloudflared build for %s/%s: install it yourself (https://github.com/cloudflare/cloudflared) and start again",
 			runtime.GOOS, runtime.GOARCH)
 	}
-	url := "https://github.com/cloudflare/cloudflared/releases/download/" + Version + "/" + name
-	log.Info("downloading cloudflared " + Version + " (about 40 MB, once)")
-	body, err := download(ctx, url)
-	if err != nil {
-		return "", fmt.Errorf("download cloudflared: %w", err)
-	}
-	sum := sha256.Sum256(body)
-	if got := hex.EncodeToString(sum[:]); got != want {
-		return "", fmt.Errorf("cloudflared %s: checksum %s, expected %s; the file is not used", name, got, want)
-	}
-	if strings.HasSuffix(name, ".tgz") {
-		if body, err = untar(body, "cloudflared"); err != nil {
-			return "", fmt.Errorf("unpack cloudflared: %w", err)
-		}
-	}
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return "", err
 	}
-	tmp := local + ".part"
-	if err := os.WriteFile(tmp, body, 0o750); err != nil { // #nosec G306 -- an executable
+	url := "https://github.com/cloudflare/cloudflared/releases/download/" + Version + "/" + name
+	log.Info("downloading cloudflared " + Version)
+	part := local + ".part"
+	got, err := download(ctx, url, part, progress)
+	if err != nil {
+		_ = os.Remove(part)
+		return "", fmt.Errorf("download cloudflared: %w", err)
+	}
+	if got != want {
+		_ = os.Remove(part)
+		return "", fmt.Errorf("cloudflared %s: checksum %s, expected %s; the file is not used", name, got, want)
+	}
+	if strings.HasSuffix(name, ".tgz") {
+		raw, err := os.ReadFile(part) // #nosec G304 -- our own download in our own folder
+		if err != nil {
+			return "", err
+		}
+		bin, err := untar(raw, "cloudflared")
+		if err != nil {
+			return "", fmt.Errorf("unpack cloudflared: %w", err)
+		}
+		if err := os.WriteFile(part, bin, 0o750); err != nil { // #nosec G306 -- an executable
+			return "", err
+		}
+	}
+	if err := os.Chmod(part, 0o750); err != nil { // #nosec G302 -- an executable
 		return "", err
 	}
-	return local, os.Rename(tmp, local)
+	return local, os.Rename(part, local)
 }
 
-func download(ctx context.Context, url string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+// stallTimeout ends a download that stopped moving; a slow one may take as long as it needs.
+const stallTimeout = time.Minute
+
+// download streams url into path and returns the file's sha256.
+func download(ctx context.Context, url, path string, progress func(done, total int64)) (string, error) {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s: %s", url, resp.Status)
+		return "", fmt.Errorf("%s: %s", url, resp.Status)
 	}
-	return io.ReadAll(io.LimitReader(resp.Body, 200<<20))
+	f, err := os.Create(path) // #nosec G304 -- our own folder
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	var done atomic.Int64
+	stalled := atomic.Bool{}
+	go func() {
+		t := time.NewTicker(5 * time.Second)
+		defer t.Stop()
+		last, since := int64(-1), time.Now()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				if n := done.Load(); n != last {
+					last, since = n, time.Now()
+				} else if time.Since(since) > stallTimeout {
+					stalled.Store(true)
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
+	h := sha256.New()
+	buf := make([]byte, 64<<10)
+	for {
+		n, rerr := resp.Body.Read(buf)
+		if n > 0 {
+			if _, err := f.Write(buf[:n]); err != nil {
+				return "", err
+			}
+			h.Write(buf[:n])
+			if done.Add(int64(n)) > 200<<20 {
+				return "", errors.New("the file is larger than expected")
+			}
+			if progress != nil {
+				progress(done.Load(), resp.ContentLength)
+			}
+		}
+		if rerr == io.EOF {
+			break
+		}
+		if rerr != nil {
+			if stalled.Load() {
+				return "", fmt.Errorf("no data for %s", stallTimeout)
+			}
+			return "", rerr
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), f.Close()
 }
 
 func untar(tgz []byte, name string) ([]byte, error) {
-	zr, err := gzip.NewReader(strings.NewReader(string(tgz)))
+	zr, err := gzip.NewReader(bytes.NewReader(tgz))
 	if err != nil {
 		return nil, err
 	}

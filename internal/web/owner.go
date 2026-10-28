@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"crypto/hmac"
+	"encoding/json"
 	"errors"
 	"html/template"
 	"net/http"
@@ -85,6 +86,7 @@ func (s *Server) ownerOnly(h http.HandlerFunc) http.HandlerFunc {
 func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /owner/enter", s.ownerEnter)
 	mux.HandleFunc("GET /owner", s.ownerOnly(s.ownerPage))
+	mux.HandleFunc("GET /owner/status.json", s.ownerOnly(s.ownerStatus))
 	mux.HandleFunc("POST /owner/setup", s.ownerOnly(s.ownerSetup))
 	mux.HandleFunc("POST /owner/market", s.ownerOnly(s.ownerMarket))
 	mux.HandleFunc("POST /owner/pause", s.ownerOnly(s.ownerPause))
@@ -103,7 +105,7 @@ func (s *Server) ownerEnter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: ownerCookie, Value: s.ownerToken(), Path: "/", MaxAge: 30 * 24 * 3600,
-		HttpOnly: true, Secure: s.cfg.SecureCookies, SameSite: http.SameSiteLaxMode})
+		HttpOnly: true, Secure: s.secure(r), SameSite: http.SameSiteLaxMode})
 	http.Redirect(w, r, "/owner", http.StatusSeeOther) // the key leaves the address bar at once
 }
 
@@ -127,6 +129,8 @@ type ownerView struct {
 	Currency   string
 	Portal     []hub.Card
 	SiteQR     template.HTML
+	Waiting    bool          // the public address is not there yet
+	PhoneQR    template.HTML // the master link: the owner scans it to open the cabinet on a phone
 }
 
 type ownerOrder struct {
@@ -156,6 +160,9 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	}
 	if strings.HasPrefix(site, "https://") {
 		v.SiteQR = qrSVG(site)
+		v.PhoneQR = qrSVG(site + "/owner/enter?k=" + ow.Key)
+	} else {
+		v.Waiting = true
 	}
 	if s.outbox != nil {
 		v.Letters = s.outbox.Messages()
@@ -268,6 +275,13 @@ func (s *Server) ownerSetup(w http.ResponseWriter, r *http.Request) {
 	}
 	v.Configured, v.Form, v.FormError = false, in, "Проверьте: "+strings.Join(problems, ", ")+"."
 	s.render(w, "owner", http.StatusUnprocessableEntity, v)
+}
+
+// ownerStatus lets the open cabinet notice the public address arriving.
+func (s *Server) ownerStatus(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	_ = json.NewEncoder(w).Encode(map[string]string{"site": s.svc.BaseURL()})
 }
 
 // restarting answers while the shop restarts with the new profile; the page comes back by itself.

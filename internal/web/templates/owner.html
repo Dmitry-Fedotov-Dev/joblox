@@ -1,4 +1,5 @@
 {{define "content"}}
+{{if .Waiting}}<p class="banner" id="site-status" role="status">Ссылка в интернете готовится: программа один раз скачивает cloudflared и подключается к Cloudflare. Можно пока заполнить карточку, ссылка появится здесь сама.</p>{{end}}
 {{if not .Configured}}
 {{template "portal" .}}
 <section>
@@ -65,6 +66,7 @@
     <a class="cta button" href="{{.SiteURL}}" target="_blank" rel="noopener">Перейти в ваше приложение</a>
     <p class="big copy">{{.SiteURL}}</p>
     {{if .SiteQR}}<div class="qr-box">{{.SiteQR}}<p class="muted small">Покажите QR-код клиенту: камера телефона откроет ваш сайт. Или перешлите ссылку в WhatsApp и Telegram.</p></div>{{end}}
+    {{if .PhoneQR}}<details><summary>Открыть этот кабинет на телефоне</summary><div class="qr-box">{{.PhoneQR}}<p class="muted small">Наведите камеру телефона: откроется кабинет владельца. Этот код никому не показывайте, он даёт полный доступ к заказам.</p></div></details>{{end}}
     {{if .Temporary}}<p class="muted small">Ссылка временная: после перезапуска программы она станет другой. Карточка на бирже обновится сама, а тем, кому вы отправляли ссылку, отправьте новую. Постоянный адрес: ниже, «Свой домен».</p>{{end}}
     <form method="post" action="/owner/market" class="actions">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
@@ -183,4 +185,4 @@ JOBLOX_OPERATORS=ваш Telegram id</pre>
 </section>
 {{end}}
 {{end}}
-{{define "scripts"}}{{if .Configured}}<script src="/static/owner.js" defer></script>{{end}}{{end}}
+{{define "scripts"}}<script src="/static/owner.js" defer></script>{{end}}

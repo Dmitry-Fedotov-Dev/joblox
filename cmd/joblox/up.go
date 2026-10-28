@@ -58,6 +58,7 @@ type settings struct {
 }
 
 type launcher struct {
+	local   string // http://127.0.0.1:port, the cabinet on this computer
 	dir     string
 	key     string
 	log     *slog.Logger
@@ -72,12 +73,18 @@ type launcher struct {
 
 func up(log *slog.Logger) error {
 	useFallbackDNS()
+	useAndroidCerts()
 	dir, err := dataDir()
 	if err != nil {
 		return err
 	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
+	}
+	// the window is for the owner: short Russian lines; the technical log goes to joblox.log
+	if f, err := os.OpenFile(filepath.Join(dir, "joblox.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600); err == nil {
+		defer f.Close()
+		log = slog.New(slog.NewTextHandler(f, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
 	if err := loadEnvFile(filepath.Join(dir, "joblox.env")); err != nil {
 		return err
@@ -139,22 +146,20 @@ func up(log *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	bin, err := tunnel.Ensure(ctx, l.path("bin"), log)
-	if err != nil {
-		return err
-	}
-	go (&tunnel.Tunnel{Bin: bin, Local: local, Token: token, Log: log, Ready: l.ready}).Run(ctx)
-	go func() { // no tunnel in time (Cloudflare blocked, no internet): the owner can still work on this machine
-		select {
-		case <-ctx.Done():
-		case <-time.After(45 * time.Second):
-			if !l.opened.Load() {
-				fmt.Printf("\nПубличная ссылка пока не получена (нет интернета или Cloudflare недоступен). Программа пробует снова.\n"+
-					"На этом устройстве кабинет открывается здесь:\n  %s/owner/enter?k=%s\n\n", local, l.key)
-			}
+	l.local = local
+	fmt.Printf("\nJoblox работает. Кабинет на этом компьютере:\n  %s/owner/enter?k=%s\nПапка с данными: %s\n\n", local, l.key, dir)
+	// the site and the browser come up at once; the public address follows when the tunnel is ready
+	go func() {
+		bin, err := tunnel.Ensure(ctx, l.path("bin"), log, downloadProgress())
+		if err != nil {
+			log.Error("cloudflared", "err", err)
+			fmt.Printf("\nНе получилось скачать cloudflared: %v\n"+
+				"Сайт пока работает только на этом компьютере. Перезапустите программу, когда интернет будет стабильнее.\n\n", err)
+			return
 		}
+		fmt.Println("Получаем публичную ссылку от Cloudflare…")
+		(&tunnel.Tunnel{Bin: bin, Local: local, Token: token, Log: log, Ready: l.ready}).Run(ctx)
 	}()
-	fmt.Printf("\nJoblox запускается. Папка с данными: %s\nЖдём публичную ссылку от Cloudflare…\n", dir)
 
 	market := strings.TrimRight(env("JOBLOX_NETWORK_URL", ""), "/")
 	if market == "off" {
@@ -178,6 +183,9 @@ func up(log *slog.Logger) error {
 			Wake: l.wake, Restart: l.restart, Started: func(svc *order.Service) {
 				svc.SetBaseURL(*l.base.Load())
 				l.svc.Store(svc)
+				if l.opened.CompareAndSwap(false, true) { // the first start: the portal opens right away
+					go openBrowser(local + "/owner/enter?k=" + l.key)
+				}
 			}})
 		if !errors.Is(err, errRestart) {
 			return err
@@ -217,14 +225,29 @@ func (l *launcher) ready(url string) {
 	}
 	base := *l.base.Load()
 	master := base + "/owner/enter?k=" + l.key
-	fmt.Printf("\nСайт в интернете: %s\n\nМастер-ссылка, вход владельца (никому не пересылайте):\n  %s\n\n"+
+	fmt.Printf("\nСайт в интернете: %s\n\nКабинет с телефона (мастер-ссылка, никому не пересылайте):\n  %s\n\n"+
 		"Окно не закрывайте: пока программа работает, сайт открыт. Остановить: Ctrl+C.\n\n", base, master)
 	select {
 	case l.wake <- struct{}{}: // the market learns the new address
 	default:
 	}
-	if l.opened.CompareAndSwap(false, true) {
-		openBrowser(master)
+}
+
+// downloadProgress prints the cloudflared download in the window every 5 MB: on a slow line it takes
+// minutes, and a silent window looks like a hang.
+func downloadProgress() func(done, total int64) {
+	const step = 5 << 20
+	var next int64
+	return func(done, total int64) {
+		if done < next && done != total {
+			return
+		}
+		next = done - done%step + step
+		if total > 0 {
+			fmt.Printf("Скачиваем cloudflared, один раз: %d из %d МБ\n", done>>20, total>>20)
+		} else {
+			fmt.Printf("Скачиваем cloudflared, один раз: %d МБ\n", done>>20)
+		}
 	}
 }
 
@@ -590,4 +613,32 @@ func useFallbackDNS() {
 	net.DefaultResolver = &net.Resolver{PreferGo: true, Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
 		return d.DialContext(ctx, network, "1.1.1.1:53")
 	}}
+}
+
+// useAndroidCerts: the same Linux binary on Android finds no /etc/ssl either, and every https request
+// fails with "certificate signed by unknown authority". Point Go at Termux's bundle or Android's store.
+// It must run before the first https request: Go reads the roots once.
+func useAndroidCerts() {
+	if runtime.GOOS != "linux" || os.Getenv("SSL_CERT_FILE") != "" || os.Getenv("SSL_CERT_DIR") != "" {
+		return
+	}
+	for _, dir := range []string{"/etc/ssl/certs", "/etc/pki/tls/certs"} {
+		if _, err := os.Stat(dir); err == nil {
+			return
+		}
+	}
+	if prefix := os.Getenv("PREFIX"); prefix != "" {
+		if f := filepath.Join(prefix, "etc", "tls", "cert.pem"); fileExists(f) {
+			_ = os.Setenv("SSL_CERT_FILE", f)
+			return
+		}
+	}
+	if fileExists("/system/etc/security/cacerts") {
+		_ = os.Setenv("SSL_CERT_DIR", "/system/etc/security/cacerts")
+	}
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

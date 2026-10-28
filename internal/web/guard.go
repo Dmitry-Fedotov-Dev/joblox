@@ -146,8 +146,21 @@ func (s *Server) visitor(w http.ResponseWriter, r *http.Request) string {
 	}
 	id := randomID()
 	http.SetCookie(w, &http.Cookie{Name: visitorCookie, Value: id, Path: "/", MaxAge: 365 * 24 * 3600,
-		HttpOnly: true, Secure: s.cfg.SecureCookies, SameSite: http.SameSiteLaxMode})
+		HttpOnly: true, Secure: s.secure(r), SameSite: http.SameSiteLaxMode})
 	return id
+}
+
+// secure says whether cookies get the Secure flag. The site behind https gets it; the owner's cabinet
+// opened on the same computer as http://127.0.0.1 does not, or some browsers would drop the cookie.
+func (s *Server) secure(r *http.Request) bool {
+	if !s.cfg.SecureCookies {
+		return false
+	}
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	return host != "127.0.0.1" && host != "localhost" && host != "::1"
 }
 
 // csrfToken ties forms to the visitor cookie: another site cannot read the cookie, so it cannot forge the token.

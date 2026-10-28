@@ -173,3 +173,19 @@ func TestTermsPage(t *testing.T) {
 		t.Fatalf("terms: %d", code)
 	}
 }
+
+func TestCabinetWaitsForThePublicAddress(t *testing.T) {
+	s, _ := ownerSite(t)
+	s.svc.SetBaseURL("http://127.0.0.1:8080")
+	s.get(t, "/owner/enter?k=masterkey0123456789")
+	if _, page := s.get(t, "/owner"); !strings.Contains(page, `id="site-status"`) {
+		t.Fatal("no waiting banner while the address is local")
+	}
+	s.svc.SetBaseURL("https://abc.trycloudflare.com")
+	if code, js := s.get(t, "/owner/status.json"); code != 200 || !strings.Contains(js, "https://abc.trycloudflare.com") {
+		t.Fatalf("status: %d %s", code, js)
+	}
+	if _, page := s.get(t, "/owner"); strings.Contains(page, `id="site-status"`) {
+		t.Fatal("waiting banner after the address came")
+	}
+}
