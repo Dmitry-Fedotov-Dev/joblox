@@ -269,10 +269,12 @@ body:has(.hero-cover) { position: relative; overflow-x: hidden; }
   object-fit: contain; object-position: right top; pointer-events: none; }
 @media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: 56%; } }
 @media (max-width: 720px) {
-  /* on a phone the figure stands above the text, not under it: the text stays crisp in both themes */
-  .hero.with-cover { min-height: 0; }
-  .hero-cover { position: static; z-index: auto; display: block; width: 100%; height: 56svh; margin: 0 0 10px;
-    object-position: center bottom; }
+  /* on a phone too the figure is as tall as the page; the text sits on soft backings over it */
+  .hero.with-cover { min-height: 70svh; display: flex; flex-direction: column; justify-content: flex-end; }
+  .hero-cover { top: 64px; height: calc(100% - 64px); right: 50%; translate: 50% 0; object-position: center top; }
+  .hero.with-cover h1, .hero.with-cover .lead { align-self: flex-start; padding: 4px 10px; border-radius: 14px;
+    background: color-mix(in srgb, var(--bg) 82%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .hero.with-cover h1 { margin-bottom: 8px; }
 }
 /* «make yourself the same»: every performer's site is also an invitation */
 .clone { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 8px 0 28px; padding: 18px 22px; border-radius: var(--radius);
