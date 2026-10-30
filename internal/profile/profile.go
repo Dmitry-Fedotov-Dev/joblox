@@ -313,7 +313,7 @@ func (p *Profile) Validate() error {
 		}
 	}
 	fields := map[string]Field{}
-	hasEmail := false
+	hasEmail, hasPhone := false, false
 	for _, f := range p.Checkout.Fields {
 		if !idRe.MatchString(f.ID) {
 			add("checkout field id %q: lowercase letters, digits and _ only", f.ID)
@@ -333,6 +333,9 @@ func (p *Profile) Validate() error {
 		}
 		if f.Type == FieldEmail && f.ID == "email" {
 			hasEmail = f.Required
+		}
+		if f.Type == FieldPhone && f.Required {
+			hasPhone = true
 		}
 	}
 	if c := p.Business.Cover; c != "" && (!coverRe.MatchString(c)) {
@@ -366,8 +369,12 @@ func (p *Profile) Validate() error {
 			add("service_catalog.field %q: a text checkout field the chosen service fills in", sc.Field)
 		}
 	}
-	if !hasEmail {
-		add("checkout needs a required field with id email and type email: documents, codes and status go there")
+	switch {
+	case hasEmail:
+	case p.Payment.RequireEmailCode:
+		add("payment.require_email_code needs a required field with id email and type email: the codes go there")
+	case !hasPhone:
+		add("checkout needs a way to reach the customer: a required email field (id email) or a required phone field")
 	}
 	for _, fee := range p.Pricing.Fees {
 		if fee.PerField != "" {

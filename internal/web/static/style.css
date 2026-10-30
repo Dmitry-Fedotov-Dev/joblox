@@ -262,20 +262,17 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 .svc b, .svc small, .svc-price { position: relative; z-index: 1; }
 @media (max-width: 520px) { .svc-icon { font-size: 44px; right: -2px; bottom: -6px; } .svc small { max-width: 100%; } }
 .whole { white-space: nowrap; }
-/* a cover picture: a cut-out figure pinned to the right half of the window, behind the whole page; the
-   content scrolls over it */
+/* a cover picture: a cut-out figure on the right, as tall as the whole page behind the content */
+body:has(.hero-cover) { position: relative; overflow-x: hidden; }
 .hero.with-cover { min-height: 460px; }
-.hero-cover { position: fixed; z-index: -1; right: 0; bottom: 0; width: 50vw; height: calc(100vh - 130px); object-fit: contain;
-  object-position: right bottom; pointer-events: none; }
+.hero-cover { position: absolute; z-index: -1; top: 76px; right: 0; height: calc(100% - 76px); width: auto; max-width: none;
+  object-fit: contain; object-position: right top; pointer-events: none; }
 @media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: 56%; } }
 @media (max-width: 720px) {
-  /* on a phone the cover fills the first screen: the figure on top, the text over its lower part, and the
-     first service tiles peeking from below; scrolling slides them over the figure */
-  .hero.with-cover { position: relative; display: flex; flex-direction: column; justify-content: flex-end;
-    min-height: calc(100svh - 112px - 92px); padding-bottom: 14px; }
-  .hero-cover { position: absolute; top: 0; right: -24px; bottom: auto; width: auto; height: 100%; max-width: none;
-    object-fit: contain; object-position: right top; opacity: 1; }
-  .hero.with-cover h1, .hero.with-cover .lead { text-shadow: 0 2px 18px var(--bg), 0 0 4px var(--bg); }
+  /* on a phone the figure stands above the text, not under it: the text stays crisp in both themes */
+  .hero.with-cover { min-height: 0; }
+  .hero-cover { position: static; z-index: auto; display: block; width: 100%; height: 56svh; margin: 0 0 10px;
+    object-position: center bottom; }
 }
 /* «make yourself the same»: every performer's site is also an invitation */
 .clone { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 8px 0 28px; padding: 18px 22px; border-radius: var(--radius);
@@ -285,7 +282,8 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 .clone small { font-weight: 500; font-size: 14px; color: var(--muted); }
 body:has(.hero-cover) .svc, body:has(.hero-cover) .card, body:has(.hero-cover) .hero-meta li {
   background: color-mix(in srgb, var(--panel) 78%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
-body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { text-shadow: 0 1px 10px var(--bg), 0 0 3px var(--bg); }
+body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { align-self: flex-start; padding: 1px 8px; border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 84%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 /* «Посмотреть настоящее изображение»: a round button on the gallery opens the plain photos over the page */
 .gallery-wrap { position: relative; }
 .real-btn { position: absolute; z-index: 3; top: 14px; right: 14px; display: flex; align-items: center; gap: 10px; height: 58px; min-width: 58px;

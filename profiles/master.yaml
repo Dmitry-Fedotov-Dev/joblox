@@ -17,17 +17,14 @@ pricing:
 
 checkout:
   fields:
-    - {id: work, label: Что нужно сделать, type: text, required: true, max_len: 120, hint: "Например: собрать шкаф-купе"}
-    - {id: details, label: Подробнее, type: textarea, required: true, max_len: 800, hint: "Что именно, сколько штук, есть ли материалы и инструмент. Можно ссылку на фото"}
-    - {id: address, label: Адрес, type: textarea, required: true, max_len: 300}
-    - {id: when, label: Когда удобно, type: datetime, required: true}
+    - {id: work, label: Услуга, type: text, required: true, max_len: 120}
     - {id: name, label: Как к вам обращаться, type: text, required: true, max_len: 80}
-    - {id: phone, label: Телефон, type: phone, required: true}
-    - {id: email, label: Email, type: email, required: true}
+    - {id: phone, label: Телефон, type: phone, required: true, hint: Мастер позвонит и договорится о времени и цене}
+    - {id: comment, label: Комментарий, type: textarea, max_len: 800, hint: "Необязательно: что сделать, адрес, удобное время"}
 
 payment:
   methods: [cash, transfer]
-  require_email_code: true
+  require_email_code: false
   reference_prefix: MA
   window_hours: 48
 

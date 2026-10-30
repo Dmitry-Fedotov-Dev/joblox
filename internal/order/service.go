@@ -203,7 +203,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*Order, antifraud
 	now := s.Now()
 	email := fields["email"]
 	client := s.ClientHash(in.ClientIP)
-	counts, err := s.Store.Counts(ctx, email, client, total, s.finals, now)
+	perEmail := email
+	if perEmail == "" {
+		perEmail = "\x00no email" // matches no stored order: customers without an email are not lumped together
+	}
+	counts, err := s.Store.Counts(ctx, perEmail, client, total, s.finals, now)
 	if err != nil {
 		return nil, antifraud.Decision{}, err
 	}
@@ -381,6 +385,9 @@ func (s *Service) Transition(ctx context.Context, o *Order, id, actor, actorID s
 }
 
 func (s *Service) mailState(ctx context.Context, o *Order) {
+	if o.Email == "" {
+		return // the customer left no email: the order page shows the status
+	}
 	st, _ := s.P.State(o.State)
 	text := st.Customer
 	if text == "" {

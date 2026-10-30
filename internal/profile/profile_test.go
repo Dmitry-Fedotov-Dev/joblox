@@ -62,7 +62,7 @@ func TestValidationCatchesMistakes(t *testing.T) {
 		"unreachable state":    {"{id: done, title: Done, final: true}]", "{id: done, title: Done, final: true}, {id: lost, title: Lost}]", `state "lost" cannot be reached`},
 		"bad actor":            {"by: operator", "by: robot", `actor "robot"`},
 		"bad requirement":      {"by: operator}", "by: operator, requires: [magic]}", `unknown requirement "magic"`},
-		"no email":             {"{id: email, label: Email, type: email, required: true}", "{id: name, label: Name, type: text}", "id email and type email"},
+		"no email":             {"{id: email, label: Email, type: email, required: true}", "{id: name, label: Name, type: text}", "a required email field"},
 		"select without items": {"{id: email, label: Email, type: email, required: true}", "{id: email, label: Email, type: email, required: true}, {id: s, label: S, type: select}", "select needs options"},
 		"final start":          {"from: new, to: done", "from: done, to: new", `starts in final state "done"`},
 	}

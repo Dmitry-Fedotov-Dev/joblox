@@ -330,6 +330,16 @@ func TestServicesShowcase(t *testing.T) {
 	if code, _ := s.get(t, "/cart"); code != http.StatusNotFound {
 		t.Fatalf("a services site has a cart: %d", code)
 	}
+	// a request needs only the service, a name and a phone: no email, no address
+	_, form := s.get(t, "/?s=sborka-mebeli")
+	r, _ := s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, form)}, "stamp": {match(t, stampRe, form)},
+		"f_work": {"Сборка мебели"}, "f_name": {"Анна"}, "f_phone": {"+996 700 000 000"}, "method": {profile.MethodCash}})
+	if r.StatusCode != http.StatusSeeOther || !strings.HasPrefix(r.Header.Get("Location"), "/o/") {
+		t.Fatalf("a request without an email: %d", r.StatusCode)
+	}
+	if code, page := s.get(t, r.Header.Get("Location")); code != http.StatusOK || !strings.Contains(page, "Сборка мебели") {
+		t.Fatalf("the request page: %d", code)
+	}
 	// the owner adds a service by agreement: no price, no sizes
 	if _, err := cat.Save(context.Background(), 0, shop.Input{Title: "Окна", Description: "Регулировка"}); err != nil {
 		t.Fatalf("a service without a price: %v", err)

@@ -11,7 +11,7 @@ import (
 // Telegram chat (a person now, an agent later) with the request already typed in.
 
 // DefaultSales is where the requests go unless JOBLOX_HUB_SALES says otherwise.
-const DefaultSales = "https://t.me/HowManyRoads"
+const DefaultSales = "https://t.me/how_many_roads"
 
 var kindPhrases = map[string]string{
 	"shop": "такой же магазин", "master": "такую же страничку мастера", "taxi": "такой же таксопарк",
