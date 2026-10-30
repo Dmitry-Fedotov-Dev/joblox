@@ -52,6 +52,8 @@ type Config struct {
 	Prefix string
 	// Cover is the file of the profile's cover picture, served at /cover; empty: no cover.
 	Cover string
+	// OGImage is the file of the link preview picture, served at /og; empty: the cover or nothing.
+	OGImage string
 	// MarketURL is the network's market where anyone can start the same kind of site; empty: no button.
 	MarketURL string
 }
@@ -147,10 +149,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /o/{token}/resend", s.resendCode)
 	mux.HandleFunc("POST /o/{token}/t/{transition}", s.customerTransition)
 	mux.HandleFunc("POST /beat", s.beat)
-	if s.cfg.Cover != "" {
-		mux.HandleFunc("GET /cover", func(w http.ResponseWriter, r *http.Request) {
+	for path, file := range map[string]string{"GET /cover": s.cfg.Cover, "GET /og": s.cfg.OGImage} {
+		if file == "" {
+			continue
+		}
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Cache-Control", "public, max-age=3600")
-			http.ServeFile(w, r, s.cfg.Cover)
+			http.ServeFile(w, r, file)
 		})
 	}
 	if s.hasCatalog() {
@@ -206,6 +211,27 @@ func (s *Server) coverURL() string {
 		v = strconv.FormatInt(fi.ModTime().Unix()^fi.Size(), 36)
 	}
 	return s.cfg.Prefix + "/cover?v=" + v
+}
+
+// fileVersion is a short tag of a file's state for its address, so a new picture is not hidden by caches.
+func fileVersion(file string) string {
+	fi, err := os.Stat(file)
+	if err != nil {
+		return ""
+	}
+	return strconv.FormatInt(fi.ModTime().Unix()^fi.Size(), 36)
+}
+
+// sitePreview is the absolute address of the site's link preview picture: the profile's og_image, else
+// the cover, else none.
+func (s *Server) sitePreview() string {
+	switch {
+	case s.cfg.OGImage != "":
+		return s.svc.BaseURL() + "/og?v=" + fileVersion(s.cfg.OGImage)
+	case s.cfg.Cover != "":
+		return s.svc.BaseURL() + "/cover?v=" + fileVersion(s.cfg.Cover)
+	}
+	return ""
 }
 
 // cookiePath keeps the cookies of a site under a prefix to that prefix.

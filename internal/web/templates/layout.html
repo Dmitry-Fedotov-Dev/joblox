@@ -4,7 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{{.Title}}{{if ne .Title .Business.Name}} · {{.Business.Name}}{{end}}</title>
-  <meta name="description" content="{{.Business.Description}}">
+  <meta name="description" content="{{if .Summary}}{{.Summary}}{{else}}{{.Business.Description}}{{end}}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{.Business.Name}}">
+  <meta property="og:title" content="{{.Title}}">
+  <meta property="og:description" content="{{if .Summary}}{{.Summary}}{{else}}{{.Business.Description}}{{end}}">
+  {{if .URL}}<meta property="og:url" content="{{.URL}}">{{end}}
+  {{if .Preview}}<meta property="og:image" content="{{.Preview}}">
+  <meta name="twitter:card" content="summary_large_image">{{end}}
   <meta name="referrer" content="same-origin">
   <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)">

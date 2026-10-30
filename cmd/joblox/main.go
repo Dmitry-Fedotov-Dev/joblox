@@ -284,7 +284,8 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
-		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: coverOf(cfg.Profile, p), MarketURL: marketURL()}, log)
+		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: fileNextTo(cfg.Profile, p.Business.Cover), OGImage: fileNextTo(cfg.Profile, p.Business.OGImage),
+		MarketURL: marketURL()}, log)
 	if err != nil {
 		return err
 	}
@@ -488,12 +489,12 @@ func pathOf(base string) string {
 	return strings.TrimRight(u.Path, "/")
 }
 
-// coverOf is the file of the profile's cover picture, which lies next to the profile.
-func coverOf(profilePath string, p *profile.Profile) string {
-	if p.Business.Cover == "" {
+// fileNextTo is a picture named in the profile (the cover, the preview), which lies next to the profile.
+func fileNextTo(profilePath, name string) string {
+	if name == "" {
 		return ""
 	}
-	file := filepath.Join(filepath.Dir(profilePath), p.Business.Cover)
+	file := filepath.Join(filepath.Dir(profilePath), name)
 	if _, err := os.Stat(file); err != nil {
 		return "" // a profile copied without its picture (joblox up): no cover rather than a broken one
 	}

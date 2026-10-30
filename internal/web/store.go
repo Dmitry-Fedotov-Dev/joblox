@@ -170,7 +170,14 @@ func (s *Server) renderProduct(w http.ResponseWriter, r *http.Request, p *shop.P
 	if s.isServices() {
 		l, hot = "", false // a service has no stock to speak of
 	}
-	v := productView{base: s.base(w, r, p.Title), Product: productCard{Product: p, Label: l, LabelHot: hot},
+	b := s.base(w, r, p.Title)
+	if c := p.Cover(); c != nil {
+		b.Preview = s.svc.BaseURL() + "/img/" + c.File + ".jpg"
+	}
+	if d := strings.TrimSpace(p.Description); d != "" {
+		b.Summary = clipText(d, 200)
+	}
+	v := productView{base: b, Product: productCard{Product: p, Label: l, LabelHot: hot},
 		Added: r.URL.Query().Get("added") == "1", Error: msg}
 	if list, err := s.cfg.Shop.List(r.Context(), false); err == nil {
 		for _, o := range list {
@@ -314,4 +321,18 @@ func (s *Server) photo(w http.ResponseWriter, r *http.Request) {
 // shopCreateFailed re-renders the cart with the checkout's mistakes.
 func (s *Server) shopCreateFailed(w http.ResponseWriter, r *http.Request, fields map[string]string, method string, fe order.FieldErrors) {
 	s.render(w, "cart", http.StatusUnprocessableEntity, s.cartView(w, r, s.readCart(r), fields, method, fe))
+}
+
+// clipText shortens a text to n letters on a word boundary, for previews.
+func clipText(s string, n int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	cut := string(r[:n])
+	if i := strings.LastIndex(cut, " "); i > n/2 {
+		cut = cut[:i]
+	}
+	return cut + "…"
 }

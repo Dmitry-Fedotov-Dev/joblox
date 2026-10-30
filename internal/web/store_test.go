@@ -297,3 +297,33 @@ func TestRealPhotos(t *testing.T) {
 		t.Fatalf("galleries: %+v %+v", p.Images, p.Real)
 	}
 }
+
+// Link previews: the site's preview picture and a product's own cover and text.
+func TestLinkPreviews(t *testing.T) {
+	s, cat := shopSite(t)
+	og := filepath.Join(t.TempDir(), "og.jpg")
+	if err := os.WriteFile(og, testJPEG(t), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s.srv.cfg.OGImage = og
+	s.http.Config.Handler = s.srv.Handler()
+	_, home := s.get(t, "/")
+	if !strings.Contains(home, `<meta property="og:image" content="http://shop.test/og?v=`) || !strings.Contains(home, `og:title`) {
+		t.Fatal("no site preview")
+	}
+	if code, _ := s.get(t, "/og"); code != http.StatusOK {
+		t.Fatalf("og picture: %d", code)
+	}
+	ctx := context.Background()
+	id, _ := cat.Save(ctx, 0, shop.Input{Title: "Грибок", Description: "Вязаная подвеска", Price: 100000, Variants: []shop.VariantInput{{Stock: 1}}})
+	_ = cat.AddImage(ctx, id, shop.Image{File: "cccccccccccccccccccccccc", W: 10, H: 10})
+	_, page := s.get(t, "/p/gribok")
+	if !strings.Contains(page, `content="http://shop.test/img/cccccccccccccccccccccccc.jpg"`) || !strings.Contains(page, `og:description" content="Вязаная подвеска"`) {
+		t.Fatal("no product preview")
+	}
+	resp, err := s.admin.Client().Get(s.admin.URL + "/admin")
+	if err != nil || resp.StatusCode != http.StatusOK {
+		t.Fatalf("the dashboard: %v %v", resp, err)
+	}
+	resp.Body.Close()
+}

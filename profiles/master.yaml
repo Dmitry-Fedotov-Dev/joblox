@@ -9,6 +9,7 @@ business:
   timezone: Asia/Bishkek
   contact: "+996 700 000 000"
   cover: master-cover.webp
+  og_image: master-og.jpg
 
 pricing:
   mode: quote

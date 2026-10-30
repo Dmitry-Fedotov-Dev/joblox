@@ -24,6 +24,8 @@ type base struct {
 	Cover    string // the address of the cover picture with its version; empty: no cover
 	Services bool   // the catalog holds services: cards of work with a request form
 	Catalog  bool   // the owner edits products or services in the cabinet
+	// Link previews (Open Graph): the page's absolute address, its picture and summary.
+	URL, Preview, Summary string
 	// Clone is the «make yourself the same» button of the public pages: what to call it and where it leads.
 	CloneText, CloneURL string
 }
@@ -36,6 +38,7 @@ func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base
 	if b.Shop {
 		b.Cart = s.readCart(r).count()
 	}
+	b.URL, b.Preview, b.Summary = s.svc.BaseURL()+r.URL.Path, s.sitePreview(), s.svc.P.Business.Description
 	if s.cfg.MarketURL != "" && !strings.HasPrefix(r.URL.Path, "/owner") && !strings.HasPrefix(r.URL.Path, "/admin") {
 		b.CloneText, b.CloneURL = cloneText(s.svc.P.Business.Kind), strings.TrimRight(s.cfg.MarketURL, "/")+"/start?for="+s.svc.P.Business.Kind
 	}
@@ -366,20 +369,21 @@ func (s *Server) beat(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------- admin
 
 type adminView struct {
-	Shop      bool // the layout's cart link, demo banner and «make the same» button: never on the dashboard
-	Cart      int
-	Demo      bool
-	CloneURL  string
-	CloneText string
-	Title     string
-	Paused    bool
-	Business  profile.Business
-	Version   string
-	Orders    []adminOrder
-	Stats     order.Stats
-	Currency  string
-	Finger    string
-	Owner     bool // opened from the owner's area through the public site, not over SSH
+	Shop                  bool // the layout's cart link, demo banner and «make the same» button: never on the dashboard
+	Cart                  int
+	Demo                  bool
+	CloneURL              string
+	CloneText             string
+	URL, Preview, Summary string
+	Title                 string
+	Paused                bool
+	Business              profile.Business
+	Version               string
+	Orders                []adminOrder
+	Stats                 order.Stats
+	Currency              string
+	Finger                string
+	Owner                 bool // opened from the owner's area through the public site, not over SSH
 }
 
 type adminOrder struct {

@@ -87,6 +87,9 @@ type Business struct {
 	Contact     string `yaml:"contact"` // shown in the footer: phone, email or messenger
 	// Cover is a picture for the top of the site: a JPEG, PNG or WebP file next to the profile.
 	Cover string `yaml:"cover"`
+	// OGImage is the picture of the site's link previews in Telegram and other messengers: a 1200×630
+	// JPEG or PNG next to the profile. Empty: the cover or nothing.
+	OGImage string `yaml:"og_image"`
 }
 
 type Item struct {
@@ -331,6 +334,9 @@ func (p *Profile) Validate() error {
 	}
 	if c := p.Business.Cover; c != "" && (!coverRe.MatchString(c)) {
 		add("business.cover %q: a .jpg, .png or .webp file name next to the profile", c)
+	}
+	if c := p.Business.OGImage; c != "" && !coverRe.MatchString(c) {
+		add("business.og_image %q: a .jpg or .png file name next to the profile", c)
 	}
 	for i, sv := range p.Services {
 		if strings.TrimSpace(sv.Title) == "" {
