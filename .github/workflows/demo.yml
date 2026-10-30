@@ -1,0 +1,38 @@
+# Живые примеры шаблонов: после зелёного CI на main те же исходники выкладываются через cd
+# (github.com/Dmitry-Fedotov-Dev/cd) на shop-demo.openline.one и master-demo.openline.one. Каким шаблоном
+# стать, решают настройки проекта на сервере (JOBLOX_PROFILE, JOBLOX_DEMO=1), не репозиторий.
+name: Demo
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # the OIDC token is the only credential
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [joblox-shop-demo, joblox-master-demo]
+    concurrency:
+      group: demo-${{ matrix.project }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: Dmitry-Fedotov-Dev/cd@v1
+        with:
+          server: ${{ vars.CD_SERVER }}
+          project: ${{ matrix.project }}
+          paths: cmd internal profiles go.mod go.sum Dockerfile .dockerignore

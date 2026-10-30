@@ -38,6 +38,7 @@
     <ul>{{range .For}}<li>{{.}}</li>{{end}}</ul>
     <h3>Что умеет</h3>
     <ul>{{range .Features}}<li>{{.}}</li>{{end}}</ul>
+    {{if .Demo}}<a class="cta ghost" href="{{.Demo}}" rel="noopener">Открыть живой пример</a>{{end}}
     <a class="cta" href="/start#{{.ID}}">Запустить такой же</a>
     <p class="muted small">Бесплатно и без посредника: сайт работает на вашем телефоне или сервере, деньги клиенты платят прямо вам. <a href="/about">Как это устроено</a>.</p>
   </div>

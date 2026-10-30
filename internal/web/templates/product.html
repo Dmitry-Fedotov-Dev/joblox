@@ -4,7 +4,7 @@
   <div>
     <div class="gallery" id="gallery">
       {{range $i, $im := $p.Images}}<figure id="ph{{$i}}"><img src="/img/{{$im.File}}.jpg" alt="{{$p.Title}}, фото {{inc $i}}" width="{{$im.W}}" height="{{$im.H}}"{{if $i}} loading="lazy"{{end}} decoding="async"></figure>
-      {{else}}<figure class="noimg"><span>{{initial $p.Title}}</span></figure>{{end}}
+      {{else}}<figure class="noimg">{{mascot $p.ID}}</figure>{{end}}
     </div>
     {{if gt (len $p.Images) 1}}<nav class="thumbs" aria-label="Фото">{{range $i, $im := $p.Images}}<a href="#ph{{$i}}"><img src="/img/{{$im.File}}_t.jpg" alt="" loading="lazy"></a>{{end}}</nav>{{end}}
   </div>

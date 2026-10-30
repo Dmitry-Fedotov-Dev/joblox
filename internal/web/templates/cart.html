@@ -8,7 +8,7 @@
     <ul class="cart-lines">
       {{range .Lines}}
       <li class="cart-line">
-        <a class="thumb" href="/p/{{.Product.Slug}}">{{with .Product.Cover}}<img src="/img/{{.File}}_t.jpg" alt="">{{end}}</a>
+        <a class="thumb" href="/p/{{.Product.Slug}}">{{with .Product.Cover}}<img src="/img/{{.File}}_t.jpg" alt="">{{else}}{{mascot .Product.ID}}{{end}}</a>
         <div class="t">
           <a href="/p/{{.Product.Slug}}">{{.Product.Title}}</a>
           {{if .Variant.Name}}<span class="muted small">Размер {{.Variant.Name}}</span>{{end}}

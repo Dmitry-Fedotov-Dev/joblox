@@ -40,5 +40,5 @@
   <p class="muted small">Дашборд доступен только с сервера: <code>ssh -L 9180:127.0.0.1:9180 сервер</code>, затем http://localhost:9180/admin. Метрики для Prometheus: /metrics.</p>{{end}}
 </section>
 {{end}}
-{{define "scripts"}}<script src="/static/admin.js" defer></script>{{end}}
+{{define "scripts"}}<script src="{{asset "admin.js"}}" defer></script>{{end}}
 {{define "kitten"}}{{end}}

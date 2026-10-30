@@ -246,3 +246,7 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 }
 .note { margin-top: 28px; }
 .gallery .noimg { display: grid; place-items: center; font-size: 96px; font-weight: 800; color: var(--muted); letter-spacing: -.05em; }
+.mascot { display: block; width: 100%; height: 100%; }
+.gallery .noimg { display: block; }
+.demo-bar { margin: 0; padding: 8px 16px; background: var(--ink); color: var(--ink-fg); font-size: 13px; font-weight: 600; text-align: center; }
+.demo-bar a { color: var(--accent); }

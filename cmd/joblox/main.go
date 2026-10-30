@@ -99,6 +99,9 @@ type Config struct {
 	BotToken   string
 	Operators  []int64
 	OwnerKey   string // opens the owner's area on a server too: BaseURL/owner/enter?k=OwnerKey
+	// Demo is a showcase site: no mail and no bot needed, a banner on every page, payment requisites that say
+	// not to pay, and a shop filled with sample products on the first start.
+	Demo bool
 }
 
 // loadConfig reads the environment. quick is `joblox up`: no mail, no bot and a base address that is not
@@ -109,8 +112,9 @@ func loadConfig(quick bool) (Config, error) {
 		DB: env("JOBLOX_DB", "data/joblox.db"), Addr: env("JOBLOX_ADDR", ":8080"),
 		AdminAddr: env("JOBLOX_ADMIN_ADDR", "127.0.0.1:9180"), BaseURL: env("JOBLOX_BASE_URL", ""),
 		Trusted: env("JOBLOX_TRUSTED_PROXIES", "127.0.0.1,::1"), BotToken: env("TELEGRAM_TOKEN", ""),
-		OwnerKey: os.Getenv("JOBLOX_OWNER_KEY"),
+		OwnerKey: os.Getenv("JOBLOX_OWNER_KEY"), Demo: os.Getenv("JOBLOX_DEMO") == "1",
 	}
+	relaxed := quick || c.Demo // a site without mail and bot is fine
 	var errs []error
 	if c.OwnerKey != "" && len(c.OwnerKey) < 32 {
 		errs = append(errs, errors.New("JOBLOX_OWNER_KEY: at least 32 random characters (openssl rand -hex 24)"))
@@ -155,7 +159,7 @@ func loadConfig(quick bool) (Config, error) {
 		if c.SMTP.From == "" {
 			errs = append(errs, errors.New("SMTP_FROM: the sender, e.g. Пекарня <shop@example.com>"))
 		}
-	} else if c.Env == "prod" && !quick {
+	} else if c.Env == "prod" && !relaxed {
 		errs = append(errs, errors.New("SMTP_HOST: production needs a mail relay for codes and statuses"))
 	}
 	for _, part := range strings.FieldsFunc(env("JOBLOX_OPERATORS", ""), func(r rune) bool { return r == ',' || r == ' ' }) {
@@ -169,7 +173,7 @@ func loadConfig(quick bool) (Config, error) {
 	if c.BotToken != "" && len(c.Operators) == 0 {
 		errs = append(errs, errors.New("JOBLOX_OPERATORS: the bot needs at least one operator id"))
 	}
-	if c.Env == "prod" && c.BotToken == "" && !quick {
+	if c.Env == "prod" && c.BotToken == "" && !relaxed {
 		errs = append(errs, errors.New("TELEGRAM_TOKEN: production needs the operator bot, otherwise nobody sees orders"))
 	}
 	return c, errors.Join(errs...)
@@ -207,6 +211,10 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if err != nil {
 		return err
 	}
+	if cfg.Demo && req == nil {
+		req = &order.Requisites{Title: "Это демо", Recipient: "Демо-сайт Joblox",
+			Lines: []order.RequisiteRow{{Label: "Перевод", Value: "не переводите деньги: это пример сайта"}}}
+	}
 	if p.AcceptsTransfer() && req == nil {
 		log.Warn("the profile takes transfers but JOBLOX_REQUISITES is empty: transfer is hidden from the checkout")
 	}
@@ -226,7 +234,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	} else {
 		outbox = &mail.Outbox{}
 		mailer = outbox
-		if opt.Owner != nil {
+		if opt.Owner != nil || cfg.Demo {
 			// nobody could receive a code: the owner sees the letters in the browser instead
 			p.Payment.RequireEmailCode = false
 			log.Info("no SMTP_HOST: letters are kept for the owner's area, email codes are off")
@@ -244,6 +252,11 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 		}
 		svc.Stock = catalog
 		photos = &shop.Photos{Dir: filepath.Join(dirOf(cfg.DB), "photos")}
+		if cfg.Demo {
+			if err := shop.SeedDemo(ctx, catalog); err != nil {
+				return err
+			}
+		}
 	}
 	if opt.Owner == nil && cfg.OwnerKey != "" {
 		opt.Owner = serverOwner(cfg.OwnerKey)
@@ -256,7 +269,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
-		CallURL: callURL(), Shop: catalog, Photos: photos}, log)
+		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo}, log)
 	if err != nil {
 		return err
 	}

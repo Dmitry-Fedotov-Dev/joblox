@@ -20,12 +20,13 @@ type base struct {
 	Paused   bool
 	Shop     bool // a shop with photos: the header shows the cart
 	Cart     int  // items in the cart
+	Demo     bool
 }
 
 func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base {
 	v := s.visitor(w, r)
 	s.rec.Seen(v)
-	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop()}
+	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Demo: s.cfg.Demo}
 	if b.Shop {
 		b.Cart = s.readCart(r).count()
 	}
@@ -336,8 +337,9 @@ func (s *Server) beat(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------- admin
 
 type adminView struct {
-	Shop     bool // the layout's cart link: never on the dashboard
+	Shop     bool // the layout's cart link and demo banner: never on the dashboard
 	Cart     int
+	Demo     bool
 	Title    string
 	Paused   bool
 	Business profile.Business

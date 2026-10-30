@@ -4,7 +4,9 @@
 package web
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"html/template"
 	"io/fs"
@@ -13,6 +15,7 @@ import (
 	"net/netip"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -42,6 +45,7 @@ type Config struct {
 	// Shop and Photos are the catalog with photos of a pricing.mode shop profile; nil otherwise.
 	Shop   *shop.Catalog
 	Photos *shop.Photos
+	Demo   bool // a showcase site: a banner on every page says orders will not be fulfilled
 }
 
 type Server struct {
@@ -66,11 +70,13 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 	funcs := template.FuncMap{
 		"money": func(a money.Amount) string { return a.String() },
 		// price is a shop price: whole sums without the kopecks, "4 500" rather than "4 500.00"
-		"price": func(a money.Amount) string { return strings.TrimSuffix(a.String(), ".00") },
-		"cur":   currencySign,
-		"join":  strings.Join,
-		"inc":   func(i int) int { return i + 1 },
-		"sign":  func() string { return currencySign(svc.P.Business.Currency) },
+		"price":  func(a money.Amount) string { return strings.TrimSuffix(a.String(), ".00") },
+		"cur":    currencySign,
+		"join":   strings.Join,
+		"inc":    func(i int) int { return i + 1 },
+		"sign":   func() string { return currencySign(svc.P.Business.Currency) },
+		"mascot": mascot,
+		"asset":  asset,
 		"initial": func(s string) string {
 			for _, r := range s {
 				return string(unicode.ToUpper(r))
@@ -238,3 +244,24 @@ func (s *Server) render(w http.ResponseWriter, page string, code int, data any) 
 		s.log.Error("template", "page", page, "err", err)
 	}
 }
+
+// asset is the address of a static file with a short hash of its content: browsers keep files for an hour,
+// and a new version must not wait for that hour.
+func asset(name string) string {
+	assetOnce.Do(func() {
+		assetHash = map[string]string{}
+		entries, _ := fs.ReadDir(staticFS, "static")
+		for _, e := range entries {
+			if b, err := fs.ReadFile(staticFS, "static/"+e.Name()); err == nil {
+				sum := sha256.Sum256(b)
+				assetHash[e.Name()] = hex.EncodeToString(sum[:4])
+			}
+		}
+	})
+	return "/static/" + name + "?v=" + assetHash[name]
+}
+
+var (
+	assetOnce sync.Once
+	assetHash map[string]string
+)

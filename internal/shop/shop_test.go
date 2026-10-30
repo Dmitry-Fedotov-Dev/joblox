@@ -290,3 +290,17 @@ func TestPhotoOrientationAndSize(t *testing.T) {
 		t.Fatalf("want ErrNotImage, got %v", err)
 	}
 }
+
+func TestSeedDemo(t *testing.T) {
+	ctx := context.Background()
+	c := open(t)
+	for range 2 { // the second start finds the products and adds nothing
+		if err := SeedDemo(ctx, c); err != nil {
+			t.Fatal(err)
+		}
+	}
+	list, _ := c.List(ctx, true)
+	if len(list) != len(demoProducts) || list[0].Title != demoProducts[0].Title {
+		t.Fatalf("demo products: %d, first %q", len(list), list[0].Title)
+	}
+}
