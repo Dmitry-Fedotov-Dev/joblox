@@ -262,15 +262,15 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 .svc b, .svc small, .svc-price { position: relative; z-index: 1; }
 @media (max-width: 520px) { .svc-icon { font-size: 44px; right: -2px; bottom: -6px; } .svc small { max-width: 100%; } }
 .whole { white-space: nowrap; }
-/* a cover picture at the top of the site: a cut-out figure on the right, the head always in view */
-.hero.with-cover { position: relative; isolation: isolate; min-height: 480px; }
-.hero.with-cover > :not(.hero-cover) { position: relative; z-index: 1; }
-.hero-cover { position: absolute; z-index: 0; right: 0; top: -12px; height: calc(100% + 24px); width: 44%; object-fit: contain;
-  object-position: right top; pointer-events: none; }
+/* a cover picture: a cut-out figure pinned to the right half of the window, behind the whole page; the
+   content scrolls over it */
+.hero.with-cover { min-height: 460px; }
+.hero-cover { position: fixed; z-index: -1; right: 0; bottom: 0; width: 50vw; height: calc(100vh - 40px); object-fit: contain;
+  object-position: right bottom; pointer-events: none; }
 @media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: 56%; } }
 @media (max-width: 720px) {
   .hero.with-cover { min-height: 0; }
-  .hero-cover { width: 62%; right: -16px; opacity: .28; }
+  .hero-cover { width: 100vw; height: 82vh; opacity: .22; }
 }
 /* «make yourself the same»: every performer's site is also an invitation */
 .clone { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 8px 0 28px; padding: 18px 22px; border-radius: var(--radius);
@@ -278,3 +278,5 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
   transition: border-color .2s ease, transform .2s ease; }
 .clone:hover { border-color: var(--accent); transform: translateY(-2px); }
 .clone small { font-weight: 500; font-size: 14px; color: var(--muted); }
+body:has(.hero-cover) .svc, body:has(.hero-cover) .card, body:has(.hero-cover) .hero-meta li {
+  background: color-mix(in srgb, var(--panel) 78%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
