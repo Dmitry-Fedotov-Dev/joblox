@@ -29,9 +29,8 @@ jobs:
       group: demo-${{ matrix.project }}
       cancel-in-progress: false
     steps:
+      # the head of main: cd archives the commit the run stands on (GITHUB_SHA); a newer push simply wins
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: Dmitry-Fedotov-Dev/cd@v1
         with:
           server: ${{ vars.CD_SERVER }}
