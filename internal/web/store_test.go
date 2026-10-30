@@ -34,10 +34,13 @@ var price450 = strings.TrimSuffix(money.Amount(450000).String(), ".00") // "4 50
 
 // shopSite is the shop profile with the photo catalog and the owner's area, as `joblox serve` runs it with
 // JOBLOX_OWNER_KEY.
-func shopSite(t *testing.T) (*site, *shop.Catalog) {
+func shopSite(t *testing.T) (*site, *shop.Catalog) { return catalogSite(t, "shop") }
+
+// catalogSite runs a preset whose products or services live in the database: shop.yaml or master.yaml.
+func catalogSite(t *testing.T, preset string) (*site, *shop.Catalog) {
 	t.Helper()
 	_, file, _, _ := runtime.Caller(0)
-	p, err := profile.Load(filepath.Join(filepath.Dir(file), "..", "..", "profiles", "shop.yaml"))
+	p, err := profile.Load(filepath.Join(filepath.Dir(file), "..", "..", "profiles", preset+".yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +55,14 @@ func shopSite(t *testing.T) (*site, *shop.Catalog) {
 	box := &mail.Outbox{}
 	req := &order.Requisites{Recipient: "ИП Тестова", Lines: []order.RequisiteRow{{Label: "Карта", Value: "4000 0000 0000 0002"}}}
 	svc := order.New(p, st, box, req, []byte("secret"), "http://shop.test")
-	svc.Stock = cat
+	if p.ServiceCatalog != nil {
+		cat.Services = true
+		if err := shop.SeedServices(context.Background(), cat, p.Services); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		svc.Stock = cat
+	}
 	rec := metrics.New()
 	svc.Observe = rec
 	owner := &Owner{Key: testOwnerKey, Configured: func() bool { return true }, Shown: func() bool { return false },

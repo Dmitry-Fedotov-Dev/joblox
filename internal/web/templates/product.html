@@ -6,7 +6,7 @@
       {{range $i, $im := $p.Images}}<figure id="ph{{$i}}"><img src="{{p}}/img/{{$im.File}}.jpg" alt="{{$p.Title}}, фото {{inc $i}}" width="{{$im.W}}" height="{{$im.H}}"{{if $i}} loading="lazy"{{end}} decoding="async"></figure>
       {{else}}<figure class="noimg">{{mascot $p.ID}}</figure>{{end}}
     </div>
-    {{if gt (len $p.Images) 1}}<nav class="thumbs" aria-label="Фото">{{range $i, $im := $p.Images}}<a href="#ph{{$i}}"><img src="{{p}}/img/{{$im.File}}_t.jpg" alt="" loading="lazy"></a>{{end}}</nav>{{end}}
+    {{if gt (len $p.Images) 1}}<nav class="thumbs" aria-label="{{if .Services}}Примеры работ{{else}}Фото{{end}}">{{range $i, $im := $p.Images}}<a href="#ph{{$i}}"><img src="{{p}}/img/{{$im.File}}_t.jpg" alt="" loading="lazy"></a>{{end}}</nav>{{end}}
   </div>
 
   <div class="buy">
@@ -14,6 +14,11 @@
     {{if .Error}}<p class="banner error" role="alert">{{.Error}}</p>{{end}}
     {{if .Product.Label}}<span class="pill{{if .Product.LabelHot}} hot{{end}}">{{.Product.Label}}</span>{{end}}
     <h1>{{$p.Title}}</h1>
+    {{if .Services}}
+    <p class="cost">{{if $p.Price}}от {{price $p.Price}} {{sign}}{{else}}по договорённости{{end}}</p>
+    <div class="sticky-buy"><a class="cta button" href="{{p}}/?s={{$p.Slug}}#order">Оставить заявку</a></div>
+    <p class="muted small">Опишите задачу, мастер посмотрит и назовёт точную цену. Платите после работы.</p>
+    {{else}}
     <p class="cost">{{price $p.Price}} {{sign}}{{if $p.OldPrice}} <s>{{price $p.OldPrice}}</s>{{end}}</p>
 
     {{if $p.InStock}}
@@ -37,6 +42,7 @@
     {{else}}
     <p class="banner">Этого товара сейчас нет в наличии.{{if .Business.Contact}} Спросите продавца: {{.Business.Contact}}{{end}}</p>
     {{end}}
+    {{end}}
 
     {{if $p.Description}}<div class="desc">{{$p.Description}}</div>{{end}}
   </div>
@@ -44,8 +50,8 @@
 
 {{if .More}}
 <section>
-  <div class="section-head"><h2>Ещё в магазине</h2><a href="{{p}}/">Все товары</a></div>
-  <div class="grid">{{range .More}}{{template "pcard" .}}{{end}}</div>
+  <div class="section-head"><h2>{{if .Services}}Ещё услуги{{else}}Ещё в магазине{{end}}</h2><a href="{{p}}/">{{if .Services}}Все услуги{{else}}Все товары{{end}}</a></div>
+  <div class="grid">{{range .More}}{{if $.Services}}{{template "scard" .}}{{else}}{{template "pcard" .}}{{end}}{{end}}</div>
 </section>
 {{end}}
 {{end}}

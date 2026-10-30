@@ -1,5 +1,5 @@
 {{define "content"}}
-{{if .P.Services}}
+{{if or .P.Services .Services}}
 <section class="hero{{if .Cover}} with-cover{{end}}">
   {{if .Cover}}<img class="hero-cover" src="{{.Cover}}" alt="" decoding="async">{{end}}
   <h1>{{whole .Business.Name}}</h1>
@@ -10,6 +10,11 @@
     <li>Оплата после работы</li>
   </ul>
 </section>
+{{if .Services}}
+<section aria-label="Услуги">
+  <div class="grid">{{range .Cards}}{{template "scard" .}}{{end}}</div>
+</section>
+{{else}}
 <section class="services" aria-label="Услуги">
   {{range $i, $sv := .P.Services}}
   <a class="svc" href="{{p}}/?s={{$i}}#order">
@@ -20,6 +25,7 @@
   </a>
   {{end}}
 </section>
+{{end}}
 {{else}}
 <section class="intro">
   <h1>{{whole .Business.Name}}</h1>

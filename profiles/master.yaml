@@ -16,7 +16,7 @@ pricing:
 
 checkout:
   fields:
-    - {id: work, label: Что нужно сделать, type: select, required: true, options: [Собрать мебель, Повесить полки или карниз, Мелкий ремонт, Сантехника, Электрика по мелочи, Другое]}
+    - {id: work, label: Что нужно сделать, type: text, required: true, max_len: 120, hint: "Например: собрать шкаф-купе"}
     - {id: details, label: Подробнее, type: textarea, required: true, max_len: 800, hint: "Что именно, сколько штук, есть ли материалы и инструмент. Можно ссылку на фото"}
     - {id: address, label: Адрес, type: textarea, required: true, max_len: 300}
     - {id: when, label: Когда удобно, type: datetime, required: true}
@@ -48,38 +48,37 @@ workflow:
     - {id: cancel, title: Отменить, from: [request, quoted, booked], to: cancelled, by: [customer, operator], notify: true}
     - {id: expire, title: Истёк срок, from: quoted, to: expired, by: system}
 
-# Плитки над заявкой: нажатие открывает форму с уже выбранной работой (pick: поле=значение).
+# Услуги — карточки, которые мастер ведёт в кабинете (/owner/catalog): цена «от», описание, фото выполненных
+# работ, своя страница у каждой. Список ниже только заполняет пустой каталог при первом запуске; карточка
+# открывает заявку, где поле work уже заполнено названием услуги.
+service_catalog:
+  field: work
+
 services:
   - title: Сборка мебели
     about: "Шкафы, кровати, кухни любых фабрик"
     price: от 800 сом
     icon: "🪑"
-    pick: work=Собрать мебель
   - title: Полки и карнизы
     about: "Повешу ровно, на любую стену"
     price: от 400 сом
     icon: "🖼️"
-    pick: work=Повесить полки или карниз
   - title: Мелкий ремонт
     about: "Двери, ручки, замки, плинтус"
     price: от 500 сом
     icon: "🔨"
-    pick: work=Мелкий ремонт
   - title: Сантехника
     about: "Смесители, сифоны, подтёки"
     price: от 600 сом
     icon: "🚰"
-    pick: work=Сантехника
   - title: Электрика по мелочи
     about: "Розетки, выключатели, люстры"
     price: от 500 сом
     icon: "💡"
-    pick: work=Электрика по мелочи
   - title: Другое
     about: "Опишите задачу, назову цену"
     price: по договорённости
     icon: "🧰"
-    pick: work=Другое
 
 antifraud:
   max_orders_per_ip_hour: 3

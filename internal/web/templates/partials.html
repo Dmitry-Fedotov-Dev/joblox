@@ -41,3 +41,11 @@
   <span class="cost">{{price .Price}} {{sign}}{{if .OldPrice}} <s>{{price .OldPrice}}</s>{{end}}</span>
 </a>
 {{end}}
+
+{{define "scard"}}
+<a class="pcard" href="{{p}}/p/{{.Slug}}">
+  <span class="media">{{with .Cover}}<img src="{{p}}/img/{{.File}}_t.jpg" alt="" loading="lazy" decoding="async" width="{{.W}}" height="{{.H}}">{{else}}{{mascot $.ID}}{{end}}</span>
+  <span class="name">{{.Title}}</span>
+  <span class="cost">{{if .Price}}от {{price .Price}} {{sign}}{{else}}по договорённости{{end}}</span>
+</a>
+{{end}}

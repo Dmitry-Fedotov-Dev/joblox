@@ -247,15 +247,22 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	svc.Log = log
 	var catalog *shop.Catalog
 	var photos *shop.Photos
-	if p.Pricing.Mode == profile.PricingShop {
+	if p.Pricing.Mode == profile.PricingShop || p.ServiceCatalog != nil {
 		if catalog, err = shop.Open(ctx, st.DB()); err != nil {
 			return err
 		}
-		svc.Stock = catalog
 		photos = &shop.Photos{Dir: filepath.Join(dirOf(cfg.DB), "photos")}
-		if cfg.Demo {
-			if err := shop.SeedDemo(ctx, catalog); err != nil {
+		if p.ServiceCatalog != nil {
+			catalog.Services = true // cards of services: no stock to reserve
+			if err := shop.SeedServices(ctx, catalog, p.Services); err != nil {
 				return err
+			}
+		} else {
+			svc.Stock = catalog
+			if cfg.Demo {
+				if err := shop.SeedDemo(ctx, catalog); err != nil {
+					return err
+				}
 			}
 		}
 	}

@@ -285,3 +285,4 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 .clone small { font-weight: 500; font-size: 14px; color: var(--muted); }
 body:has(.hero-cover) .svc, body:has(.hero-cover) .card, body:has(.hero-cover) .hero-meta li {
   background: color-mix(in srgb, var(--panel) 78%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { text-shadow: 0 1px 10px var(--bg), 0 0 3px var(--bg); }

@@ -18,13 +18,22 @@ import (
 // kept in a signed cookie and the checkout with the profile's fields. Everything works without JavaScript;
 // the script only adds the gallery swipe and the kitten.
 
-func (s *Server) isShop() bool { return s.cfg.Shop != nil }
+func (s *Server) isShop() bool { return s.cfg.Shop != nil && !s.cfg.Shop.Services }
+
+// isServices: the catalog holds a performer's services (cards with photos of finished work), the orders are
+// requests with the price named by the performer.
+func (s *Server) isServices() bool { return s.cfg.Shop != nil && s.cfg.Shop.Services }
+
+// hasCatalog: products or services live in the database and the owner edits them.
+func (s *Server) hasCatalog() bool { return s.cfg.Shop != nil }
 
 func (s *Server) storeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /p/{slug}", s.productPage)
-	mux.HandleFunc("GET /cart", s.cartPage)
-	mux.HandleFunc("POST /cart", s.cartUpdate)
 	mux.HandleFunc("GET /img/{file}", s.photo)
+	if s.isShop() {
+		mux.HandleFunc("GET /cart", s.cartPage)
+		mux.HandleFunc("POST /cart", s.cartUpdate)
+	}
 }
 
 // ---------------------------------------------------------------- cart cookie
@@ -144,7 +153,7 @@ type productView struct {
 }
 
 func (s *Server) productPage(w http.ResponseWriter, r *http.Request) {
-	if !s.isShop() {
+	if !s.hasCatalog() {
 		http.NotFound(w, r)
 		return
 	}
@@ -158,11 +167,14 @@ func (s *Server) productPage(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) renderProduct(w http.ResponseWriter, r *http.Request, p *shop.Product, code int, msg string) {
 	l, hot := label(p)
+	if s.isServices() {
+		l, hot = "", false // a service has no stock to speak of
+	}
 	v := productView{base: s.base(w, r, p.Title), Product: productCard{Product: p, Label: l, LabelHot: hot},
 		Added: r.URL.Query().Get("added") == "1", Error: msg}
 	if list, err := s.cfg.Shop.List(r.Context(), false); err == nil {
 		for _, o := range list {
-			if o.ID != p.ID && o.InStock() && len(v.More) < 4 {
+			if o.ID != p.ID && (o.InStock() || s.isServices()) && len(v.More) < 4 {
 				v.More = append(v.More, productCard{Product: o})
 			}
 		}
@@ -291,7 +303,7 @@ func (s *Server) cartView(w http.ResponseWriter, r *http.Request, c cart, form m
 // photo serves a processed photo; the names are random and the files never change, so they are cached for good.
 func (s *Server) photo(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("file")
-	if !s.isShop() || !shop.ValidFile(name) {
+	if !s.hasCatalog() || !shop.ValidFile(name) {
 		http.NotFound(w, r)
 		return
 	}

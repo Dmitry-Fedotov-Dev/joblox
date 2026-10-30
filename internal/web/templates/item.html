@@ -1,12 +1,12 @@
 {{define "content"}}
-<p><a href="{{p}}/owner/catalog">← Все товары</a></p>
-<h1>{{if .Product}}{{.Product.Title}}{{else}}Новый товар{{end}}</h1>
+<p><a href="{{p}}/owner/catalog">← {{if .Services}}Все услуги{{else}}Все товары{{end}}</a></p>
+<h1>{{if .Product}}{{.Product.Title}}{{else if .Services}}Новая услуга{{else}}Новый товар{{end}}</h1>
 {{if .Saved}}<p class="banner ok" role="status">Сохранено.{{if .Product}} <a href="{{p}}/p/{{.Product.Slug}}" target="_blank" rel="noopener">Открыть на витрине</a>{{end}}</p>{{end}}
 {{if .Problems}}<p class="banner error" role="alert">Проверьте: {{join .Problems ", "}}.</p>{{end}}
 
 {{if .Product}}
 <section class="card" id="photos">
-  <h2>Фото</h2>
+  <h2>{{if .Services}}Примеры работ{{else}}Фото{{end}}</h2>
   {{if .Product.Images}}
   <div class="photos">
     {{range $i, $im := .Product.Images}}
@@ -29,12 +29,12 @@
   <input type="hidden" name="id" value="{{if .Product}}{{.Product.ID}}{{end}}">
   <div class="field">
     <label for="title">Название <span class="req">*</span></label>
-    <input id="title" name="title" value="{{.Title}}" maxlength="80" required placeholder="Платье льняное">
+    <input id="title" name="title" value="{{.Title}}" maxlength="80" required placeholder="{{if .Services}}Сборка мебели{{else}}Платье льняное{{end}}">
   </div>
   <div class="vrow">
     <div class="field">
-      <label for="price">Цена, {{.Currency}} <span class="req">*</span></label>
-      <input id="price" name="price" value="{{.Price}}" inputmode="decimal" required placeholder="4500">
+      <label for="price">{{if .Services}}Цена от, {{.Currency}}{{else}}Цена, {{.Currency}} <span class="req">*</span>{{end}}</label>
+      <input id="price" name="price" value="{{.Price}}" inputmode="decimal"{{if not .Services}} required{{end}} placeholder="{{if .Services}}0 — по договорённости{{else}}4500{{end}}">
     </div>
     <div class="field">
       <label for="old_price">Старая цена</label>
@@ -45,6 +45,7 @@
     <label for="description">Описание</label>
     <textarea id="description" name="description" rows="5" maxlength="3000" placeholder="Ткань, размеры, уход">{{.Description}}</textarea>
   </div>
+  {{if not .Services}}
   <fieldset class="field">
     <legend>Размеры и остаток</legend>
     <p class="hint">Одна строка на размер. Если размера нет, оставьте название пустым и укажите количество. Пустая строка не сохраняется.</p>
@@ -58,8 +59,9 @@
       {{end}}
     </div>
   </fieldset>
+  {{end}}
   <div class="field">
-    <label for="photos">Добавить фото</label>
+    <label for="photos">{{if .Services}}Добавить фото работ{{else}}Добавить фото{{end}}</label>
     <input id="photos" name="photos" type="file" accept="image/*" multiple>
     <p class="hint">Можно сразу несколько, до {{.MaxImages}} на товар (осталось {{.ImagesLeft}}), каждое до {{.MB}} МБ. Мы сами повернём их как надо, уменьшим и уберём из файлов место съёмки.</p>
   </div>
@@ -70,7 +72,7 @@
 {{if .Product}}
 <form method="post" action="{{p}}/owner/catalog/{{.Product.ID}}/delete" class="card">
   <input type="hidden" name="csrf" value="{{.CSRF}}">
-  <h2>Удалить товар</h2>
+  <h2>{{if .Services}}Удалить услугу{{else}}Удалить товар{{end}}</h2>
   <p class="muted small">Товар и его фото исчезнут насовсем. Заказы с ним останутся как были.</p>
   <label class="radio"><input type="checkbox" name="sure" value="1" required> Да, удалить насовсем</label>
   <button class="danger" type="submit">Удалить</button>

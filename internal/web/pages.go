@@ -22,6 +22,8 @@ type base struct {
 	Cart     int  // items in the cart
 	Demo     bool
 	Cover    string // the address of the cover picture with its version; empty: no cover
+	Services bool   // the catalog holds services: cards of work with a request form
+	Catalog  bool   // the owner edits products or services in the cabinet
 	// Clone is the «make yourself the same» button of the public pages: what to call it and where it leads.
 	CloneText, CloneURL string
 }
@@ -29,7 +31,8 @@ type base struct {
 func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base {
 	v := s.visitor(w, r)
 	s.rec.Seen(v)
-	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Demo: s.cfg.Demo, Cover: s.coverURL()}
+	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Demo: s.cfg.Demo, Cover: s.coverURL(),
+		Services: s.isServices(), Catalog: s.hasCatalog()}
 	if b.Shop {
 		b.Cart = s.readCart(r).count()
 	}
@@ -61,6 +64,7 @@ type shopView struct {
 	Stamp     string
 	FormError string
 	Quote     bool
+	Cards     []productCard // the services catalog (service_catalog in the profile)
 }
 
 type methodView struct {
@@ -124,12 +128,25 @@ func (s *Server) shop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var form map[string]string
-	if i, err := strconv.Atoi(r.URL.Query().Get("s")); err == nil && i >= 0 && i < len(s.svc.P.Services) {
+	q := r.URL.Query().Get("s")
+	if s.isServices() {
+		if p, err := s.cfg.Shop.BySlug(r.Context(), q); err == nil && !p.Hidden {
+			form = map[string]string{s.svc.P.ServiceCatalog.Field: p.Title} // the card the customer came from
+		}
+	} else if i, err := strconv.Atoi(q); err == nil && i >= 0 && i < len(s.svc.P.Services) {
 		if name, val, ok := strings.Cut(s.svc.P.Services[i].Pick, "="); ok {
 			form = map[string]string{name: val} // the tile the customer pressed is already chosen
 		}
 	}
-	s.render(w, "shop", http.StatusOK, s.shopView(w, r, form, nil, "", nil))
+	v := s.shopView(w, r, form, nil, "", nil)
+	if s.isServices() {
+		list, err := s.cfg.Shop.List(r.Context(), false)
+		if err != nil {
+			s.log.Error("services", "err", err)
+		}
+		v.Cards = cards(list)
+	}
+	s.render(w, "shop", http.StatusOK, v)
 }
 
 func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
@@ -349,18 +366,20 @@ func (s *Server) beat(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------- admin
 
 type adminView struct {
-	Shop     bool // the layout's cart link and demo banner: never on the dashboard
-	Cart     int
-	Demo     bool
-	Title    string
-	Paused   bool
-	Business profile.Business
-	Version  string
-	Orders   []adminOrder
-	Stats    order.Stats
-	Currency string
-	Finger   string
-	Owner    bool // opened from the owner's area through the public site, not over SSH
+	Shop      bool // the layout's cart link, demo banner and «make the same» button: never on the dashboard
+	Cart      int
+	Demo      bool
+	CloneURL  string
+	CloneText string
+	Title     string
+	Paused    bool
+	Business  profile.Business
+	Version   string
+	Orders    []adminOrder
+	Stats     order.Stats
+	Currency  string
+	Finger    string
+	Owner     bool // opened from the owner's area through the public site, not over SSH
 }
 
 type adminOrder struct {

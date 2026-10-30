@@ -19,6 +19,7 @@ import (
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/metrics"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/shop"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/store"
 )
 
@@ -308,19 +309,27 @@ func TestQuoteProfilePage(t *testing.T) {
 	}
 }
 
-// A master's site: the services tiles, and a tile opens the request with its work already chosen.
+// A master's site: the services are cards from the catalog, each with its page; a card's «Оставить заявку»
+// opens the request with the service already written in.
 func TestServicesShowcase(t *testing.T) {
-	s := newSite(t, "master")
+	s, cat := catalogSite(t, "master")
 	_, home := s.get(t, "/")
-	if !strings.Contains(home, `class="svc"`) || !strings.Contains(home, "Сборка мебели") || !strings.Contains(home, "от 800 сом") {
-		t.Fatal("no services tiles")
+	if !strings.Contains(home, `href="/p/sborka-mebeli"`) || !strings.Contains(home, "от 800") || !strings.Contains(home, "по договорённости") {
+		t.Fatal("no service cards")
 	}
-	_, picked := s.get(t, "/?s=3")
-	if !strings.Contains(picked, `<option selected>Сантехника</option>`) {
-		t.Fatal("the tile does not choose the work")
+	code, page := s.get(t, "/p/sborka-mebeli")
+	if code != http.StatusOK || !strings.Contains(page, `href="/?s=sborka-mebeli#order"`) || strings.Contains(page, `action="/cart"`) {
+		t.Fatalf("service page: %d", code)
 	}
-	if code, _ := s.get(t, "/?s=99"); code != http.StatusOK {
-		t.Fatalf("an unknown tile: %d", code)
+	if _, form := s.get(t, "/?s=sborka-mebeli"); !strings.Contains(form, `value="Сборка мебели"`) {
+		t.Fatal("the card does not fill the request")
+	}
+	if code, _ := s.get(t, "/cart"); code != http.StatusNotFound {
+		t.Fatalf("a services site has a cart: %d", code)
+	}
+	// the owner adds a service by agreement: no price, no sizes
+	if _, err := cat.Save(context.Background(), 0, shop.Input{Title: "Окна", Description: "Регулировка"}); err != nil {
+		t.Fatalf("a service without a price: %v", err)
 	}
 }
 

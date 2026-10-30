@@ -139,7 +139,9 @@ func (s *Server) itemSave(w http.ResponseWriter, r *http.Request) {
 	in := shop.Input{Title: r.PostFormValue("title"), Description: r.PostFormValue("description"), Hidden: r.PostFormValue("hidden") == "1"}
 	var problems []string
 	var err error
-	if in.Price, err = money.Parse(strings.ReplaceAll(r.PostFormValue("price"), " ", "")); err != nil {
+	if raw := strings.ReplaceAll(r.PostFormValue("price"), " ", ""); raw == "" && s.isServices() {
+		in.Price = 0 // a service by agreement
+	} else if in.Price, err = money.Parse(raw); err != nil {
 		problems = append(problems, "цена: число, например 4500")
 	}
 	if old := strings.ReplaceAll(r.PostFormValue("old_price"), " ", ""); old != "" {

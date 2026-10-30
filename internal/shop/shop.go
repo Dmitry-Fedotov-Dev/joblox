@@ -115,6 +115,9 @@ func (e *OutOfStock) Unwrap() error { return ErrOutOfStock }
 type Catalog struct {
 	db  *sql.DB
 	now func() time.Time
+	// Services: the catalog holds a performer's services, not goods: no sizes and no stock, the price is a
+	// «from» price and 0 means «by agreement».
+	Services bool
 }
 
 var migrations = []string{
@@ -308,7 +311,7 @@ type Problems []string
 
 func (p Problems) Error() string { return strings.Join(p, ", ") }
 
-func (in *Input) clean() Problems {
+func (in *Input) clean(services bool) Problems {
 	var bad Problems
 	in.Title = strings.Join(strings.Fields(in.Title), " ")
 	in.Description = strings.TrimSpace(strings.ReplaceAll(in.Description, "\r\n", "\n"))
@@ -318,7 +321,7 @@ func (in *Input) clean() Problems {
 	if utf8.RuneCountInString(in.Description) > 3000 {
 		bad = append(bad, "описание не длиннее 3000 букв")
 	}
-	if in.Price <= 0 {
+	if in.Price < 0 || in.Price == 0 && !services {
 		bad = append(bad, "цена больше нуля")
 	}
 	if in.OldPrice != 0 && in.OldPrice <= in.Price {
@@ -344,7 +347,9 @@ func (in *Input) clean() Problems {
 		seen[key] = true
 		vs = append(vs, v)
 	}
-	if len(vs) == 0 {
+	if services {
+		vs = nil // a service has no sizes and no stock
+	} else if len(vs) == 0 {
 		bad = append(bad, "хотя бы одна строка с остатком")
 	}
 	if len(vs) > 1 {
@@ -362,7 +367,7 @@ func (in *Input) clean() Problems {
 // Save creates (id 0) or updates a product and returns its id. A variant missing from the input is retired,
 // not deleted: past orders still point at it.
 func (c *Catalog) Save(ctx context.Context, id int64, in Input) (int64, error) {
-	if bad := in.clean(); len(bad) > 0 {
+	if bad := in.clean(c.Services); len(bad) > 0 {
 		return 0, bad
 	}
 	tx, err := c.db.BeginTx(ctx, nil)

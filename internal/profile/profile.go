@@ -59,6 +59,14 @@ type Profile struct {
 	// Services are the tiles above the request form of a performer who names the price (a master, a
 	// courier): what they do and from what price. A tile opens the form with its choice already made.
 	Services []Service `yaml:"services"`
+	// ServiceCatalog turns the services into cards the owner edits in the browser, each with its own page
+	// and photos of finished work; the YAML services only fill an empty catalog on the first start.
+	ServiceCatalog *ServiceCatalog `yaml:"service_catalog"`
+}
+
+// ServiceCatalog: Field is the checkout field the chosen service fills in (a text field).
+type ServiceCatalog struct {
+	Field string `yaml:"field"`
 }
 
 // Service is one tile of the services showcase.
@@ -335,6 +343,15 @@ func (p *Profile) Validate() error {
 		f, known := fields[name]
 		if !ok || !known || f.Type == FieldSelect && !slices.Contains(f.Options, val) {
 			add("service %q: pick %q must be field=value of a checkout field (one of the options for a select)", sv.Title, sv.Pick)
+		}
+	}
+	if sc := p.ServiceCatalog; sc != nil {
+		f, ok := fields[sc.Field]
+		switch {
+		case p.Pricing.Mode != PricingQuote:
+			add("service_catalog works with pricing.mode quote: the performer names the price")
+		case !ok || f.Type != FieldText && f.Type != FieldTextarea:
+			add("service_catalog.field %q: a text checkout field the chosen service fills in", sc.Field)
 		}
 	}
 	if !hasEmail {

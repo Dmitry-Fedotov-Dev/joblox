@@ -2,6 +2,11 @@ package shop
 
 import (
 	"context"
+	"strconv"
+	"strings"
+
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 )
 
 // demoProducts fill the showcase shop (JOBLOX_DEMO=1) on its first start. They have no photos on purpose:
@@ -29,6 +34,32 @@ func SeedDemo(ctx context.Context, c *Catalog) error {
 	}
 	for i := len(demoProducts) - 1; i >= 0; i-- { // each new product goes first: add backwards to keep the order
 		if _, err := c.Save(ctx, 0, demoProducts[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SeedServices fills an empty services catalog with the profile's services: title, description and the
+// number in the price text («от 800 сом» → 800; no number: by agreement).
+func SeedServices(ctx context.Context, c *Catalog, services []profile.Service) error {
+	list, err := c.List(ctx, true)
+	if err != nil || len(list) > 0 {
+		return err
+	}
+	for i := len(services) - 1; i >= 0; i-- {
+		sv := services[i]
+		digits := strings.Map(func(r rune) rune {
+			if r >= '0' && r <= '9' {
+				return r
+			}
+			return -1
+		}, sv.Price)
+		var price money.Amount
+		if n, err := strconv.ParseInt(digits, 10, 64); err == nil {
+			price = money.Amount(n * 100)
+		}
+		if _, err := c.Save(ctx, 0, Input{Title: sv.Title, Description: sv.About, Price: price}); err != nil {
 			return err
 		}
 	}

@@ -153,7 +153,7 @@ func (s *Server) Handler() http.Handler {
 			http.ServeFile(w, r, s.cfg.Cover)
 		})
 	}
-	if s.isShop() {
+	if s.hasCatalog() {
 		s.storeRoutes(mux)
 	}
 	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {

@@ -94,7 +94,7 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /owner/o/{id}/{action}", s.ownerOnly(s.ownerAction))
 	mux.HandleFunc("GET /admin", s.ownerOnly(s.adminPage))
 	mux.HandleFunc("GET /admin/live.json", s.ownerOnly(s.adminLive))
-	if s.isShop() {
+	if s.hasCatalog() {
 		s.catalogRoutes(mux)
 	}
 }
