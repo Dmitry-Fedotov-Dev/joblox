@@ -260,3 +260,16 @@ func TestStartTariffs(t *testing.T) {
 		t.Error("an unknown kind is not ignored")
 	}
 }
+
+// A site on the network's own hosting is marked checked on the market; others are not.
+func TestHostedSitesTrusted(t *testing.T) {
+	_, srv, _ := newHub(t)
+	post(t, srv.URL, `{"id":"`+idA+`","kind":"shop","version":"1","online":1,"orders_today":0,"listing":{"title":"Магазин Вали","url":"https://valya.openline.one/"}}`)
+	home := get(t, srv.URL+"/").body
+	if !strings.Contains(home, "Магазин Вали") || !strings.Contains(home, "проверен") {
+		t.Fatal("a hosted site is not shown as checked")
+	}
+	if !hosted("https://valya.openline.one/") || hosted("https://evil-openline.one/") || hosted("https://x.trycloudflare.com/") {
+		t.Fatal("hosted()")
+	}
+}

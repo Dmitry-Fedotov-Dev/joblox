@@ -7,9 +7,9 @@
 
 <div class="cubes">
   {{range $i, $c := .Tiles}}
-  <a class="cube k-{{.Kind}}{{if .Wide}} wide{{end}}" style="--i: {{$i}}" href="{{.URL}}" title="{{.About}}" rel="{{if .Badge}}noopener{{else}}nofollow noopener ugc{{end}}">
+  <a class="cube k-{{.Kind}}{{if or .Wide .Trusted}} wide{{end}}" style="--i: {{$i}}" href="{{.URL}}" title="{{.About}}" rel="{{if .Badge}}noopener{{else}}nofollow noopener ugc{{end}}">
     <span class="emoji" aria-hidden="true">{{kindIcon .Kind}}</span>
-    {{if .Badge}}<span class="tag">{{.Badge}}</span>{{else}}<span class="tag live"><span class="dot"></span>на связи</span>{{end}}
+    {{if .Badge}}<span class="tag">{{.Badge}}</span>{{else if .Trusted}}<span class="tag live"><span class="dot"></span>проверен · на связи</span>{{else}}<span class="tag live"><span class="dot"></span>на связи</span>{{end}}
     <b>{{.Title}}</b>
   </a>
   {{else}}

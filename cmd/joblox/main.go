@@ -313,8 +313,14 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 				return err
 			}
 		}
+		listing := opt.Listing
+		if listing == nil && env("JOBLOX_LISTING", "") == "1" {
+			card := &hub.Listing{Title: p.Business.Name, Place: env("JOBLOX_PLACE", ""), About: p.Business.Description,
+				Contact: p.Business.Contact, URL: cfg.BaseURL}
+			listing = func() *hub.Listing { return card }
+		}
 		rep := &hub.Reporter{URL: url, ID: id, Kind: p.Business.Kind, Version: version, Online: rec.Online, Log: log,
-			Listing: opt.Listing, Wake: opt.Wake,
+			Listing: listing, Wake: opt.Wake,
 			OrdersToday: func(ctx context.Context) int {
 				s, err := st.Stats(ctx, time.Now().Add(-24*time.Hour), svc.Finals())
 				if err != nil {

@@ -32,7 +32,8 @@ type Card struct {
 	Badge   string `json:"badge,omitempty"`  // "OpenLine" for the author's own projects
 	Invite  bool   `json:"invite,omitempty"` // "start your own": leads to the launch instructions
 	Online  int    `json:"online,omitempty"`
-	Wide    bool   `json:"-"` // a double tile on the home page
+	Trusted bool   `json:"trusted,omitempty"` // lives on the network's own hosting: its owner was checked
+	Wide    bool   `json:"-"`                 // a double tile on the home page
 }
 
 // Featured are the author's projects, the network's own pages and the ready-made templates. They stand in
@@ -134,7 +135,8 @@ func (h *Hub) Market(ctx context.Context, kind string) ([]Card, error) {
 		if json.Unmarshal([]byte(raw), &l) != nil {
 			continue
 		}
-		cards = append(cards, Card{Kind: k, Title: l.Title, Place: l.Place, About: l.About, Contact: l.Contact, URL: l.URL, Online: online})
+		cards = append(cards, Card{Kind: k, Title: l.Title, Place: l.Place, About: l.About, Contact: l.Contact, URL: l.URL, Online: online,
+			Trusted: hosted(l.URL)})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -193,4 +195,12 @@ func (h *Hub) hide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// HostedZone is the domain of the network's own hosting: a site there was set up after a check of its owner.
+const HostedZone = ".openline.one"
+
+func hosted(site string) bool {
+	u, err := url.Parse(site)
+	return err == nil && u.Scheme == "https" && strings.HasSuffix(u.Hostname(), HostedZone)
 }
