@@ -313,7 +313,10 @@
     this.setMode(d > 18 ? M.RUN : M.WALK);
     this.facing = this.tx > this.x ? 1 : -1;
   };
-  C.boop = function () { this.setMode(M.IDLE); this.setEmote(E.JOY, 1.9); this.buzz(2); this.mood = Math.min(1, this.mood + 0.04); };
+  C.boop = function () {
+    this.setMode(M.IDLE); this.setEmote(E.JOY, 2.6); this.buzz(2); this.mood = Math.min(1, this.mood + 0.04);
+    this.loveT = 1.8; this.loveAcc = 0;                  // a tap is love: purring and a stream of hearts rising
+  };
   C.startRoll = function () { this.setMode(M.ROLL); this.emote = E.NONE; this.quarter = 0; this.rollShift = 0; this.buzz(2); this.mood = Math.min(1, this.mood + 0.08); };
   C.startFlip = function () {
     this.setMode(M.FLIP); this.emote = E.NONE; this.quarter = 0; this.buzz(2);
@@ -390,6 +393,15 @@
 
   // ---------------------------------------------------------------- simulation
   C.step = function (dt) {
+    if (this.loveT > 0) {                                // hearts float up from his head, swaying, then fade
+      this.loveT -= dt; this.loveAcc = (this.loveAcc || 0) + dt;
+      if (this.loveAcc > 0.13) {
+        this.loveAcc = 0;
+        var lr = this.rng;
+        this.spawn(PT.HEART, this.x + lr.range(-9, 9), this.y - this.z - 30, lr.range(-7, 7), -14 - lr.next() * 10, 1.6 + lr.next() * 0.6);
+        if (lr.next() < 0.35) this.buzz(1);
+      }
+    }
     if (dt > 0.05) dt = 0.05;
     this.t += dt; this.modeT += dt;
     if (this.emote !== E.NONE) { this.emoteT += dt; this.emoteFx(dt); if (this.emoteT > this.emoteLen) this.emote = E.NONE; }
