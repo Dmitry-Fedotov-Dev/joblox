@@ -1,0 +1,44 @@
+{{define "content"}}
+<h1>Корзина</h1>
+{{if not .Lines}}
+<p class="empty"><b>Пока пусто</b><a href="/">Вернуться к товарам</a></p>
+{{else}}
+<div class="cart">
+  <section>
+    <ul class="cart-lines">
+      {{range .Lines}}
+      <li class="cart-line">
+        <a class="thumb" href="/p/{{.Product.Slug}}">{{with .Product.Cover}}<img src="/img/{{.File}}_t.jpg" alt="">{{end}}</a>
+        <div class="t">
+          <a href="/p/{{.Product.Slug}}">{{.Product.Title}}</a>
+          {{if .Variant.Name}}<span class="muted small">Размер {{.Variant.Name}}</span>{{end}}
+          <span class="price">{{price .Sum}} {{sign}}</span>
+        </div>
+        <form class="q" method="post" action="/cart">
+          <input type="hidden" name="csrf" value="{{$.CSRF}}">
+          <input type="hidden" name="item" value="{{.Item}}">
+          <label class="sr" for="q{{.Item}}">Количество</label>
+          <input id="q{{.Item}}" type="number" name="qty" value="{{.Qty}}" min="0" max="99" inputmode="numeric">
+          <button class="secondary" type="submit">OK</button>
+        </form>
+        {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
+      </li>
+      {{end}}
+    </ul>
+    <p class="sumrow"><span>Товары</span><span>{{price .Sum}} {{sign}}</span></p>
+    {{if .P.Pricing.Fees}}<p class="muted small">Доставка и сборы, если есть, добавятся к сумме заказа.</p>{{end}}
+  </section>
+
+  <form class="card" method="post" action="/order" novalidate>
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input type="hidden" name="stamp" value="{{.Stamp}}">
+    <div class="hp" aria-hidden="true"><label>Сайт <input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <h2>Оформление</h2>
+    {{if .FormError}}<p class="banner error" role="alert">{{.FormError}}</p>{{end}}
+    {{template "fields" .}}
+    <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>Оформить заказ</button>
+    {{if .P.Payment.RequireEmailCode}}<p class="muted small">После оформления на почту придёт код подтверждения.</p>{{end}}
+  </form>
+</div>
+{{end}}
+{{end}}

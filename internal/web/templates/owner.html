@@ -56,6 +56,7 @@
     <h1>Кабинет</h1>
     <span class="actions">
       <a href="/">Мой сайт</a>
+      {{if .Shop}}<a href="/owner/catalog">Товары</a>{{end}}
       {{if .MarketURL}}<a href="{{.MarketURL}}" target="_blank" rel="noopener">Биржа</a>{{end}}
       <a href="/admin">Нагрузка</a>
     </span>

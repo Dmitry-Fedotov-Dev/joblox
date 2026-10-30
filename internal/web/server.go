@@ -14,11 +14,14 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+	"unicode"
 
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/kitten"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/mail"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/metrics"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/shop"
 )
 
 //go:embed templates/*.html
@@ -36,6 +39,9 @@ type Config struct {
 	// CallURL is a voice service that pairs two people by a room in the link (Контакт, https://openline.one/):
 	// an open order gets a "call" button for the customer and the performer. Empty: no button.
 	CallURL string
+	// Shop and Photos are the catalog with photos of a pricing.mode shop profile; nil otherwise.
+	Shop   *shop.Catalog
+	Photos *shop.Photos
 }
 
 type Server struct {
@@ -59,13 +65,32 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		general: NewLimiter(20, 60), orders: NewLimiter(0.1, 5), codes: NewLimiter(0.2, 8)}
 	funcs := template.FuncMap{
 		"money": func(a money.Amount) string { return a.String() },
+		// price is a shop price: whole sums without the kopecks, "4 500" rather than "4 500.00"
+		"price": func(a money.Amount) string { return strings.TrimSuffix(a.String(), ".00") },
 		"cur":   currencySign,
 		"join":  strings.Join,
 		"inc":   func(i int) int { return i + 1 },
+		"sign":  func() string { return currencySign(svc.P.Business.Currency) },
+		"initial": func(s string) string {
+			for _, r := range s {
+				return string(unicode.ToUpper(r))
+			}
+			return ""
+		},
+		"plural": func(n int, one, few, many string) string {
+			n %= 100
+			switch {
+			case n%10 == 1 && n != 11:
+				return one
+			case n%10 >= 2 && n%10 <= 4 && (n < 12 || n > 14):
+				return few
+			}
+			return many
+		},
 	}
 	s.tpl = map[string]*template.Template{}
-	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms"} {
-		t, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, "templates/layout.html", "templates/"+page+".html")
+	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms", "store", "product", "cart", "catalog", "item"} {
+		t, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, "templates/layout.html", "templates/partials.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, err
 		}
@@ -95,6 +120,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	static, _ := fs.Sub(staticFS, "static")
 	mux.Handle("GET /static/", http.StripPrefix("/static/", cacheStatic(http.FileServerFS(static))))
+	mux.Handle("GET /kitten/", http.StripPrefix("/kitten", kitten.Handler()))
 	mux.HandleFunc("GET /{$}", s.shop)
 	mux.HandleFunc("POST /order", s.createOrder)
 	mux.HandleFunc("GET /o/{token}", s.orderPage)
@@ -103,6 +129,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /o/{token}/resend", s.resendCode)
 	mux.HandleFunc("POST /o/{token}/t/{transition}", s.customerTransition)
 	mux.HandleFunc("POST /beat", s.beat)
+	if s.isShop() {
+		s.storeRoutes(mux)
+	}
 	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
@@ -161,6 +190,9 @@ type statusWriter struct {
 	code int
 }
 
+// Unwrap lets http.ResponseController reach the connection (the upload stretches its deadlines).
+func (w *statusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
 func (w *statusWriter) WriteHeader(code int) {
 	w.code = code
 	w.ResponseWriter.WriteHeader(code)
@@ -189,7 +221,11 @@ func (s *Server) middleware(mux *http.ServeMux) http.Handler {
 			_, _ = sw.Write([]byte("слишком много запросов, попробуйте через несколько секунд"))
 			return
 		}
-		r.Body = http.MaxBytesReader(sw, r.Body, 64<<10)
+		limit := int64(64 << 10)
+		if r.Method == http.MethodPost && r.URL.Path == uploadPath {
+			limit = uploadLimit // photos from a phone, a dozen at once
+		}
+		r.Body = http.MaxBytesReader(sw, r.Body, limit)
 		inner.ServeHTTP(sw, r)
 	})
 }

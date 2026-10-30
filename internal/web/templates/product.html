@@ -1,0 +1,51 @@
+{{define "content"}}
+{{$p := .Product}}
+<article class="product">
+  <div>
+    <div class="gallery" id="gallery">
+      {{range $i, $im := $p.Images}}<figure id="ph{{$i}}"><img src="/img/{{$im.File}}.jpg" alt="{{$p.Title}}, фото {{inc $i}}" width="{{$im.W}}" height="{{$im.H}}"{{if $i}} loading="lazy"{{end}} decoding="async"></figure>
+      {{else}}<figure class="noimg"><span>{{initial $p.Title}}</span></figure>{{end}}
+    </div>
+    {{if gt (len $p.Images) 1}}<nav class="thumbs" aria-label="Фото">{{range $i, $im := $p.Images}}<a href="#ph{{$i}}"><img src="/img/{{$im.File}}_t.jpg" alt="" loading="lazy"></a>{{end}}</nav>{{end}}
+  </div>
+
+  <div class="buy">
+    {{if .Added}}<p class="added" role="status" data-kitten-cheer>В корзине <a href="/cart">Оформить →</a></p>{{end}}
+    {{if .Error}}<p class="banner error" role="alert">{{.Error}}</p>{{end}}
+    {{if .Product.Label}}<span class="pill{{if .Product.LabelHot}} hot{{end}}">{{.Product.Label}}</span>{{end}}
+    <h1>{{$p.Title}}</h1>
+    <p class="cost">{{price $p.Price}} {{sign}}{{if $p.OldPrice}} <s>{{price $p.OldPrice}}</s>{{end}}</p>
+
+    {{if $p.InStock}}
+    <form method="post" action="/cart">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="hidden" name="add" value="1">
+      <input type="hidden" name="qty" value="1">
+      {{if or (gt (len $p.Variants) 1) (index $p.Variants 0).Name}}
+      <fieldset class="sizes">
+        <legend>Размер</legend>
+        {{$first := true}}
+        {{range $p.Variants}}
+        <label><input type="radio" name="item" value="v{{.ID}}"{{if not .Stock}} disabled{{else if $first}} checked{{$first = false}}{{end}} required><span>{{.Name}}</span></label>
+        {{end}}
+      </fieldset>
+      {{else}}{{range $p.Variants}}<input type="hidden" name="item" value="v{{.ID}}">{{end}}{{end}}
+      <div class="sticky-buy">
+        <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>В корзину</button>
+      </div>
+    </form>
+    {{else}}
+    <p class="banner">Этого товара сейчас нет в наличии.{{if .Business.Contact}} Спросите продавца: {{.Business.Contact}}{{end}}</p>
+    {{end}}
+
+    {{if $p.Description}}<div class="desc">{{$p.Description}}</div>{{end}}
+  </div>
+</article>
+
+{{if .More}}
+<section>
+  <div class="section-head"><h2>Ещё в магазине</h2><a href="/">Все товары</a></div>
+  <div class="grid">{{range .More}}{{template "pcard" .}}{{end}}</div>
+</section>
+{{end}}
+{{end}}

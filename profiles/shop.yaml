@@ -1,4 +1,5 @@
-# Интернет-магазин: каталог, корзина, доставка курьером или самовывоз со склада.
+# Интернет-магазин с фото: товары, размеры и остатки владелец ведёт в кабинете (/owner/catalog),
+# корзина, доставка курьером или самовывоз. Купленное резервируется, при отмене возвращается в продажу.
 business:
   name: Магазин «Мастерская»
   kind: shop
@@ -7,13 +8,8 @@ business:
   timezone: Europe/Moscow
   contact: shop@example.com
 
-catalog:
-  - {id: mug, title: Кружка керамическая, price: 900, unit: шт, max_qty: 10}
-  - {id: board, title: Разделочная доска из дуба, price: 2400, unit: шт, max_qty: 5}
-  - {id: candle, title: Свеча соевая, price: 650, unit: шт, max_qty: 20}
-
 pricing:
-  mode: catalog
+  mode: shop
   min_total: 500
   fees:
     - {id: courier, title: Доставка курьером, amount: 350, free_from: 5000, when: delivery=Курьером}
@@ -39,8 +35,8 @@ workflow:
     - {id: packing, title: Собирается, customer: "Оплата получена, заказ собирается"}
     - {id: shipped, title: Передан в доставку, customer: "Заказ в пути"}
     - {id: done, title: Получен, customer: "Заказ получен. Спасибо!", final: true}
-    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true}
-    - {id: expired, title: Истёк, customer: "Оплата не поступила вовремя, заказ закрыт", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true, restock: true}
+    - {id: expired, title: Истёк, customer: "Оплата не поступила вовремя, заказ закрыт", final: true, restock: true}
   transitions:
     - {id: pack, title: Собирать, from: new, to: packing, by: operator, requires: [paid, approved], notify: true}
     - {id: ship, title: Отправлен, from: packing, to: shipped, by: operator, notify: true}

@@ -36,6 +36,9 @@ const (
 const (
 	PricingCatalog = "catalog" // the sum of the cart and the fees
 	PricingQuote   = "quote"   // the operator names the price after reading the request
+	// PricingShop is a shop with photos: products, sizes and stock live in the database and the owner edits
+	// them in the browser (internal/shop); the YAML catalog stays empty.
+	PricingShop = "shop"
 )
 
 // Payment methods.
@@ -139,6 +142,8 @@ type State struct {
 	Title    string `yaml:"title"`    // for the operator
 	Customer string `yaml:"customer"` // what the customer reads on the order page
 	Final    bool   `yaml:"final"`
+	// Restock puts the reserved items back on sale when an order arrives here (cancelled, expired).
+	Restock bool `yaml:"restock"`
 }
 
 type Transition struct {
@@ -257,8 +262,12 @@ func (p *Profile) Validate() error {
 			add("pricing.mode catalog needs at least one catalog item")
 		}
 	case PricingQuote:
+	case PricingShop:
+		if len(p.Catalog) > 0 {
+			add("pricing.mode shop takes the products from the shop's database: leave catalog empty")
+		}
 	default:
-		add("pricing.mode %q: want catalog or quote", p.Pricing.Mode)
+		add("pricing.mode %q: want catalog, shop or quote", p.Pricing.Mode)
 	}
 	items := map[string]bool{}
 	for _, it := range p.Catalog {

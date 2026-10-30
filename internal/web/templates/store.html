@@ -1,0 +1,24 @@
+{{define "content"}}
+<section class="hero">
+  <p class="eyebrow">{{if .Business.Kind}}Магазин{{end}}</p>
+  <h1>{{.Business.Name}}</h1>
+  {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}
+  {{$n := 0}}{{range .Products}}{{if .InStock}}{{$n = inc $n}}{{end}}{{end}}
+  <ul class="hero-meta">
+    {{if $n}}<li><b>{{$n}}</b> {{plural $n "товар" "товара" "товаров"}} в наличии</li>{{end}}
+    {{if .Business.Contact}}<li>{{.Business.Contact}}</li>{{end}}
+    <li>Оплата напрямую продавцу</li>
+  </ul>
+</section>
+
+<section id="catalog">
+  {{if .Products}}
+  <div class="grid">
+    {{range .Products}}{{template "pcard" .}}{{end}}
+  </div>
+  {{else}}
+  <p class="empty"><b>Скоро здесь появятся товары</b>Загляните чуть позже.</p>
+  {{end}}
+  {{if .Intro}}<p class="muted small note">{{.Intro}}</p>{{end}}
+</section>
+{{end}}

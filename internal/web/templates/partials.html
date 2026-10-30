@@ -1,0 +1,43 @@
+{{/* Shared pieces: the checkout fields (the classic form and the shop's cart) and the product card. */}}
+{{define "fields"}}
+  {{range .Fields}}
+  <div class="field{{if .Error}} has-error{{end}}">
+    <label for="f_{{.ID}}">{{.Label}}{{if .Required}} <span class="req" aria-hidden="true">*</span>{{end}}{{if .Unit}}, {{.Unit}}{{end}}</label>
+    {{if eq .Type "textarea"}}
+      <textarea id="f_{{.ID}}" name="f_{{.ID}}" rows="3"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{.Value}}</textarea>
+    {{else if eq .Type "select"}}
+      <select id="f_{{.ID}}" name="f_{{.ID}}"{{if .Required}} required{{end}}>
+        <option value="">Выберите</option>
+        {{$v := .Value}}{{range .Options}}<option{{if eq . $v}} selected{{end}}>{{.}}</option>{{end}}
+      </select>
+    {{else}}
+      <input id="f_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}"
+        {{if eq .Type "email"}}type="email" autocomplete="email"{{else if eq .Type "phone"}}type="tel" autocomplete="tel"{{else if eq .Type "number"}}type="number" step="any" inputmode="decimal"{{if .Min}} min="{{.Min}}"{{end}}{{if .Max}} max="{{.Max}}"{{end}}{{else if eq .Type "datetime"}}type="datetime-local"{{else if eq .Type "url"}}type="url" placeholder="https://"{{else}}type="text"{{end}}
+        {{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>
+    {{end}}
+    {{if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
+    {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
+  </div>
+  {{end}}
+
+  {{if gt (len .Methods) 1}}
+  <fieldset class="field">
+    <legend>Оплата</legend>
+    {{range .Methods}}<label class="radio"><input type="radio" name="method" value="{{.ID}}"{{if .Checked}} checked{{end}}> {{.Title}}</label>{{end}}
+  </fieldset>
+  {{else}}{{range .Methods}}<input type="hidden" name="method" value="{{.ID}}">{{end}}{{end}}
+
+  {{if .P.Texts.PaymentNote}}<p class="muted small">{{.P.Texts.PaymentNote}}</p>{{end}}
+  {{if .P.Texts.Rules}}<p class="muted small">{{.P.Texts.Rules}}</p>{{end}}
+{{end}}
+
+{{define "pcard"}}
+<a class="pcard{{if not .InStock}} soldout{{end}}" href="/p/{{.Slug}}">
+  <span class="media">
+    {{with .Cover}}<img src="/img/{{.File}}_t.jpg" alt="" loading="lazy" decoding="async" width="{{.W}}" height="{{.H}}">{{else}}<span class="ph">{{initial $.Title}}</span>{{end}}
+  </span>
+  {{if .Label}}<span class="pill{{if .LabelHot}} hot{{end}}">{{.Label}}</span>{{end}}
+  <span class="name">{{.Title}}</span>
+  <span class="cost">{{price .Price}} {{sign}}{{if .OldPrice}} <s>{{price .OldPrice}}</s>{{end}}</span>
+</a>
+{{end}}

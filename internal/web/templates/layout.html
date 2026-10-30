@@ -2,18 +2,21 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{{.Title}}{{if ne .Title .Business.Name}} · {{.Business.Name}}{{end}}</title>
   <meta name="description" content="{{.Business.Description}}">
   <meta name="referrer" content="same-origin">
+  <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="/">{{.Business.Name}}</a>
-      {{if .Business.Contact}}<span class="contact">{{.Business.Contact}}</span>{{end}}
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>{{.Business.Name}}</a>
+      {{if .Shop}}<a class="cart-link" href="/cart">Корзина{{if .Cart}} <span class="count">{{.Cart}}</span>{{end}}</a>
+      {{else if .Business.Contact}}<span class="contact">{{.Business.Contact}}</span>{{end}}
     </div>
   </header>
   <main class="wrap">
@@ -21,9 +24,11 @@
     {{block "content" .}}{{end}}
   </main>
   <footer class="wrap foot">
-    <span>{{.Business.Name}}</span>
+    <span>{{.Business.Name}}{{if and .Shop .Business.Contact}} · {{.Business.Contact}}{{end}}</span>
     <span><a href="/terms">Условия</a> · Работает на <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Joblox</a></span>
   </footer>
   {{block "scripts" .}}<script src="/static/app.js" defer></script>{{end}}
+  {{block "kitten" .}}<script src="/kitten/dymok.js" defer></script>
+  <script src="/kitten/kitten.js" defer></script>{{end}}
 </body>
 </html>

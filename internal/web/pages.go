@@ -18,12 +18,18 @@ type base struct {
 	Title    string
 	CSRF     string
 	Paused   bool
+	Shop     bool // a shop with photos: the header shows the cart
+	Cart     int  // items in the cart
 }
 
 func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base {
 	v := s.visitor(w, r)
 	s.rec.Seen(v)
-	return base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused()}
+	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop()}
+	if b.Shop {
+		b.Cart = s.readCart(r).count()
+	}
+	return b
 }
 
 type fieldView struct {
@@ -106,6 +112,10 @@ func (s *Server) shopView(w http.ResponseWriter, r *http.Request, form map[strin
 }
 
 func (s *Server) shop(w http.ResponseWriter, r *http.Request) {
+	if s.isShop() {
+		s.storeFront(w, r)
+		return
+	}
 	s.render(w, "shop", http.StatusOK, s.shopView(w, r, nil, nil, "", nil))
 }
 
@@ -125,7 +135,13 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 		fields[f.ID] = r.PostFormValue("f_" + f.ID)
 	}
 	qty := map[string]int{}
+	if s.isShop() {
+		qty = s.readCart(r) // the cart is the signed cookie, not what the form claims
+	}
 	for key, vals := range r.PostForm {
+		if s.isShop() {
+			break
+		}
 		if id, ok := strings.CutPrefix(key, "item_"); ok && len(vals) > 0 {
 			if q, err := strconv.Atoi(strings.TrimSpace(vals[0])); err == nil && q != 0 {
 				qty[id] = q
@@ -141,6 +157,8 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 	})
 	var fe order.FieldErrors
 	switch {
+	case errors.As(err, &fe) && s.isShop():
+		s.shopCreateFailed(w, r, fields, method, fe)
 	case errors.As(err, &fe):
 		s.render(w, "shop", http.StatusUnprocessableEntity, s.shopView(w, r, fields, qty, method, fe))
 	case errors.Is(err, order.ErrPaused):
@@ -152,6 +170,9 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 		s.log.Error("create order", "err", err)
 		s.message(w, r, http.StatusInternalServerError, "Ошибка", "Заказ не сохранён. Попробуйте ещё раз через минуту.")
 	default:
+		if s.isShop() {
+			s.writeCart(w, r, nil)
+		}
 		http.Redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
 	}
 }
@@ -315,6 +336,8 @@ func (s *Server) beat(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------- admin
 
 type adminView struct {
+	Shop     bool // the layout's cart link: never on the dashboard
+	Cart     int
 	Title    string
 	Paused   bool
 	Business profile.Business

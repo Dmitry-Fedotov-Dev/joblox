@@ -128,15 +128,18 @@ func fnum(v *float64) string {
 	return strconv.FormatFloat(*v, 'f', -1, 64)
 }
 
-// Price builds the lines and fees and the total. Quote profiles return an unpriced order.
-func Price(p *profile.Profile, items map[string]int, fields map[string]string) ([]Line, []FeeLine, money.Amount, bool, FieldErrors) {
+// Price builds the lines and fees and the total from catalog (the profile's or the shop's). Quote profiles
+// return an unpriced order.
+func Price(p *profile.Profile, catalog []profile.Item, items map[string]int, fields map[string]string) ([]Line, []FeeLine, money.Amount, bool, FieldErrors) {
 	if p.Pricing.Mode == profile.PricingQuote {
 		return nil, nil, 0, false, nil
 	}
 	var errs FieldErrors
 	var lines []Line
 	var sum money.Amount
-	for _, it := range p.Catalog {
+	known := map[string]bool{}
+	for _, it := range catalog {
+		known[it.ID] = !it.Hidden
 		q := items[it.ID]
 		if q == 0 || it.Hidden {
 			continue
@@ -146,16 +149,24 @@ func Price(p *profile.Profile, items map[string]int, fields map[string]string) (
 			maxQ = 99
 		}
 		if q < 0 || q > maxQ {
-			errs = append(errs, &FieldError{Field: "item_" + it.ID, Msg: fmt.Sprintf("от 1 до %d", maxQ)})
+			msg := fmt.Sprintf("от 1 до %d", maxQ)
+			if p.Pricing.Mode == profile.PricingShop {
+				msg = fmt.Sprintf("в наличии %d", maxQ)
+			}
+			errs = append(errs, &FieldError{Field: "item_" + it.ID, Msg: msg})
 			continue
 		}
 		l := Line{ItemID: it.ID, Title: it.Title, Qty: q, Price: it.Price, Sum: it.Price.MulQty(q)}
 		lines = append(lines, l)
 		sum += l.Sum
 	}
-	for id := range items {
-		if _, ok := p.Item(id); !ok {
+	for id, q := range items {
+		visible, ok := known[id]
+		switch {
+		case !ok:
 			errs = append(errs, &FieldError{Field: "item_" + id, Msg: "такой позиции нет"})
+		case !visible && q != 0:
+			errs = append(errs, &FieldError{Field: "item_" + id, Msg: "этого уже нет в продаже"})
 		}
 	}
 	if len(lines) == 0 && len(errs) == 0 {

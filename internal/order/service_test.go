@@ -15,6 +15,7 @@ import (
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/shop"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/store"
 )
 
@@ -236,16 +237,17 @@ func TestValidation(t *testing.T) {
 
 func TestPricingFees(t *testing.T) {
 	shop := preset(t, "shop")
-	_, fees, total, _, errs := order.Price(shop, map[string]int{"mug": 1}, map[string]string{"delivery": "Курьером"})
+	catalog := []profile.Item{{ID: "mug", Title: "Кружка", Price: 90000}, {ID: "board", Title: "Доска", Price: 240000}}
+	_, fees, total, _, errs := order.Price(shop, catalog, map[string]int{"mug": 1}, map[string]string{"delivery": "Курьером"})
 	if len(errs) > 0 || len(fees) != 1 || total != 90000+35000 {
 		t.Fatalf("courier fee: %v %v %v", fees, total, errs)
 	}
-	_, fees, total, _, _ = order.Price(shop, map[string]int{"board": 3}, map[string]string{"delivery": "Курьером"})
+	_, fees, total, _, _ = order.Price(shop, catalog, map[string]int{"board": 3}, map[string]string{"delivery": "Курьером"})
 	if len(fees) != 0 || total != 720000 {
 		t.Fatalf("free delivery from 5000: %v %v", fees, total)
 	}
 	taxi := preset(t, "taxi")
-	_, fees, total, _, _ = order.Price(taxi, map[string]int{"economy": 1}, map[string]string{"distance_km": "12.5"})
+	_, fees, total, _, _ = order.Price(taxi, taxi.Catalog, map[string]int{"economy": 1}, map[string]string{"distance_km": "12.5"})
 	if len(fees) != 1 || total != 15000+35000 {
 		t.Fatalf("per km: %v %v", fees, total)
 	}
@@ -326,5 +328,60 @@ func TestRequisitesFingerprint(t *testing.T) {
 	}
 	if got := a.PurposeFor("KL-7", "100.00"); got != "KL-7" {
 		t.Fatalf("purpose %q", got)
+	}
+}
+
+// A shop with photos: the order takes the item off the stock, the next customer is told it is gone, and the
+// cancellation puts it back on sale.
+func TestShopStock(t *testing.T) {
+	ctx := context.Background()
+	e := newEnv(t, "shop")
+	cat, err := shop.Open(ctx, e.st.DB())
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.svc.Stock = cat
+	id, err := cat.Save(ctx, 0, shop.Input{Title: "Платье", Price: 450000, Variants: []shop.VariantInput{{Name: "44", Stock: 1}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, _ := cat.Get(ctx, id)
+	item := shop.ItemID(p.Variants[0].ID)
+	in := func(email string) order.CreateInput {
+		return order.CreateInput{Items: map[string]int{item: 1}, Method: profile.MethodTransfer, ClientIP: "203.0.113." + email[:1],
+			FillSeconds: 30, Fields: map[string]string{"name": "Анна", "phone": "+996 700 000 000", "email": email,
+				"delivery": "Самовывоз со склада"}}
+	}
+	o, _, err := e.svc.Create(ctx, in("anna@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o.Lines[0].Title != "Платье, 44" || o.Total != 450000 {
+		t.Fatalf("line: %+v total %s", o.Lines, o.Total)
+	}
+	if p, _ = cat.Get(ctx, id); p.InStock() {
+		t.Fatal("the ordered dress is still on sale")
+	}
+	var fe order.FieldErrors
+	if _, _, err := e.svc.Create(ctx, in("boris@example.com")); !errors.As(err, &fe) || fe[0].Field != "item_"+item {
+		t.Fatalf("second buyer: %v", err)
+	}
+	if err := e.svc.Transition(ctx, o, "cancel", profile.ActorCustomer, ""); err != nil {
+		t.Fatal(err)
+	}
+	if p, _ = cat.Get(ctx, id); p.Stock() != 1 {
+		t.Fatalf("cancel did not restock: %d", p.Stock())
+	}
+	// the sweep expires an unpaid order and restocks too
+	o, _, err = e.svc.Create(ctx, in("boris@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.clock = e.clock.Add(48 * time.Hour)
+	if n, err := e.svc.Sweep(ctx); err != nil || n != 1 {
+		t.Fatalf("sweep: %d %v", n, err)
+	}
+	if p, _ = cat.Get(ctx, id); p.Stock() != 1 {
+		t.Fatalf("expiry did not restock: %d", p.Stock())
 	}
 }

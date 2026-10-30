@@ -1,0 +1,80 @@
+{{define "content"}}
+<p><a href="/owner/catalog">← Все товары</a></p>
+<h1>{{if .Product}}{{.Product.Title}}{{else}}Новый товар{{end}}</h1>
+{{if .Saved}}<p class="banner ok" role="status">Сохранено.{{if .Product}} <a href="/p/{{.Product.Slug}}" target="_blank" rel="noopener">Открыть на витрине</a>{{end}}</p>{{end}}
+{{if .Problems}}<p class="banner error" role="alert">Проверьте: {{join .Problems ", "}}.</p>{{end}}
+
+{{if .Product}}
+<section class="card" id="photos">
+  <h2>Фото</h2>
+  {{if .Product.Images}}
+  <div class="photos">
+    {{range $i, $im := .Product.Images}}
+    <div class="photo">
+      <img src="/img/{{$im.File}}_t.jpg" alt="Фото {{inc $i}}" loading="lazy">
+      {{if not $i}}<span class="pill hot first">Обложка</span>{{end}}
+      <div class="acts">
+        {{if $i}}<form method="post" action="/owner/catalog/{{$.Product.ID}}/img-cover-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Обложка</button></form>{{end}}
+        <form method="post" action="/owner/catalog/{{$.Product.ID}}/img-del-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Удалить</button></form>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}<p class="muted">Фото пока нет. Добавьте их ниже, в форме товара.</p>{{end}}
+</section>
+{{end}}
+
+<form class="card" method="post" action="/owner/catalog/save" enctype="multipart/form-data">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <input type="hidden" name="id" value="{{if .Product}}{{.Product.ID}}{{end}}">
+  <div class="field">
+    <label for="title">Название <span class="req">*</span></label>
+    <input id="title" name="title" value="{{.Title}}" maxlength="80" required placeholder="Платье льняное">
+  </div>
+  <div class="vrow">
+    <div class="field">
+      <label for="price">Цена, {{.Currency}} <span class="req">*</span></label>
+      <input id="price" name="price" value="{{.Price}}" inputmode="decimal" required placeholder="4500">
+    </div>
+    <div class="field">
+      <label for="old_price">Старая цена</label>
+      <input id="old_price" name="old_price" value="{{.OldPrice}}" inputmode="decimal" placeholder="—">
+    </div>
+  </div>
+  <div class="field">
+    <label for="description">Описание</label>
+    <textarea id="description" name="description" rows="5" maxlength="3000" placeholder="Ткань, размеры, уход">{{.Description}}</textarea>
+  </div>
+  <fieldset class="field">
+    <legend>Размеры и остаток</legend>
+    <p class="hint">Одна строка на размер. Если размера нет, оставьте название пустым и укажите количество. Пустая строка не сохраняется.</p>
+    <div class="vrows">
+      {{range $i, $r := .Rows}}
+      <div class="vrow">
+        <input type="hidden" name="v_id_{{$i}}" value="{{if $r.ID}}{{$r.ID}}{{end}}">
+        <input name="v_name_{{$i}}" value="{{$r.Name}}" maxlength="30" placeholder="Размер, например 44" aria-label="Размер">
+        <input name="v_stock_{{$i}}" value="{{$r.Stock}}" inputmode="numeric" placeholder="Штук" aria-label="Остаток">
+      </div>
+      {{end}}
+    </div>
+  </fieldset>
+  <div class="field">
+    <label for="photos">Добавить фото</label>
+    <input id="photos" name="photos" type="file" accept="image/*" multiple>
+    <p class="hint">Можно сразу несколько, до {{.MaxImages}} на товар (осталось {{.ImagesLeft}}), каждое до {{.MB}} МБ. Мы сами повернём их как надо, уменьшим и уберём из файлов место съёмки.</p>
+  </div>
+  <label class="radio"><input type="checkbox" name="hidden" value="1"{{if .Hidden}} checked{{end}}> Скрыть с витрины</label>
+  <button class="cta" type="submit">Сохранить</button>
+</form>
+
+{{if .Product}}
+<form method="post" action="/owner/catalog/{{.Product.ID}}/delete" class="card">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <h2>Удалить товар</h2>
+  <p class="muted small">Товар и его фото исчезнут насовсем. Заказы с ним останутся как были.</p>
+  <label class="radio"><input type="checkbox" name="sure" value="1" required> Да, удалить насовсем</label>
+  <button class="danger" type="submit">Удалить</button>
+</form>
+{{end}}
+{{end}}
+{{define "kitten"}}{{end}}

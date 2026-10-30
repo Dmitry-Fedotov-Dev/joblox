@@ -47,6 +47,9 @@ func Open(path string) (*SQLite, error) {
 
 func (s *SQLite) Close() error { return s.db.Close() }
 
+// DB is the database for modules that keep their own tables in the same file (internal/shop).
+func (s *SQLite) DB() *sql.DB { return s.db }
+
 var migrations = []string{
 	`CREATE TABLE orders (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,

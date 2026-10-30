@@ -1,0 +1,29 @@
+{{define "content"}}
+<div class="dash-head">
+  <h1>Товары</h1>
+  <span class="actions"><a href="/owner">Кабинет</a><a href="/" target="_blank" rel="noopener">Витрина</a></span>
+</div>
+<p><a class="button cta" href="/owner/catalog/new">Добавить товар</a></p>
+{{if not .Products}}
+<p class="empty"><b>Товаров пока нет</b>Добавьте первый: название, цена, фото с телефона и сколько штук каждого размера.</p>
+{{else}}
+<ul class="plist">
+  {{range $i, $p := .Products}}
+  <li class="prow{{if $p.Hidden}} off{{end}}" id="p{{$p.ID}}">
+    <a class="thumb" href="/owner/catalog/{{$p.ID}}">{{with $p.Cover}}<img src="/img/{{.File}}_t.jpg" alt="" loading="lazy">{{end}}</a>
+    <div class="t">
+      <a href="/owner/catalog/{{$p.ID}}">{{$p.Title}}</a>
+      <div class="muted small">{{price $p.Price}} {{$.Currency}} · {{if $p.Hidden}}скрыт{{else if $p.InStock}}в наличии {{$p.Stock}}{{else}}нет в наличии{{end}}{{if gt (len $p.Variants) 1}} · {{range $k, $v := $p.Variants}}{{if $k}}, {{end}}{{$v.Name}}: {{$v.Stock}}{{end}}{{end}}</div>
+    </div>
+    <div class="acts">
+      <a class="button secondary" href="/owner/catalog/{{$p.ID}}">Изменить</a>
+      <form method="post" action="/owner/catalog/{{$p.ID}}/{{if $p.Hidden}}show{{else}}hide{{end}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">{{if $p.Hidden}}Показать{{else}}Скрыть{{end}}</button></form>
+      {{if $i}}<form method="post" action="/owner/catalog/{{$p.ID}}/up"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit" aria-label="Выше">↑</button></form>{{end}}
+      <form method="post" action="/owner/catalog/{{$p.ID}}/down"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit" aria-label="Ниже">↓</button></form>
+    </div>
+  </li>
+  {{end}}
+</ul>
+{{end}}
+{{end}}
+{{define "kitten"}}{{end}}

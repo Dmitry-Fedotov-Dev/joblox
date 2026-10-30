@@ -1,6 +1,9 @@
-{{template "top" "Joblox: такси, доставка и услуги рядом"}}
-<h1>Что нужно?</h1>
-<p class="stats"><span>На связи: <b>{{.Installations}}</b></span><span>Заказов за сутки: <b>{{.OrdersToday}}</b></span></p>
+{{template "top" "Joblox: товары и услуги от людей рядом"}}
+<section class="hero">
+  <h1>Что нужно<em>?</em></h1>
+  <p>Товары, услуги, лавки и кухни на районе. Каждый исполнитель работает сам: заказ и оплата идут напрямую ему.</p>
+  <p class="stats"><span>На связи: <b>{{.Installations}}</b></span><span>Заказов за сутки: <b>{{.OrdersToday}}</b></span></p>
+</section>
 
 <nav class="chips" aria-label="Виды услуг">
   {{range .Chips}}<a class="chip{{if .On}} on{{end}}" href="/{{if .Kind}}?kind={{.Kind}}{{end}}">{{if .Kind}}{{kindIcon .Kind}} {{end}}{{.Title}}</a>{{end}}

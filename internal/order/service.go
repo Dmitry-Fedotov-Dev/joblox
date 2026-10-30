@@ -41,6 +41,21 @@ type Observer interface {
 	Transition(to string)
 }
 
+// Stock is the shop's catalog (internal/shop) for profiles with pricing.mode shop: the items on sale and
+// their reservation. Nil for every other profile, whose catalog is the YAML one.
+type Stock interface {
+	Items(ctx context.Context) ([]profile.Item, error)
+	// Reserve takes the quantities by item id off the stock, all or nothing; a missing item comes back as
+	// an error with a Short method.
+	Reserve(ctx context.Context, qty map[string]int) error
+	Release(ctx context.Context, qty map[string]int) error
+}
+
+// stockShort is how a Stock says which item ran out and how many are left.
+type stockShort interface {
+	Short() (item string, left int)
+}
+
 type NopNotifier struct{}
 
 func (NopNotifier) OrderCreated(context.Context, *Order, antifraud.Decision) {}
@@ -77,6 +92,7 @@ type Service struct {
 	Notify  Notifier
 	Observe Observer
 	Req     *Requisites
+	Stock   Stock
 	Now     func() time.Time
 	Log     *slog.Logger
 	secret  []byte
@@ -173,7 +189,14 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*Order, antifraud
 	if len(errs) > 0 {
 		return nil, antifraud.Decision{}, errs
 	}
-	lines, fees, total, priced, perrs := Price(s.P, in.Items, fields)
+	catalog := s.P.Catalog
+	if s.Stock != nil {
+		var err error
+		if catalog, err = s.Stock.Items(ctx); err != nil {
+			return nil, antifraud.Decision{}, err
+		}
+	}
+	lines, fees, total, priced, perrs := Price(s.P, catalog, in.Items, fields)
 	if len(perrs) > 0 {
 		return nil, antifraud.Decision{}, perrs
 	}
@@ -211,8 +234,27 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*Order, antifraud
 	if o.RiskReasons == nil {
 		o.RiskReasons = []string{}
 	}
+	if s.Stock != nil {
+		if err := s.Stock.Reserve(ctx, quantities(lines)); err != nil {
+			var short stockShort
+			if errors.As(err, &short) {
+				item, left := short.Short()
+				msg := "этого уже нет в наличии"
+				if left > 0 {
+					msg = fmt.Sprintf("в наличии %d", left)
+				}
+				return nil, d, FieldErrors{{Field: "item_" + item, Msg: msg}}
+			}
+			return nil, d, err
+		}
+	}
 	if err := s.Store.Create(ctx, o, Event{At: now, Actor: profile.ActorCustomer, Kind: "created", To: o.State,
 		Note: fmt.Sprintf("%s, риск %d", d.Action, d.Score)}); err != nil {
+		if s.Stock != nil {
+			if rerr := s.Stock.Release(ctx, quantities(lines)); rerr != nil {
+				s.Log.Error("stock not released after a failed order", "err", rerr)
+			}
+		}
 		return nil, d, err
 	}
 	s.Notify.OrderCreated(ctx, o, d)
@@ -222,6 +264,14 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*Order, antifraud
 		}
 	}
 	return o, d, nil
+}
+
+func quantities(lines []Line) map[string]int {
+	q := map[string]int{}
+	for _, l := range lines {
+		q[l.ItemID] += l.Qty
+	}
+	return q
 }
 
 func normPhone(p string) string {
@@ -313,6 +363,15 @@ func (s *Service) Transition(ctx context.Context, o *Order, id, actor, actorID s
 	ev := Event{At: now, Actor: actor, ActorID: actorID, Kind: "transition", From: from, To: t.To, Note: t.Title}
 	if err := s.save(ctx, o, ev); err != nil {
 		return err
+	}
+	if s.Stock != nil && len(o.Lines) > 0 {
+		prev, _ := s.P.State(from)
+		next, _ := s.P.State(t.To)
+		if next.Restock && !prev.Restock {
+			if err := s.Stock.Release(ctx, quantities(o.Lines)); err != nil {
+				s.Log.Error("stock not released", "order", o.ID, "err", err)
+			}
+		}
 	}
 	s.Observe.Transition(t.To)
 	if t.Notify {

@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -31,6 +32,7 @@ import (
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/metrics"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/shop"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/store"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/web"
 )
@@ -96,6 +98,7 @@ type Config struct {
 	SMTP       *mail.SMTP
 	BotToken   string
 	Operators  []int64
+	OwnerKey   string // opens the owner's area on a server too: BaseURL/owner/enter?k=OwnerKey
 }
 
 // loadConfig reads the environment. quick is `joblox up`: no mail, no bot and a base address that is not
@@ -106,8 +109,12 @@ func loadConfig(quick bool) (Config, error) {
 		DB: env("JOBLOX_DB", "data/joblox.db"), Addr: env("JOBLOX_ADDR", ":8080"),
 		AdminAddr: env("JOBLOX_ADMIN_ADDR", "127.0.0.1:9180"), BaseURL: env("JOBLOX_BASE_URL", ""),
 		Trusted: env("JOBLOX_TRUSTED_PROXIES", "127.0.0.1,::1"), BotToken: env("TELEGRAM_TOKEN", ""),
+		OwnerKey: os.Getenv("JOBLOX_OWNER_KEY"),
 	}
 	var errs []error
+	if c.OwnerKey != "" && len(c.OwnerKey) < 32 {
+		errs = append(errs, errors.New("JOBLOX_OWNER_KEY: at least 32 random characters (openssl rand -hex 24)"))
+	}
 	if c.Env != "prod" && c.Env != "dev" {
 		errs = append(errs, fmt.Errorf("JOBLOX_ENV must be prod or dev, not %q", c.Env))
 	}
@@ -229,6 +236,18 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	svc := order.New(p, st, mailer, req, cfg.Secret, cfg.BaseURL)
 	svc.Log = log
+	var catalog *shop.Catalog
+	var photos *shop.Photos
+	if p.Pricing.Mode == profile.PricingShop {
+		if catalog, err = shop.Open(ctx, st.DB()); err != nil {
+			return err
+		}
+		svc.Stock = catalog
+		photos = &shop.Photos{Dir: filepath.Join(dirOf(cfg.DB), "photos")}
+	}
+	if opt.Owner == nil && cfg.OwnerKey != "" {
+		opt.Owner = serverOwner(cfg.OwnerKey)
+	}
 	rec := metrics.New()
 	svc.Observe = rec
 	trusted, err := web.ParsePrefixes(cfg.Trusted)
@@ -237,7 +256,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
-		CallURL: callURL()}, log)
+		CallURL: callURL(), Shop: catalog, Photos: photos}, log)
 	if err != nil {
 		return err
 	}
@@ -422,4 +441,11 @@ func check(args []string) error {
 		fmt.Printf("реквизиты: %s, отпечаток %s\n", req.Recipient, req.Fingerprint())
 	}
 	return nil
+}
+
+// serverOwner is the owner's area of a shop run by `joblox serve` on a server: no setup and no tunnel, only the
+// orders, the catalog and the dashboard behind the master link.
+func serverOwner(key string) *web.Owner {
+	return &web.Owner{Key: key, Configured: func() bool { return true }, Shown: func() bool { return false },
+		SetShown: func(bool) error { return errors.New("the market card is set in the profile on a server") }}
 }

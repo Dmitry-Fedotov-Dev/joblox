@@ -22,6 +22,8 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite" // database/sql driver "sqlite"
+
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/kitten"
 )
 
 //go:embed *.html
@@ -236,9 +238,11 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("GET /terms", h.static("terms.html"))
 	mux.HandleFunc("GET /api", h.static("api.html"))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
+	mux.Handle("GET /kitten/", http.StripPrefix("/kitten", kitten.Handler()))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// the page has no scripts at all; it refreshes itself with a meta tag
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+		// the only scripts are the kitten's, from this host; the page refreshes itself with a meta tag
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; img-src 'self' data:; "+
+			"frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		r.Body = http.MaxBytesReader(w, r.Body, 4096)

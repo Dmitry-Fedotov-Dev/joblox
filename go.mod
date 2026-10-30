@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/prometheus/client_golang v1.24.1
+	golang.org/x/image v0.47.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.61.0
 	rsc.io/qr v0.2.0
