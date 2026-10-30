@@ -1,11 +1,33 @@
 {{define "content"}}
+{{if .P.Services}}
+<section class="hero">
+  <h1>{{.Business.Name}}</h1>
+  {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}
+  <ul class="hero-meta">
+    {{if .Business.Contact}}<li>{{.Business.Contact}}</li>{{end}}
+    <li>Цену называет мастер</li>
+    <li>Оплата после работы</li>
+  </ul>
+</section>
+<section class="services" aria-label="Услуги">
+  {{range $i, $sv := .P.Services}}
+  <a class="svc" href="{{p}}/?s={{$i}}#order">
+    {{if $sv.Icon}}<span class="svc-icon" aria-hidden="true">{{$sv.Icon}}</span>{{end}}
+    <b>{{$sv.Title}}</b>
+    {{if $sv.About}}<small>{{$sv.About}}</small>{{end}}
+    {{if $sv.Price}}<span class="svc-price">{{$sv.Price}}</span>{{end}}
+  </a>
+  {{end}}
+</section>
+{{else}}
 <section class="intro">
   <h1>{{.Business.Name}}</h1>
   {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}
   {{if .P.Texts.Intro}}<p class="muted">{{.P.Texts.Intro}}</p>{{end}}
 </section>
+{{end}}
 
-<form class="card" method="post" action="{{p}}/order" novalidate data-cart>
+<form class="card" id="order" method="post" action="{{p}}/order" novalidate data-cart>
   <input type="hidden" name="csrf" value="{{.CSRF}}">
   <input type="hidden" name="stamp" value="{{.Stamp}}">
   <div class="hp" aria-hidden="true"><label>Сайт <input name="website" tabindex="-1" autocomplete="off"></label></div>

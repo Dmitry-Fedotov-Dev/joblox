@@ -117,7 +117,13 @@ func (s *Server) shop(w http.ResponseWriter, r *http.Request) {
 		s.storeFront(w, r)
 		return
 	}
-	s.render(w, "shop", http.StatusOK, s.shopView(w, r, nil, nil, "", nil))
+	var form map[string]string
+	if i, err := strconv.Atoi(r.URL.Query().Get("s")); err == nil && i >= 0 && i < len(s.svc.P.Services) {
+		if name, val, ok := strings.Cut(s.svc.P.Services[i].Pick, "="); ok {
+			form = map[string]string{name: val} // the tile the customer pressed is already chosen
+		}
+	}
+	s.render(w, "shop", http.StatusOK, s.shopView(w, r, form, nil, "", nil))
 }
 
 func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {

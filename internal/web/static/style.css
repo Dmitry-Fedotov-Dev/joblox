@@ -248,3 +248,16 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 .demo-bar { margin: 0; padding: 8px 16px; background: var(--ink); color: var(--ink-fg); font-size: 13px; font-weight: 600; text-align: center; }
 .demo-bar a { color: var(--accent); }
 .mascot { display: block; width: 100%; height: 100%; object-fit: cover; object-position: bottom; }
+/* services showcase of a performer who names the price */
+.services { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 6px 0 22px; }
+@media (min-width: 720px) { .services { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
+.svc { position: relative; display: flex; flex-direction: column; gap: 4px; min-height: 150px; padding: 18px; border-radius: var(--radius);
+  background: var(--panel); border: 1px solid var(--line); text-decoration: none; overflow: hidden; transition: transform .2s ease, border-color .2s ease; }
+.svc:hover, .svc:focus-visible { transform: translateY(-3px); border-color: var(--ink); }
+.svc-icon { position: absolute; right: -4px; bottom: -10px; font-size: 64px; line-height: 1; rotate: -10deg; opacity: .9; transition: rotate .3s ease; }
+.svc:hover .svc-icon { rotate: 4deg; }
+.svc b { font-size: 18px; line-height: 1.2; letter-spacing: -.02em; max-width: 80%; }
+.svc small { color: var(--muted); font-size: 13px; line-height: 1.4; max-width: 72%; }
+.svc-price { margin-top: auto; font-weight: 800; color: var(--accent); }
+.svc b, .svc small, .svc-price { position: relative; z-index: 1; }
+@media (max-width: 520px) { .svc-icon { font-size: 44px; right: -2px; bottom: -6px; } .svc small { max-width: 100%; } }

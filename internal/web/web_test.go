@@ -307,3 +307,19 @@ func TestQuoteProfilePage(t *testing.T) {
 		t.Fatal("quote storefront")
 	}
 }
+
+// A master's site: the services tiles, and a tile opens the request with its work already chosen.
+func TestServicesShowcase(t *testing.T) {
+	s := newSite(t, "master")
+	_, home := s.get(t, "/")
+	if !strings.Contains(home, `class="svc"`) || !strings.Contains(home, "Сборка мебели") || !strings.Contains(home, "от 800 сом") {
+		t.Fatal("no services tiles")
+	}
+	_, picked := s.get(t, "/?s=3")
+	if !strings.Contains(picked, `<option selected>Сантехника</option>`) {
+		t.Fatal("the tile does not choose the work")
+	}
+	if code, _ := s.get(t, "/?s=99"); code != http.StatusOK {
+		t.Fatalf("an unknown tile: %d", code)
+	}
+}

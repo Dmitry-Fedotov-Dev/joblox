@@ -56,6 +56,18 @@ type Profile struct {
 	Workflow  Workflow  `yaml:"workflow"`
 	Antifraud Antifraud `yaml:"antifraud"`
 	Texts     Texts     `yaml:"texts"`
+	// Services are the tiles above the request form of a performer who names the price (a master, a
+	// courier): what they do and from what price. A tile opens the form with its choice already made.
+	Services []Service `yaml:"services"`
+}
+
+// Service is one tile of the services showcase.
+type Service struct {
+	Title string `yaml:"title"`
+	About string `yaml:"about"`
+	Price string `yaml:"price"` // shown as is: «от 800 сом», «1 500 сом/час»
+	Icon  string `yaml:"icon"`  // an emoji
+	Pick  string `yaml:"pick"`  // field=value: the checkout choice the tile makes, e.g. work=Собрать мебель
 }
 
 type Business struct {
@@ -303,6 +315,19 @@ func (p *Profile) Validate() error {
 		}
 		if f.Type == FieldEmail && f.ID == "email" {
 			hasEmail = f.Required
+		}
+	}
+	for i, sv := range p.Services {
+		if strings.TrimSpace(sv.Title) == "" {
+			add("services[%d]: title is required", i)
+		}
+		if sv.Pick == "" {
+			continue
+		}
+		name, val, ok := strings.Cut(sv.Pick, "=")
+		f, known := fields[name]
+		if !ok || !known || f.Type == FieldSelect && !slices.Contains(f.Options, val) {
+			add("service %q: pick %q must be field=value of a checkout field (one of the options for a select)", sv.Title, sv.Pick)
 		}
 	}
 	if !hasEmail {

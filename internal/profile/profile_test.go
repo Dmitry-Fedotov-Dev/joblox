@@ -89,3 +89,29 @@ func TestStringList(t *testing.T) {
 		t.Fatalf("by = %v", by)
 	}
 }
+
+func TestServicePickMustExist(t *testing.T) {
+	raw := `
+business: {name: Мастер, currency: KGS}
+pricing: {mode: quote}
+checkout:
+  fields:
+    - {id: email, label: Email, type: email, required: true}
+    - {id: work, label: Работа, type: select, required: true, options: [Мебель]}
+services:
+  - {title: Мебель, pick: work=Мебель}
+  - {title: Окна, pick: work=Окна}
+payment: {methods: [cash]}
+workflow:
+  initial: new
+  states:
+    - {id: new, title: Новая}
+    - {id: done, title: Готово, final: true}
+  transitions:
+    - {id: finish, title: Готово, from: new, to: done, by: operator}
+`
+	_, err := Parse([]byte(raw))
+	if err == nil || !strings.Contains(err.Error(), `service "Окна"`) || strings.Contains(err.Error(), `service "Мебель"`) {
+		t.Fatalf("want an error about Окна only, got %v", err)
+	}
+}

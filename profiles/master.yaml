@@ -47,6 +47,39 @@ workflow:
     - {id: cancel, title: Отменить, from: [request, quoted, booked], to: cancelled, by: [customer, operator], notify: true}
     - {id: expire, title: Истёк срок, from: quoted, to: expired, by: system}
 
+# Плитки над заявкой: нажатие открывает форму с уже выбранной работой (pick: поле=значение).
+services:
+  - title: Сборка мебели
+    about: "Шкафы, кровати, кухни любых фабрик"
+    price: от 800 сом
+    icon: "🪑"
+    pick: work=Собрать мебель
+  - title: Полки и карнизы
+    about: "Повешу ровно, на любую стену"
+    price: от 400 сом
+    icon: "🖼️"
+    pick: work=Повесить полки или карниз
+  - title: Мелкий ремонт
+    about: "Двери, ручки, замки, плинтус"
+    price: от 500 сом
+    icon: "🔨"
+    pick: work=Мелкий ремонт
+  - title: Сантехника
+    about: "Смесители, сифоны, подтёки"
+    price: от 600 сом
+    icon: "🚰"
+    pick: work=Сантехника
+  - title: Электрика по мелочи
+    about: "Розетки, выключатели, люстры"
+    price: от 500 сом
+    icon: "💡"
+    pick: work=Электрика по мелочи
+  - title: Другое
+    about: "Опишите задачу, назову цену"
+    price: по договорённости
+    icon: "🧰"
+    pick: work=Другое
+
 antifraud:
   max_orders_per_ip_hour: 3
   review_above: 30000
