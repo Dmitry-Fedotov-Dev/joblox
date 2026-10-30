@@ -337,7 +337,7 @@ func TestPreorder(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, home := s.get(t, "/")
-	if !strings.Contains(home, ">Предзаказ<") || strings.Contains(home, "Нет в наличии") {
+	if !strings.Contains(home, ">Предзаказ<") || strings.Contains(home, "Нет в наличии") || !strings.Contains(home, "/static/spin/spin-") {
 		t.Fatal("the preorder is not marked on the storefront")
 	}
 	_, page := s.get(t, "/p/zaychik")

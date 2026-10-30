@@ -34,7 +34,7 @@
 {{define "pcard"}}
 <a class="pcard{{if not .InStock}} soldout{{end}}" href="{{p}}/p/{{.Slug}}">
   <span class="media">
-    {{with .Cover}}<img src="{{p}}/img/{{.File}}_t.jpg" alt="" loading="lazy" decoding="async" width="{{.W}}" height="{{.H}}">{{else}}{{mascot $.ID}}{{end}}
+    {{with .Cover}}<img src="{{p}}/img/{{.File}}_t.jpg" alt="" loading="lazy" decoding="async" width="{{.W}}" height="{{.H}}">{{else}}{{if $.Preorder}}{{spin $.ID}}{{else}}{{mascot $.ID}}{{end}}{{end}}
   </span>
   {{if .Label}}<span class="pill{{if .LabelHot}} hot{{end}}">{{.Label}}</span>{{end}}
   <span class="name">{{.Title}}</span>
