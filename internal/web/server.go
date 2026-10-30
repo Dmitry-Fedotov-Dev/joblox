@@ -82,6 +82,7 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		},
 		"asset": func(name string) string { return s.cfg.Prefix + asset(name) },
 		"p":     func() string { return s.cfg.Prefix },
+		"whole": whole,
 		"initial": func(s string) string {
 			for _, r := range s {
 				return string(unicode.ToUpper(r))
@@ -296,3 +297,17 @@ var (
 	assetOnce sync.Once
 	assetHash map[string]string
 )
+
+// whole keeps hyphenated words of a big heading in one piece: «Хитаги-сан» moves to the next line whole
+// instead of breaking at its hyphen.
+func whole(text string) template.HTML {
+	words := strings.Fields(text)
+	for i, w := range words {
+		w = template.HTMLEscapeString(w)
+		if strings.Contains(w, "-") {
+			w = `<span class="whole">` + w + `</span>`
+		}
+		words[i] = w
+	}
+	return template.HTML(strings.Join(words, " "))
+}

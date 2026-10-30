@@ -1,7 +1,7 @@
 {{define "content"}}
 <section class="hero">
   <p class="eyebrow">{{if .Business.Kind}}Магазин{{end}}</p>
-  <h1>{{.Business.Name}}</h1>
+  <h1>{{whole .Business.Name}}</h1>
   {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}
   {{$n := 0}}{{range .Products}}{{if .InStock}}{{$n = inc $n}}{{end}}{{end}}
   <ul class="hero-meta">

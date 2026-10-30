@@ -1,7 +1,7 @@
 {{define "content"}}
 {{if .P.Services}}
 <section class="hero">
-  <h1>{{.Business.Name}}</h1>
+  <h1>{{whole .Business.Name}}</h1>
   {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}
   <ul class="hero-meta">
     {{if .Business.Contact}}<li>{{.Business.Contact}}</li>{{end}}
@@ -21,7 +21,7 @@
 </section>
 {{else}}
 <section class="intro">
-  <h1>{{.Business.Name}}</h1>
+  <h1>{{whole .Business.Name}}</h1>
   {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}
   {{if .P.Texts.Intro}}<p class="muted">{{.P.Texts.Intro}}</p>{{end}}
 </section>
