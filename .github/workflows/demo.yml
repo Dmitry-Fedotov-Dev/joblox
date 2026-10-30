@@ -22,6 +22,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       fail-fast: false
+      max-parallel: 1 # cd builds one project at a time
       matrix:
         project: [joblox-shop-demo, joblox-master-demo]
     concurrency:
