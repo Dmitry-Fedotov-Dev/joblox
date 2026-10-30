@@ -373,7 +373,7 @@ func TestShopStock(t *testing.T) {
 		t.Fatalf("cancel did not restock: %d", p.Stock())
 	}
 	// the sweep expires an unpaid order and restocks too
-	o, _, err = e.svc.Create(ctx, in("boris@example.com"))
+	_, _, err = e.svc.Create(ctx, in("boris@example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
