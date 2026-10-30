@@ -31,23 +31,23 @@ func yarn(id int64) template.HTML {
 	if id%2 != 0 {
 		toy = "bunny"
 	}
-	return template.HTML(fmt.Sprintf(`<span class="yarn y-%[1]s" aria-hidden="true">`+
+	return template.HTML(fmt.Sprintf(`<span class="yarn y-%[1]s" data-seed="%[2]d" aria-hidden="true">`+
 		`<img class="needles" src="/static/knit/knit-%[1]s.gif" alt="" width="84" height="90" loading="lazy" decoding="async">`+
 		`<span class="loop"><span class="thread"></span>`+
-		`<img class="ball" src="/static/knit/ball-%[1]s.png" alt="" width="48" height="36" loading="lazy" decoding="async"></span></span>`, toy))
+		`<img class="ball" src="/static/knit/ball-%[1]s.png" alt="" width="48" height="36" loading="lazy" decoding="async"></span></span>`, toy, id))
 }
 
-// spins is how many pictures there are in static/spin.
+// spins is how many tints of each pose there are in static/spin.
 const spins = 4
 
-// spin is the picture of a preorder without photos: Dymok, the site's kitten, walking slowly round after his tail in
-// soft pink and pale violet, a calm «it is being made» rather than a hurry.
+// spin is the picture of a preorder card: Dymok resting in one of four soft tints. Most cards he sleeps on,
+// on some he purrs with hearts or hums a tune; under the pointer he purrs on any card (CSS .love).
 func spin(id int64) template.HTML {
-	n := id % spins
-	if n < 0 {
-		n = -n
+	if id < 0 {
+		id = -id
 	}
-	// under the pointer the walking kitten gives way to a purring one with hearts rising (CSS .love)
-	return template.HTML(fmt.Sprintf(`<img class="mascot pixel" src="/static/spin/spin-%d.gif" alt="Готовится под заказ" width="200" height="248" loading="lazy" decoding="async">`+
-		`<img class="mascot pixel love" src="/static/spin/love-%d.gif" alt="" width="200" height="248" loading="lazy" decoding="async">`, n+1, n+1))
+	n := id%spins + 1
+	pose := [...]string{"sleep", "sleep", "sleep", "love", "music"}[id%5]
+	return template.HTML(fmt.Sprintf(`<img class="mascot pixel" src="/static/spin/%s-%d.gif" alt="Готовится под заказ" width="200" height="248" loading="lazy" decoding="async">`+
+		`<img class="mascot pixel love" src="/static/spin/love-%d.gif" alt="" width="200" height="248" loading="lazy" decoding="async">`, pose, n, n))
 }

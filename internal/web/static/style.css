@@ -333,6 +333,15 @@ body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { align-s
 @media (max-width: 720px) { .yarn .needles { width: 63px; top: 4px; right: 4px; } .yarn .loop { top: 20px; right: 66px; left: -4px; bottom: -4px; }
   .yarn .ball { width: 36px; height: 27px; top: calc(100% - 19.5px); } }
 @media (prefers-reduced-motion: reduce) { .yarn .thread, .yarn .ball { transition: none; animation: none; } }
+/* with yarn.js the thread is a rope with weight (an SVG path) and the ball rolls on its own */
+.yarn.live .loop { display: none; }
+.yarn .rope { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+.yarn .rope path { fill: none; stroke: var(--yarn); stroke-linecap: round; stroke-linejoin: round; }
+.yarn .rope-ball { position: absolute; left: 0; top: 0; image-rendering: pixelated; will-change: transform; opacity: 0; }
+.yarn .rope-ball.wiggle { animation: rope-wiggle .9s ease-in-out; }
+.yarn .rope-ball.pop { animation: rope-pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes rope-wiggle { 25% { rotate: -18deg; } 60% { rotate: 12deg; } }
+@keyframes rope-pop { from { scale: .2; } to { scale: 1; } }
 /* the order's progress line */
 .track { display: flex; gap: 6px; list-style: none; margin: 14px 0 6px; padding: 0; counter-reset: step; flex-wrap: wrap; }
 .track li { flex: 1 1 0; min-width: 84px; position: relative; padding: 30px 4px 0; text-align: center; font-size: 13px; color: var(--muted); }

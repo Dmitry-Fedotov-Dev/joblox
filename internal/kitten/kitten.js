@@ -46,8 +46,13 @@
   // knitting shops frame their cards with yarn: now and then he walks up to a ball and knocks it off; the thread
   // snaps and winds back to the needles, then wraps the card again and the ball comes back
   var yarnNext = performance.now() + 9000, yarnGoal = null, wiggled = new WeakMap();
-  function ballAt(el) { var r = el.querySelector(".ball").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r]; }
+  var Y = function () { return window.JobloxYarn; };  // yarn.js: the thread with weight, when it is loaded
+  function ballAt(el) {
+    var b = (Y() && Y().ball(el)) || el.querySelector(".ball"), r = b.getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2, r];
+  }
   function snap(el) {
+    if (Y() && Y().knock(el)) return;
     el.classList.add("snapped");
     setTimeout(function () {
       el.classList.add("noball"); el.classList.remove("snapped");
@@ -55,12 +60,14 @@
     }, 5000);
   }
   function wiggle(el) {
+    if (Y()) { Y().nudge(el); return; }
     el.classList.remove("wiggle"); void el.offsetWidth; el.classList.add("wiggle");
     setTimeout(function () { el.classList.remove("wiggle"); }, 1000);
   }
   function yarnStep(now, c, pos) {
     var all = document.querySelectorAll(".yarn:not(.snapped):not(.noball)");
     if (!all.length) return false;
+    if (Y()) Y().touch(pos[0], pos[1] - 20);        // walking along a thread, he brushes it
     for (var i = 0; i < all.length; i++) {         // passing by a ball, he gives it a little push
       var b = ballAt(all[i]);
       if (Math.hypot(b[0] - pos[0], b[1] - pos[1]) < 120 && now > (wiggled.get(all[i]) || 0)) { wiggled.set(all[i], now + 7000); wiggle(all[i]); }
