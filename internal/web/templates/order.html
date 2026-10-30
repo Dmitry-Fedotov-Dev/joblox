@@ -25,14 +25,14 @@
 <section class="card">
   <h2>Подтвердите email</h2>
   <p class="muted">Мы отправили код на {{.O.Email}}. Без подтверждения заказ не будет выполнен{{if eq .O.Method "transfer"}}, а реквизиты не появятся{{end}}.</p>
-  <form method="post" action="/o/{{.O.Token}}/code" class="inline">
+  <form method="post" action="{{p}}/o/{{.O.Token}}/code" class="inline">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <label class="sr" for="code">Код из письма</label>
     <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="123456" required>
     <button type="submit">Подтвердить</button>
   </form>
   {{if .CodeError}}<p class="field-error">{{.CodeError}}</p>{{end}}
-  <form method="post" action="/o/{{.O.Token}}/resend"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="link" type="submit">Отправить код ещё раз</button></form>
+  <form method="post" action="{{p}}/o/{{.O.Token}}/resend"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="link" type="submit">Отправить код ещё раз</button></form>
 </section>
 {{end}}
 
@@ -61,7 +61,7 @@
 {{if .Actions}}
 <section class="card actions">
   {{range .Actions}}
-  <form method="post" action="/o/{{$.O.Token}}/t/{{.ID}}">
+  <form method="post" action="{{p}}/o/{{$.O.Token}}/t/{{.ID}}">
     <input type="hidden" name="csrf" value="{{$.CSRF}}">
     <button type="submit" class="{{if or (eq .To "cancelled") (eq .To "rejected")}}secondary{{end}}">{{.Title}}</button>
   </form>

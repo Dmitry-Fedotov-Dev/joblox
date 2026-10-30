@@ -145,7 +145,7 @@ func (s *Server) visitor(w http.ResponseWriter, r *http.Request) string {
 		return c.Value
 	}
 	id := randomID()
-	http.SetCookie(w, &http.Cookie{Name: visitorCookie, Value: id, Path: "/", MaxAge: 365 * 24 * 3600,
+	http.SetCookie(w, &http.Cookie{Name: visitorCookie, Value: id, Path: s.cookiePath(), MaxAge: 365 * 24 * 3600,
 		HttpOnly: true, Secure: s.secure(r), SameSite: http.SameSiteLaxMode})
 	return id
 }

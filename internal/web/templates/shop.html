@@ -5,7 +5,7 @@
   {{if .P.Texts.Intro}}<p class="muted">{{.P.Texts.Intro}}</p>{{end}}
 </section>
 
-<form class="card" method="post" action="/order" novalidate data-cart>
+<form class="card" method="post" action="{{p}}/order" novalidate data-cart>
   <input type="hidden" name="csrf" value="{{.CSRF}}">
   <input type="hidden" name="stamp" value="{{.Stamp}}">
   <div class="hp" aria-hidden="true"><label>Сайт <input name="website" tabindex="-1" autocomplete="off"></label></div>

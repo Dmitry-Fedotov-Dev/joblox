@@ -1,5 +1,5 @@
 # Живые примеры шаблонов: после зелёного CI на main те же исходники выкладываются через cd
-# (github.com/Dmitry-Fedotov-Dev/cd) на shop-demo.openline.one и master-demo.openline.one. Каким шаблоном
+# (github.com/Dmitry-Fedotov-Dev/cd) и открываются по адресам joblox.openline.one/demo-shop и /demo-master. Каким шаблоном
 # стать, решают настройки проекта на сервере (JOBLOX_PROFILE, JOBLOX_DEMO=1), не репозиторий.
 name: Demo
 

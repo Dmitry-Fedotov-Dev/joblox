@@ -46,6 +46,8 @@ type Config struct {
 	Shop   *shop.Catalog
 	Photos *shop.Photos
 	Demo   bool // a showcase site: a banner on every page says orders will not be fulfilled
+	// Prefix is the path the site lives under ("/demo-shop"), taken from the base address; empty at the root.
+	Prefix string
 }
 
 type Server struct {
@@ -70,13 +72,16 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 	funcs := template.FuncMap{
 		"money": func(a money.Amount) string { return a.String() },
 		// price is a shop price: whole sums without the kopecks, "4 500" rather than "4 500.00"
-		"price":  func(a money.Amount) string { return strings.TrimSuffix(a.String(), ".00") },
-		"cur":    currencySign,
-		"join":   strings.Join,
-		"inc":    func(i int) int { return i + 1 },
-		"sign":   func() string { return currencySign(svc.P.Business.Currency) },
-		"mascot": mascot,
-		"asset":  asset,
+		"price": func(a money.Amount) string { return strings.TrimSuffix(a.String(), ".00") },
+		"cur":   currencySign,
+		"join":  strings.Join,
+		"inc":   func(i int) int { return i + 1 },
+		"sign":  func() string { return currencySign(svc.P.Business.Currency) },
+		"mascot": func(id int64) template.HTML {
+			return template.HTML(strings.Replace(string(mascot(id)), `src="/`, `src="`+s.cfg.Prefix+`/`, 1))
+		},
+		"asset": func(name string) string { return s.cfg.Prefix + asset(name) },
+		"p":     func() string { return s.cfg.Prefix },
 		"initial": func(s string) string {
 			for _, r := range s {
 				return string(unicode.ToUpper(r))
@@ -139,7 +144,7 @@ func (s *Server) Handler() http.Handler {
 		s.storeRoutes(mux)
 	}
 	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
+		s.redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
 	})
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.HandleFunc("GET /terms", s.terms)
@@ -152,8 +157,34 @@ func (s *Server) Handler() http.Handler {
 			_ = json.NewEncoder(w).Encode(s.outbox.Messages())
 		})
 	}
-	return s.middleware(mux)
+	return s.mount(s.middleware(mux))
 }
+
+// mount puts the site under its prefix: /demo-shop/cart reaches the /cart handler, the bare /demo-shop
+// is sent to /demo-shop/.
+func (s *Server) mount(h http.Handler) http.Handler {
+	if s.cfg.Prefix == "" {
+		return h
+	}
+	mux := http.NewServeMux()
+	mux.Handle(s.cfg.Prefix+"/", http.StripPrefix(s.cfg.Prefix, h))
+	mux.HandleFunc(s.cfg.Prefix, func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, s.cfg.Prefix+"/", http.StatusMovedPermanently)
+	})
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
+	return mux
+}
+
+// redirect sends the browser to a path of this site, under its prefix.
+func (s *Server) redirect(w http.ResponseWriter, r *http.Request, path string, code int) {
+	if strings.HasPrefix(path, "/") {
+		path = s.cfg.Prefix + path
+	}
+	http.Redirect(w, r, path, code)
+}
+
+// cookiePath keeps the cookies of a site under a prefix to that prefix.
+func (s *Server) cookiePath() string { return s.cfg.Prefix + "/" }
 
 // AdminHandler is the operator's dashboard and /metrics. Serve it on 127.0.0.1 only and reach it through
 // an SSH tunnel: it shows order numbers and load figures that are nobody else's business.
@@ -162,10 +193,10 @@ func (s *Server) AdminHandler() http.Handler {
 	static, _ := fs.Sub(staticFS, "static")
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServerFS(static)))
 	mux.Handle("GET /metrics", s.rec.Handler())
-	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/admin", http.StatusFound) })
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) { s.redirect(w, r, "/admin", http.StatusFound) })
 	mux.HandleFunc("GET /admin", s.adminPage)
 	mux.HandleFunc("GET /admin/live.json", s.adminLive)
-	return securityHeaders(mux, false)
+	return s.mount(securityHeaders(mux, false))
 }
 
 func cacheStatic(h http.Handler) http.Handler {

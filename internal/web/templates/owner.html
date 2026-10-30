@@ -7,7 +7,7 @@
   <h1>Кем вы будете?</h1>
   <p class="lead">Выберите роль и заполните карточку. Через минуту у вас будет свой сайт для заказов.</p>
   {{if .FormError}}<p class="banner error" role="alert">{{.FormError}}</p>{{end}}
-  <form method="post" action="/owner/setup" class="card">
+  <form method="post" action="{{p}}/owner/setup" class="card">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <fieldset class="field">
       <legend>Роль</legend>
@@ -55,10 +55,10 @@
   <div class="dash-head">
     <h1>Кабинет</h1>
     <span class="actions">
-      <a href="/">Мой сайт</a>
-      {{if .Shop}}<a href="/owner/catalog">Товары</a>{{end}}
+      <a href="{{p}}/">Мой сайт</a>
+      {{if .Shop}}<a href="{{p}}/owner/catalog">Товары</a>{{end}}
       {{if .MarketURL}}<a href="{{.MarketURL}}" target="_blank" rel="noopener">Биржа</a>{{end}}
-      <a href="/admin">Нагрузка</a>
+      <a href="{{p}}/admin">Нагрузка</a>
     </span>
   </div>
 
@@ -69,18 +69,18 @@
     {{if .SiteQR}}<div class="qr-box">{{.SiteQR}}<p class="muted small">Покажите QR-код клиенту: камера телефона откроет ваш сайт. Или перешлите ссылку в WhatsApp и Telegram.</p></div>{{end}}
     {{if .PhoneQR}}<details><summary>Открыть этот кабинет на телефоне</summary><div class="qr-box">{{.PhoneQR}}<p class="muted small">Наведите камеру телефона: откроется кабинет владельца. Этот код никому не показывайте, он даёт полный доступ к заказам.</p></div></details>{{end}}
     {{if .Temporary}}<p class="muted small">Ссылка временная: после перезапуска программы она станет другой. Карточка на бирже обновится сама, а тем, кому вы отправляли ссылку, отправьте новую. Постоянный адрес: ниже, «Свой домен».</p>{{end}}
-    <form method="post" action="/owner/market" class="actions">
+    <form method="post" action="{{p}}/owner/market" class="actions">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
       {{if .Shown}}<span>Карточка на бирже показана.</span><button class="secondary" name="show" value="0">Скрыть с биржи</button>
       {{else}}<span>Карточка на бирже скрыта.</span><button class="secondary" name="show" value="1">Показать на бирже</button>{{end}}
     </form>
-    <form method="post" action="/owner/pause" class="actions">
+    <form method="post" action="{{p}}/owner/pause" class="actions">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
       {{if .Paused}}<button>Возобновить приём заказов</button>{{else}}<button class="secondary">Остановить приём заказов</button>{{end}}
     </form>
   </div>
 
-  <h2>Заказы <a class="small" href="/owner">обновить</a></h2>
+  <h2>Заказы <a class="small" href="{{p}}/owner">обновить</a></h2>
   {{if not .Orders}}<p class="muted">Открытых заказов нет. Новые появятся здесь сами.</p>{{end}}
   {{$csrf := .CSRF}}
   {{range .Orders}}
@@ -95,13 +95,13 @@
     </dl>
     {{if .Review}}<p class="banner warn">Заказ ждёт вашей проверки.</p>{{end}}
     <div class="actions">
-      {{if .Review}}<form method="post" action="/owner/o/{{.O.ID}}/approve"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Одобрить</button></form>{{end}}
-      {{if .Quote}}<form method="post" action="/owner/o/{{.O.ID}}/price" class="inline"><input type="hidden" name="csrf" value="{{$csrf}}"><input name="total" inputmode="decimal" placeholder="Цена" required aria-label="Цена"><button>Назвать цену</button></form>{{end}}
-      {{if .CanPay}}<form method="post" action="/owner/o/{{.O.ID}}/paid"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Оплата получена</button></form>{{end}}
+      {{if .Review}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/approve"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Одобрить</button></form>{{end}}
+      {{if .Quote}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/price" class="inline"><input type="hidden" name="csrf" value="{{$csrf}}"><input name="total" inputmode="decimal" placeholder="Цена" required aria-label="Цена"><button>Назвать цену</button></form>{{end}}
+      {{if .CanPay}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/paid"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Оплата получена</button></form>{{end}}
       {{$id := .O.ID}}
-      {{range .Actions}}<form method="post" action="/owner/o/{{$id}}/t-{{.ID}}"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="secondary">{{.Title}}</button></form>{{end}}
+      {{range .Actions}}<form method="post" action="{{p}}/owner/o/{{$id}}/t-{{.ID}}"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="secondary">{{.Title}}</button></form>{{end}}
       {{if .Call}}<a class="button secondary" href="{{.Call}}" target="_blank" rel="noopener">Позвонить клиенту</a>{{end}}
-      <form method="post" action="/owner/o/{{.O.ID}}/block"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="link">В чёрный список</button></form>
+      <form method="post" action="{{p}}/owner/o/{{.O.ID}}/block"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="link">В чёрный список</button></form>
     </div>
   </article>
   {{end}}

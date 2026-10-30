@@ -57,7 +57,7 @@ func (s *Server) readCart(r *http.Request) cart {
 
 func (s *Server) writeCart(w http.ResponseWriter, r *http.Request, c cart) {
 	if len(c) == 0 {
-		http.SetCookie(w, &http.Cookie{Name: cartCookie, Value: "", Path: "/", MaxAge: -1, HttpOnly: true,
+		http.SetCookie(w, &http.Cookie{Name: cartCookie, Value: "", Path: s.cookiePath(), MaxAge: -1, HttpOnly: true,
 			Secure: s.secure(r), SameSite: http.SameSiteLaxMode})
 		return
 	}
@@ -71,7 +71,7 @@ func (s *Server) writeCart(w http.ResponseWriter, r *http.Request, c cart) {
 		parts[i] = id + ":" + strconv.Itoa(c[id])
 	}
 	body := strings.Join(parts, ".")
-	http.SetCookie(w, &http.Cookie{Name: cartCookie, Value: body + "~" + s.sign("cart", body), Path: "/",
+	http.SetCookie(w, &http.Cookie{Name: cartCookie, Value: body + "~" + s.sign("cart", body), Path: s.cookiePath(),
 		MaxAge: 30 * 24 * 3600, HttpOnly: true, Secure: s.secure(r), SameSite: http.SameSiteLaxMode})
 }
 
@@ -183,7 +183,7 @@ func (s *Server) cartUpdate(w http.ResponseWriter, r *http.Request) {
 	c := s.readCart(r)
 	item := r.PostFormValue("item")
 	if _, ok := shop.ParseItemID(item); !ok {
-		http.Redirect(w, r, "/cart", http.StatusSeeOther)
+		s.redirect(w, r, "/cart", http.StatusSeeOther)
 		return
 	}
 	q, err := strconv.Atoi(r.PostFormValue("qty"))
@@ -204,7 +204,7 @@ func (s *Server) cartUpdate(w http.ResponseWriter, r *http.Request) {
 		default:
 			c[item] += max(q, 1)
 			s.writeCart(w, r, c)
-			http.Redirect(w, r, "/p/"+p.Slug+"?added=1", http.StatusSeeOther)
+			s.redirect(w, r, "/p/"+p.Slug+"?added=1", http.StatusSeeOther)
 		}
 		return
 	}
@@ -214,7 +214,7 @@ func (s *Server) cartUpdate(w http.ResponseWriter, r *http.Request) {
 		c[item] = min(q, 99)
 	}
 	s.writeCart(w, r, c)
-	http.Redirect(w, r, "/cart", http.StatusSeeOther)
+	s.redirect(w, r, "/cart", http.StatusSeeOther)
 }
 
 func (s *Server) findVariant(r *http.Request, item string) (*shop.Product, shop.Variant, bool) {

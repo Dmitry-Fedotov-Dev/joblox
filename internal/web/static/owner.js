@@ -3,6 +3,7 @@
 // the list of open orders changes, unless the owner is typing.
 (function () {
   "use strict";
+  var base = document.documentElement.getAttribute("data-base") || ""; // the site may live under a path
   function typing() {
     var el = document.activeElement;
     return el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
@@ -12,7 +13,7 @@
   var status = document.getElementById("site-status");
   if (status) {
     var wait = setInterval(function () {
-      fetch("/owner/status.json", { cache: "no-store" })
+      fetch(base + "/owner/status.json", { cache: "no-store" })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           if (!d || d.site.indexOf("https://") !== 0) return;
@@ -30,7 +31,7 @@
   if (setup) return;
   var last = null;
   function check() {
-    fetch("/admin/live.json", { cache: "no-store" })
+    fetch(base + "/admin/live.json", { cache: "no-store" })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d) return;

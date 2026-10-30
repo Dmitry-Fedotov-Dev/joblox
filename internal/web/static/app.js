@@ -2,6 +2,7 @@
 // refreshes the order page when the order changes and keeps the online counter.
 (function () {
   "use strict";
+  var base = document.documentElement.getAttribute("data-base") || ""; // the site may live under a path
 
   // Cart sum preview: the server computes the real total, this is only a hint while choosing.
   var cart = document.querySelector("[data-cart]");
@@ -29,7 +30,7 @@
     var version = order.getAttribute("data-version");
     var poll = function () {
       if (document.hidden) return;
-      fetch("/o/" + encodeURIComponent(token) + "/state.json", { credentials: "same-origin", cache: "no-store" })
+      fetch(base + "/o/" + encodeURIComponent(token) + "/state.json", { credentials: "same-origin", cache: "no-store" })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (s) {
           var typing = document.activeElement && document.activeElement.tagName === "INPUT";
@@ -42,7 +43,7 @@
 
   // Online counter: a heartbeat while the page is visible.
   var beat = function () {
-    if (!document.hidden) fetch("/beat", { method: "POST", credentials: "same-origin" }).catch(function () {});
+    if (!document.hidden) fetch(base + "/beat", { method: "POST", credentials: "same-origin" }).catch(function () {});
   };
   setInterval(beat, 30000);
 })();

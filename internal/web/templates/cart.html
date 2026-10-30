@@ -1,20 +1,20 @@
 {{define "content"}}
 <h1>Корзина</h1>
 {{if not .Lines}}
-<p class="empty"><b>Пока пусто</b><a href="/">Вернуться к товарам</a></p>
+<p class="empty"><b>Пока пусто</b><a href="{{p}}/">Вернуться к товарам</a></p>
 {{else}}
 <div class="cart">
   <section>
     <ul class="cart-lines">
       {{range .Lines}}
       <li class="cart-line">
-        <a class="thumb" href="/p/{{.Product.Slug}}">{{with .Product.Cover}}<img src="/img/{{.File}}_t.jpg" alt="">{{else}}{{mascot .Product.ID}}{{end}}</a>
+        <a class="thumb" href="{{p}}/p/{{.Product.Slug}}">{{with .Product.Cover}}<img src="{{p}}/img/{{.File}}_t.jpg" alt="">{{else}}{{mascot .Product.ID}}{{end}}</a>
         <div class="t">
-          <a href="/p/{{.Product.Slug}}">{{.Product.Title}}</a>
+          <a href="{{p}}/p/{{.Product.Slug}}">{{.Product.Title}}</a>
           {{if .Variant.Name}}<span class="muted small">Размер {{.Variant.Name}}</span>{{end}}
           <span class="price">{{price .Sum}} {{sign}}</span>
         </div>
-        <form class="q" method="post" action="/cart">
+        <form class="q" method="post" action="{{p}}/cart">
           <input type="hidden" name="csrf" value="{{$.CSRF}}">
           <input type="hidden" name="item" value="{{.Item}}">
           <label class="sr" for="q{{.Item}}">Количество</label>
@@ -29,7 +29,7 @@
     {{if .P.Pricing.Fees}}<p class="muted small">Доставка и сборы, если есть, добавятся к сумме заказа.</p>{{end}}
   </section>
 
-  <form class="card" method="post" action="/order" novalidate>
+  <form class="card" method="post" action="{{p}}/order" novalidate>
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <input type="hidden" name="stamp" value="{{.Stamp}}">
     <div class="hp" aria-hidden="true"><label>Сайт <input name="website" tabindex="-1" autocomplete="off"></label></div>

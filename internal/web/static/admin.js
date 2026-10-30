@@ -1,6 +1,7 @@
 // Built-in dashboard: reads /admin/live.json every two seconds and fills the tiles and the RPS chart.
 (function () {
   "use strict";
+  var base = document.documentElement.getAttribute("data-base") || ""; // the site may live under a path
 
   var el = function (k) { return document.querySelector('[data-k="' + k + '"]'); };
   var set = function (k, v) { var n = el(k); if (n) n.textContent = v; };
@@ -46,7 +47,7 @@
   };
 
   var tick = function () {
-    fetch("/admin/live.json", { cache: "no-store" })
+    fetch(base + "/admin/live.json", { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var l = d.live, s = l.system, o = d.orders;

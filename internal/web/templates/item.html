@@ -1,7 +1,7 @@
 {{define "content"}}
-<p><a href="/owner/catalog">← Все товары</a></p>
+<p><a href="{{p}}/owner/catalog">← Все товары</a></p>
 <h1>{{if .Product}}{{.Product.Title}}{{else}}Новый товар{{end}}</h1>
-{{if .Saved}}<p class="banner ok" role="status">Сохранено.{{if .Product}} <a href="/p/{{.Product.Slug}}" target="_blank" rel="noopener">Открыть на витрине</a>{{end}}</p>{{end}}
+{{if .Saved}}<p class="banner ok" role="status">Сохранено.{{if .Product}} <a href="{{p}}/p/{{.Product.Slug}}" target="_blank" rel="noopener">Открыть на витрине</a>{{end}}</p>{{end}}
 {{if .Problems}}<p class="banner error" role="alert">Проверьте: {{join .Problems ", "}}.</p>{{end}}
 
 {{if .Product}}
@@ -11,11 +11,11 @@
   <div class="photos">
     {{range $i, $im := .Product.Images}}
     <div class="photo">
-      <img src="/img/{{$im.File}}_t.jpg" alt="Фото {{inc $i}}" loading="lazy">
+      <img src="{{p}}/img/{{$im.File}}_t.jpg" alt="Фото {{inc $i}}" loading="lazy">
       {{if not $i}}<span class="pill hot first">Обложка</span>{{end}}
       <div class="acts">
-        {{if $i}}<form method="post" action="/owner/catalog/{{$.Product.ID}}/img-cover-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Обложка</button></form>{{end}}
-        <form method="post" action="/owner/catalog/{{$.Product.ID}}/img-del-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Удалить</button></form>
+        {{if $i}}<form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-cover-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Обложка</button></form>{{end}}
+        <form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-del-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Удалить</button></form>
       </div>
     </div>
     {{end}}
@@ -24,7 +24,7 @@
 </section>
 {{end}}
 
-<form class="card" method="post" action="/owner/catalog/save" enctype="multipart/form-data">
+<form class="card" method="post" action="{{p}}/owner/catalog/save" enctype="multipart/form-data">
   <input type="hidden" name="csrf" value="{{.CSRF}}">
   <input type="hidden" name="id" value="{{if .Product}}{{.Product.ID}}{{end}}">
   <div class="field">
@@ -68,7 +68,7 @@
 </form>
 
 {{if .Product}}
-<form method="post" action="/owner/catalog/{{.Product.ID}}/delete" class="card">
+<form method="post" action="{{p}}/owner/catalog/{{.Product.ID}}/delete" class="card">
   <input type="hidden" name="csrf" value="{{.CSRF}}">
   <h2>Удалить товар</h2>
   <p class="muted small">Товар и его фото исчезнут насовсем. Заказы с ним останутся как были.</p>

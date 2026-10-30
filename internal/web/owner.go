@@ -108,9 +108,9 @@ func (s *Server) ownerEnter(w http.ResponseWriter, r *http.Request) {
 		s.message(w, r, http.StatusNotFound, "Ссылка не подошла", "Откройте мастер-ссылку из окна программы ещё раз.")
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: ownerCookie, Value: s.ownerToken(), Path: "/", MaxAge: 30 * 24 * 3600,
+	http.SetCookie(w, &http.Cookie{Name: ownerCookie, Value: s.ownerToken(), Path: s.cookiePath(), MaxAge: 30 * 24 * 3600,
 		HttpOnly: true, Secure: s.secure(r), SameSite: http.SameSiteLaxMode})
-	http.Redirect(w, r, "/owner", http.StatusSeeOther) // the key leaves the address bar at once
+	s.redirect(w, r, "/owner", http.StatusSeeOther) // the key leaves the address bar at once
 }
 
 // ---------------------------------------------------------------- views
@@ -290,7 +290,7 @@ func (s *Server) ownerStatus(w http.ResponseWriter, _ *http.Request) {
 
 // restarting answers while the shop restarts with the new profile; the page comes back by itself.
 func (s *Server) restarting(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Refresh", "4; url=/owner")
+	w.Header().Set("Refresh", "4; url="+s.cfg.Prefix+"/owner")
 	s.message(w, r, http.StatusOK, "Готово", "Сайт перезапускается с новыми настройками. Через несколько секунд откроется кабинет.")
 }
 
@@ -301,7 +301,7 @@ func (s *Server) ownerMarket(w http.ResponseWriter, r *http.Request) {
 	if err := s.cfg.Owner.SetShown(r.PostFormValue("show") == "1"); err != nil {
 		s.log.Error("owner market", "err", err)
 	}
-	http.Redirect(w, r, "/owner", http.StatusSeeOther)
+	s.redirect(w, r, "/owner", http.StatusSeeOther)
 }
 
 func (s *Server) ownerPause(w http.ResponseWriter, r *http.Request) {
@@ -313,7 +313,7 @@ func (s *Server) ownerPause(w http.ResponseWriter, r *http.Request) {
 	} else {
 		s.svc.Pause()
 	}
-	http.Redirect(w, r, "/owner", http.StatusSeeOther)
+	s.redirect(w, r, "/owner", http.StatusSeeOther)
 }
 
 func (s *Server) ownerAction(w http.ResponseWriter, r *http.Request) {
@@ -359,7 +359,7 @@ func (s *Server) ownerAction(w http.ResponseWriter, r *http.Request) {
 		s.message(w, r, http.StatusConflict, "Заказ №"+strconv.FormatInt(id, 10), msg)
 		return
 	}
-	http.Redirect(w, r, "/owner#o"+strconv.FormatInt(id, 10), http.StatusSeeOther)
+	s.redirect(w, r, "/owner#o"+strconv.FormatInt(id, 10), http.StatusSeeOther)
 }
 
 // callLink is the voice room of an open order: the customer and the performer open the same link and

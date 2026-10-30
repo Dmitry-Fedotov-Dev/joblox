@@ -3,21 +3,21 @@
 <article class="product">
   <div>
     <div class="gallery" id="gallery">
-      {{range $i, $im := $p.Images}}<figure id="ph{{$i}}"><img src="/img/{{$im.File}}.jpg" alt="{{$p.Title}}, фото {{inc $i}}" width="{{$im.W}}" height="{{$im.H}}"{{if $i}} loading="lazy"{{end}} decoding="async"></figure>
+      {{range $i, $im := $p.Images}}<figure id="ph{{$i}}"><img src="{{p}}/img/{{$im.File}}.jpg" alt="{{$p.Title}}, фото {{inc $i}}" width="{{$im.W}}" height="{{$im.H}}"{{if $i}} loading="lazy"{{end}} decoding="async"></figure>
       {{else}}<figure class="noimg">{{mascot $p.ID}}</figure>{{end}}
     </div>
-    {{if gt (len $p.Images) 1}}<nav class="thumbs" aria-label="Фото">{{range $i, $im := $p.Images}}<a href="#ph{{$i}}"><img src="/img/{{$im.File}}_t.jpg" alt="" loading="lazy"></a>{{end}}</nav>{{end}}
+    {{if gt (len $p.Images) 1}}<nav class="thumbs" aria-label="Фото">{{range $i, $im := $p.Images}}<a href="#ph{{$i}}"><img src="{{p}}/img/{{$im.File}}_t.jpg" alt="" loading="lazy"></a>{{end}}</nav>{{end}}
   </div>
 
   <div class="buy">
-    {{if .Added}}<p class="added" role="status" data-kitten-cheer>В корзине <a href="/cart">Оформить →</a></p>{{end}}
+    {{if .Added}}<p class="added" role="status" data-kitten-cheer>В корзине <a href="{{p}}/cart">Оформить →</a></p>{{end}}
     {{if .Error}}<p class="banner error" role="alert">{{.Error}}</p>{{end}}
     {{if .Product.Label}}<span class="pill{{if .Product.LabelHot}} hot{{end}}">{{.Product.Label}}</span>{{end}}
     <h1>{{$p.Title}}</h1>
     <p class="cost">{{price $p.Price}} {{sign}}{{if $p.OldPrice}} <s>{{price $p.OldPrice}}</s>{{end}}</p>
 
     {{if $p.InStock}}
-    <form method="post" action="/cart">
+    <form method="post" action="{{p}}/cart">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
       <input type="hidden" name="add" value="1">
       <input type="hidden" name="qty" value="1">
@@ -44,7 +44,7 @@
 
 {{if .More}}
 <section>
-  <div class="section-head"><h2>Ещё в магазине</h2><a href="/">Все товары</a></div>
+  <div class="section-head"><h2>Ещё в магазине</h2><a href="{{p}}/">Все товары</a></div>
   <div class="grid">{{range .More}}{{template "pcard" .}}{{end}}</div>
 </section>
 {{end}}

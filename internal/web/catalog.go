@@ -198,7 +198,7 @@ func (s *Server) itemSave(w http.ResponseWriter, r *http.Request) {
 	if photoMsg != "" {
 		target += "&photo=" + url.QueryEscape(photoMsg)
 	}
-	http.Redirect(w, r, target, http.StatusSeeOther)
+	s.redirect(w, r, target, http.StatusSeeOther)
 }
 
 // savePhotos processes the uploaded files one by one; a bad file is skipped and named in the answer.
@@ -257,7 +257,7 @@ func (s *Server) itemAction(w http.ResponseWriter, r *http.Request) {
 		err = s.cfg.Shop.Move(ctx, id, dir)
 	case action == "delete":
 		if r.PostFormValue("sure") != "1" {
-			http.Redirect(w, r, "/owner/catalog/"+strconv.FormatInt(id, 10), http.StatusSeeOther)
+			s.redirect(w, r, "/owner/catalog/"+strconv.FormatInt(id, 10), http.StatusSeeOther)
 			return
 		}
 		var files []string
@@ -296,5 +296,5 @@ func (s *Server) itemAction(w http.ResponseWriter, r *http.Request) {
 		s.message(w, r, http.StatusInternalServerError, "Не получилось", "Обновите страницу и попробуйте ещё раз.")
 		return
 	}
-	http.Redirect(w, r, back, http.StatusSeeOther)
+	s.redirect(w, r, back, http.StatusSeeOther)
 }

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-base="{{p}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -15,8 +15,8 @@
   {{if .Demo}}<p class="demo-bar">Это пример сайта на <a href="https://joblox.openline.one">Joblox</a>: заказы никто не выполнит, деньги не переводите.</p>{{end}}
   <header class="top">
     <div class="wrap">
-      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span>{{.Business.Name}}</a>
-      {{if .Shop}}<a class="cart-link" href="/cart">Корзина{{if .Cart}} <span class="count">{{.Cart}}</span>{{end}}</a>
+      <a class="brand" href="{{p}}/"><span class="brand-mark" aria-hidden="true"></span>{{.Business.Name}}</a>
+      {{if .Shop}}<a class="cart-link" href="{{p}}/cart">Корзина{{if .Cart}} <span class="count">{{.Cart}}</span>{{end}}</a>
       {{else if .Business.Contact}}<span class="contact">{{.Business.Contact}}</span>{{end}}
     </div>
   </header>
@@ -26,10 +26,10 @@
   </main>
   <footer class="wrap foot">
     <span>{{.Business.Name}}{{if and .Shop .Business.Contact}} · {{.Business.Contact}}{{end}}</span>
-    <span><a href="/terms">Условия</a> · Работает на <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Joblox</a></span>
+    <span><a href="{{p}}/terms">Условия</a> · Работает на <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Joblox</a></span>
   </footer>
   {{block "scripts" .}}<script src="{{asset "app.js"}}" defer></script>{{end}}
-  {{block "kitten" .}}<script src="/kitten/dymok.js" defer></script>
-  <script src="/kitten/kitten.js" defer></script>{{end}}
+  {{block "kitten" .}}<script src="{{p}}/kitten/dymok.js" defer></script>
+  <script src="{{p}}/kitten/kitten.js" defer></script>{{end}}
 </body>
 </html>

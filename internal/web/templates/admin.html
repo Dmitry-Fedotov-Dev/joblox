@@ -36,7 +36,7 @@
     <tr><th>№</th><th>Статус</th><th>Сумма</th><th>Создан</th></tr>
     {{range .Orders}}<tr><td>{{.ID}}</td><td>{{.State}}{{if .Review}} ⚠️{{end}}{{if .Paid}} · оплачен{{end}}</td><td class="num">{{.Total}}</td><td>{{.At}}</td></tr>{{end}}
   </table>
-  {{if .Owner}}<p class="muted small"><a href="/owner">Вернуться в кабинет</a></p>{{else}}
+  {{if .Owner}}<p class="muted small"><a href="{{p}}/owner">Вернуться в кабинет</a></p>{{else}}
   <p class="muted small">Дашборд доступен только с сервера: <code>ssh -L 9180:127.0.0.1:9180 сервер</code>, затем http://localhost:9180/admin. Метрики для Prometheus: /metrics.</p>{{end}}
 </section>
 {{end}}

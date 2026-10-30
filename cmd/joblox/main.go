@@ -18,6 +18,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -269,7 +270,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
-		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo}, log)
+		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL)}, log)
 	if err != nil {
 		return err
 	}
@@ -461,4 +462,13 @@ func check(args []string) error {
 func serverOwner(key string) *web.Owner {
 	return &web.Owner{Key: key, Configured: func() bool { return true }, Shown: func() bool { return false },
 		SetShown: func(bool) error { return errors.New("the market card is set in the profile on a server") }}
+}
+
+// pathOf is the path part of the base address: a site at https://example.com/demo-shop lives under /demo-shop.
+func pathOf(base string) string {
+	u, err := url.Parse(base)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimRight(u.Path, "/")
 }

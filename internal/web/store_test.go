@@ -209,3 +209,35 @@ func TestCartCookieSigned(t *testing.T) {
 		t.Fatal("a forged cart was accepted")
 	}
 }
+
+// A site under a path (https://joblox.openline.one/demo-shop) keeps every link, redirect and cookie there.
+func TestUnderPrefix(t *testing.T) {
+	s, cat := shopSite(t)
+	s.srv.cfg.Prefix = "/demo-shop"
+	s.http.Config.Handler = s.srv.Handler()
+	if _, err := cat.Save(context.Background(), 0, shop.Input{Title: "Платье", Price: 450000, Variants: []shop.VariantInput{{Stock: 2}}}); err != nil {
+		t.Fatal(err)
+	}
+	if code, _ := s.get(t, "/demo-shop"); code != http.StatusMovedPermanently {
+		t.Fatalf("bare prefix: %d", code)
+	}
+	code, home := s.get(t, "/demo-shop/")
+	if code != http.StatusOK || !strings.Contains(home, `href="/demo-shop/p/plate"`) || !strings.Contains(home, `href="/demo-shop/static/style.css?v=`) ||
+		!strings.Contains(home, `src="/demo-shop/static/kittens/`) || strings.Contains(home, `href="/p/`) {
+		t.Fatalf("links under the prefix: %d", code)
+	}
+	_, page := s.get(t, "/demo-shop/p/plate")
+	r, _ := s.post(t, "/demo-shop/cart", url.Values{"csrf": {match(t, csrfRe, page)}, "add": {"1"}, "qty": {"1"}, "item": {match(t, itemRe, page)}})
+	if r.Header.Get("Location") != "/demo-shop/p/plate?added=1" {
+		t.Fatalf("redirect: %s", r.Header.Get("Location"))
+	}
+	if _, cart := s.get(t, "/demo-shop/cart"); !strings.Contains(cart, "Платье") {
+		t.Fatal("the cart cookie does not live under the prefix")
+	}
+	if code, _ := s.get(t, "/healthz"); code != http.StatusOK {
+		t.Fatalf("health at the root: %d", code)
+	}
+	if code, _ := s.get(t, "/cart"); code != http.StatusNotFound {
+		t.Fatalf("the site answers outside its prefix: %d", code)
+	}
+}

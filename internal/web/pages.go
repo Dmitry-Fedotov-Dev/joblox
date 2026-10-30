@@ -174,7 +174,7 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 		if s.isShop() {
 			s.writeCart(w, r, nil)
 		}
-		http.Redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
+		s.redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
 	}
 }
 
@@ -295,7 +295,7 @@ func (s *Server) verifyCode(w http.ResponseWriter, r *http.Request) {
 		s.render(w, "order", http.StatusUnprocessableEntity, s.orderView(w, r, o, msg, ""))
 		return
 	}
-	http.Redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
+	s.redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
 }
 
 func (s *Server) resendCode(w http.ResponseWriter, r *http.Request) {
@@ -325,7 +325,7 @@ func (s *Server) customerTransition(w http.ResponseWriter, r *http.Request) {
 		s.render(w, "order", code, s.orderView(w, r, o, "", msg))
 		return
 	}
-	http.Redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
+	s.redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
 }
 
 // beat keeps the online counter honest for pages left open: the script calls it every 30 seconds.
