@@ -1,5 +1,5 @@
 # Живые примеры шаблонов: после зелёного CI на main те же исходники выкладываются через cd
-# (github.com/Dmitry-Fedotov-Dev/cd) и открываются по адресам joblox.openline.one/demo-shop и /demo-master. Каким шаблоном
+# (github.com/Dmitry-Fedotov-Dev/cd): демо магазина joblox.openline.one/demo-shop и настоящие сайты. Каким шаблоном
 # стать, решают настройки проекта на сервере (JOBLOX_PROFILE, JOBLOX_DEMO=1), не репозиторий.
 name: Demo
 
@@ -25,7 +25,7 @@ jobs:
       max-parallel: 1 # cd builds one project at a time
       matrix:
         # the demos and the shops that run this code as is, their settings and profile kept on the server
-        project: [joblox-shop-demo, joblox-master-demo, uslozhnyaesh, hitagi]
+        project: [joblox-shop-demo, uslozhnyaesh, hitagi]
     concurrency:
       group: demo-${{ matrix.project }}
       cancel-in-progress: false
