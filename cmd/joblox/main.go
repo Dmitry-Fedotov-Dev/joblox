@@ -115,7 +115,8 @@ func loadConfig(quick bool) (Config, error) {
 		Trusted: env("JOBLOX_TRUSTED_PROXIES", "127.0.0.1,::1"), BotToken: env("TELEGRAM_TOKEN", ""),
 		OwnerKey: os.Getenv("JOBLOX_OWNER_KEY"), Demo: os.Getenv("JOBLOX_DEMO") == "1",
 	}
-	relaxed := quick || c.Demo // a site without mail and bot is fine
+	// a site without mail and bot is fine when someone sees the orders: the owner's area on the site, or a demo
+	relaxed := quick || c.Demo || c.OwnerKey != ""
 	var errs []error
 	if c.OwnerKey != "" && len(c.OwnerKey) < 32 {
 		errs = append(errs, errors.New("JOBLOX_OWNER_KEY: at least 32 random characters (openssl rand -hex 24)"))
@@ -228,6 +229,9 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	defer st.Close()
 
+	if opt.Owner == nil && cfg.OwnerKey != "" {
+		opt.Owner = serverOwner(cfg.OwnerKey) // the owner works with the orders in the browser
+	}
 	var mailer order.Mailer
 	var outbox *mail.Outbox
 	if cfg.SMTP != nil {
@@ -265,9 +269,6 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 				}
 			}
 		}
-	}
-	if opt.Owner == nil && cfg.OwnerKey != "" {
-		opt.Owner = serverOwner(cfg.OwnerKey)
 	}
 	rec := metrics.New()
 	svc.Observe = rec

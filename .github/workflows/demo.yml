@@ -24,7 +24,8 @@ jobs:
       fail-fast: false
       max-parallel: 1 # cd builds one project at a time
       matrix:
-        project: [joblox-shop-demo, joblox-master-demo]
+        # the demos and the shops that run this code as is, their settings and profile kept on the server
+        project: [joblox-shop-demo, joblox-master-demo, uslozhnyaesh]
     concurrency:
       group: demo-${{ matrix.project }}
       cancel-in-progress: false
