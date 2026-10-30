@@ -36,7 +36,6 @@
     <span>{{.Business.Name}}{{if and .Shop .Business.Contact}} · {{.Business.Contact}}{{end}}</span>
     <span><a href="{{p}}/terms">Условия</a> · Работает на <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Joblox</a></span>
   </footer>
-  {{if eq .Business.Placeholder "knit"}}<img class="knit-corner" src="{{p}}/static/knit/corner.gif" alt="" width="176" height="140" aria-hidden="true">{{end}}
   {{block "scripts" .}}<script src="{{asset "app.js"}}" defer></script>{{end}}
   {{block "kitten" .}}<script src="{{p}}/kitten/dymok.js" defer></script>
   <script src="{{p}}/kitten/kitten.js" defer></script>{{end}}

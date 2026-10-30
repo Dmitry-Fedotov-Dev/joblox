@@ -5,7 +5,7 @@
     {{if $p.Real}}<a class="real-btn" href="#real" aria-label="Посмотреть настоящее изображение"><span class="real-icon" aria-hidden="true">📷</span><span class="real-text">Посмотреть настоящее изображение</span></a>{{end}}
     <div class="gallery" id="gallery">
       {{range $i, $im := $p.Images}}<figure id="ph{{$i}}"><img src="{{p}}/img/{{$im.File}}.jpg" alt="{{$p.Title}}, фото {{inc $i}}" width="{{$im.W}}" height="{{$im.H}}"{{if $i}} loading="lazy"{{end}} decoding="async"></figure>
-      {{else}}<figure class="noimg">{{if $p.Preorder}}{{spin $p.ID}}{{else}}{{mascot $p.ID}}{{end}}</figure>{{end}}
+      {{else}}<figure class="noimg">{{if $p.Preorder}}{{spin $p.ID}}{{else}}{{mascot $p.ID}}{{end}}{{yarn $p.ID}}</figure>{{end}}
     </div>
     {{if gt (len $p.Images) 1}}<nav class="thumbs" aria-label="{{if .Services}}Примеры работ{{else}}Фото{{end}}">{{range $i, $im := $p.Images}}<a href="#ph{{$i}}"><img src="{{p}}/img/{{$im.File}}_t.jpg" alt="" loading="lazy"></a>{{end}}</nav>{{end}}
   </div>

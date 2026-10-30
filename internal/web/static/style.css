@@ -306,11 +306,33 @@ body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { align-s
 .media:has(.love), .noimg:has(.love) { position: relative; }
 .mascot.love { position: absolute; inset: 0; opacity: 0; transition: opacity .25s; }
 .pcard:hover .mascot.love, .noimg:hover .mascot.love { opacity: 1; }
-/* the knitting shop keeps knitting in a corner: slow needles and a ball of yarn, never in the way */
-.knit-corner { position: fixed; left: 14px; bottom: 12px; z-index: 1; width: 110px; height: auto; opacity: .9;
-  image-rendering: pixelated; pointer-events: none; }
-@media (max-width: 720px) { .knit-corner { width: 76px; left: 8px; bottom: 8px; } }
-@media print { .knit-corner { display: none; } }
+/* the knitting shop: needles knit a toy in a card's corner, the thread runs round the card to a ball of yarn */
+.mascot.knitbg { background: var(--soft); }
+.noimg:has(.yarn) { position: relative; }
+.yarn { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.pcard .pill { z-index: 2; }
+.y-bear { --yarn: rgb(196 146 104); }
+.y-bunny { --yarn: rgb(232 160 184); }
+.yarn .needles { position: absolute; top: 6px; right: 6px; width: 84px; height: auto; image-rendering: pixelated; }
+/* the thread: from the needles left along the top, down the left side, right along the bottom to the ball */
+.yarn .loop { position: absolute; top: 27px; left: -6px; right: 89px; bottom: -6px; }
+.yarn .thread { position: absolute; inset: 0; clip-path: inset(-8px -40px -8px -8px); transition: clip-path 2.6s ease-in-out; }
+.yarn .thread::before, .yarn .thread::after { content: ""; position: absolute; left: 0; border: 0 solid var(--yarn); }
+.yarn .thread::before { top: 0; right: 0; bottom: 12px; border-width: 3px 0 0 3px; border-top-left-radius: 12px; }
+.yarn .thread::after { bottom: 0; height: 12px; width: calc(100% + 24px); border-width: 0 0 3px 3px; border-bottom-left-radius: 12px; }
+.yarn .ball { position: absolute; left: calc(100% + 24px); top: calc(100% - 25.5px); width: 48px; height: 36px; image-rendering: pixelated;
+  transition: opacity .4s, transform .5s cubic-bezier(.3, 1.6, .5, 1); }
+/* knocked off by the kitten: the ball rolls away, the thread snaps and winds back to the needles */
+.yarn.snapped .thread { clip-path: inset(-8px -40px -8px calc(100% + 40px)); transition: clip-path 1s ease-in; }
+.yarn.snapped .ball { animation: yarn-knock 1.2s ease-in forwards; }
+.yarn.noball .ball { opacity: 0; transform: scale(.3); transition: none; }
+.yarn.wiggle .ball { animation: yarn-wiggle .9s ease-in-out; }
+@keyframes yarn-knock { 25% { transform: translate(14px, -16px) rotate(80deg); }
+  100% { transform: translate(90px, 50px) rotate(420deg); opacity: 0; } }
+@keyframes yarn-wiggle { 25% { transform: rotate(-16deg); } 60% { transform: rotate(12deg); } }
+@media (max-width: 720px) { .yarn .needles { width: 63px; top: 4px; right: 4px; } .yarn .loop { top: 20px; right: 66px; left: -4px; bottom: -4px; }
+  .yarn .ball { width: 36px; height: 27px; top: calc(100% - 19.5px); } }
+@media (prefers-reduced-motion: reduce) { .yarn .thread, .yarn .ball { transition: none; animation: none; } }
 /* the order's progress line */
 .track { display: flex; gap: 6px; list-style: none; margin: 14px 0 6px; padding: 0; counter-reset: step; flex-wrap: wrap; }
 .track li { flex: 1 1 0; min-width: 84px; position: relative; padding: 30px 4px 0; text-align: center; font-size: 13px; color: var(--muted); }

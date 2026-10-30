@@ -92,6 +92,12 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 			}
 			return template.HTML(strings.Replace(string(pic), `src="/`, `src="`+s.cfg.Prefix+`/`, 1))
 		},
+		"yarn": func(id int64) template.HTML {
+			if s.svc.P.Business.Placeholder != "knit" {
+				return ""
+			}
+			return template.HTML(strings.ReplaceAll(string(yarn(id)), `src="/`, `src="`+s.cfg.Prefix+`/`))
+		},
 		"spin": func(id int64) template.HTML {
 			return template.HTML(strings.ReplaceAll(string(spin(id)), `src="/`, `src="`+s.cfg.Prefix+`/`))
 		},
