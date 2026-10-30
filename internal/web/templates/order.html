@@ -2,6 +2,8 @@
 <section class="card" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
   <p class="eyebrow">Заказ №{{.O.ID}} · {{.Ref}}</p>
   <h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>
+  {{if .Steps}}<ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}">{{.Title}}</li>{{end}}</ol>{{end}}
+  {{if not .Final}}<p class="keep muted small">Сохраните эту страницу: здесь всегда видно, что с заказом. Она обновляется сама.</p>{{end}}
   {{if .Waiting}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
   {{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
 

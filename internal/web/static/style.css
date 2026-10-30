@@ -305,3 +305,16 @@ body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { text-sh
 .real-close { position: fixed; top: 12px; right: 16px; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%;
   background: rgba(255, 255, 255, .14); color: #fff; font-size: 30px; text-decoration: none; }
 .mascot.pixel { image-rendering: pixelated; }
+/* the order's progress line */
+.track { display: flex; gap: 6px; list-style: none; margin: 14px 0 6px; padding: 0; counter-reset: step; flex-wrap: wrap; }
+.track li { flex: 1 1 0; min-width: 84px; position: relative; padding: 30px 4px 0; text-align: center; font-size: 13px; color: var(--muted); }
+.track li::before { counter-increment: step; content: counter(step); position: absolute; top: 0; left: 50%; translate: -50% 0; width: 24px; height: 24px;
+  border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--soft); color: var(--muted); }
+.track li::after { content: ""; position: absolute; top: 11px; left: calc(50% + 16px); right: calc(-50% + 16px); height: 2px; background: var(--line); }
+.track li:last-child::after { display: none; }
+.track li.done { color: var(--fg); }
+.track li.done::before { content: "✓"; background: var(--ink); color: var(--ink-fg); }
+.track li.done::after { background: var(--ink); }
+.track li.now { color: var(--fg); font-weight: 800; }
+.track li.now::before { background: var(--accent); color: var(--accent-fg); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent); }
+.keep { margin: 4px 0 0; }

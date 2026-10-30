@@ -346,3 +346,35 @@ func TestCloneButton(t *testing.T) {
 		t.Fatal("the button without a market")
 	}
 }
+
+// The order page shows the order's way: placed, paid (for a transfer), then the profile's steps.
+func TestOrderTrack(t *testing.T) {
+	_, file, _, _ := runtime.Caller(0)
+	p, err := profile.Load(filepath.Join(filepath.Dir(file), "..", "..", "profiles", "shop.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	o := &order.Order{State: "new", Method: profile.MethodTransfer, Priced: true}
+	var titles []string
+	for _, st := range track(p, o) {
+		mark := ""
+		if st.Done {
+			mark += "+"
+		}
+		if st.Now {
+			mark += "*"
+		}
+		titles = append(titles, st.Title+mark)
+	}
+	if got := strings.Join(titles, " "); got != "Оформлен+ Оплачен* Собирается Передан в доставку Получен" {
+		t.Fatalf("track: %s", got)
+	}
+	o.State, o.Paid = "shipped", true
+	if steps := track(p, o); !steps[1].Done || !steps[3].Now {
+		t.Fatalf("shipped: %+v", steps)
+	}
+	o.State = "cancelled"
+	if track(p, o) != nil {
+		t.Fatal("a cancelled order has a track")
+	}
+}

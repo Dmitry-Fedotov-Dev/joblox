@@ -223,6 +223,7 @@ type orderView struct {
 	base
 	O           *order.Order
 	State       profile.State
+	Steps       []Step
 	Final       bool
 	Ref         string
 	Fields      []fieldView
@@ -268,6 +269,7 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 		v.Purpose = s.svc.Req.PurposeFor(v.Ref, o.Total.Plain())
 	}
 	v.Actions = s.svc.Flow.Open(o.State, profile.ActorCustomer, o.Flags())
+	v.Steps = track(p, o)
 	v.Call = s.callLink(o)
 	switch {
 	case st.Final:
