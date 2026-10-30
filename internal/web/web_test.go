@@ -317,6 +317,9 @@ func TestServicesShowcase(t *testing.T) {
 	if !strings.Contains(home, `href="/p/sborka-mebeli"`) || !strings.Contains(home, "от 800") || !strings.Contains(home, "по договорённости") {
 		t.Fatal("no service cards")
 	}
+	if strings.Contains(home, `id="order"`) {
+		t.Fatal("the front page of a services site shows the request form")
+	}
 	code, page := s.get(t, "/p/sborka-mebeli")
 	if code != http.StatusOK || !strings.Contains(page, `href="/?s=sborka-mebeli#order"`) || strings.Contains(page, `action="/cart"`) {
 		t.Fatalf("service page: %d", code)

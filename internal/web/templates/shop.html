@@ -1,5 +1,10 @@
 {{define "content"}}
-{{if or .P.Services .Services}}
+{{if and .Services .Picked}}
+<p><a href="{{p}}/">← Все услуги</a></p>
+<p class="eyebrow">Заявка</p>
+<h1>{{.Picked}}</h1>
+<p class="muted">Опишите задачу: мастер посмотрит и назовёт цену. Платите после работы.</p>
+{{else if or .P.Services .Services}}
 <section class="hero{{if .Cover}} with-cover{{end}}">
   {{if .Cover}}<img class="hero-cover" src="{{.Cover}}" alt="" decoding="async">{{end}}
   <h1>{{whole .Business.Name}}</h1>
@@ -34,6 +39,7 @@
 </section>
 {{end}}
 
+{{if not (and .Services (not .Picked))}}
 <form class="card" id="order" method="post" action="{{p}}/order" novalidate data-cart>
   <input type="hidden" name="csrf" value="{{.CSRF}}">
   <input type="hidden" name="stamp" value="{{.Stamp}}">
@@ -69,4 +75,5 @@
   <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>{{if .Quote}}Отправить заявку{{else}}Оформить заказ{{end}}</button>
   {{if .P.Payment.RequireEmailCode}}<p class="muted small">После оформления на почту придёт код подтверждения.</p>{{end}}
 </form>
+{{end}}
 {{end}}

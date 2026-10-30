@@ -68,6 +68,9 @@ type shopView struct {
 	FormError string
 	Quote     bool
 	Cards     []productCard // the services catalog (service_catalog in the profile)
+	// Picked is the service of a request page; empty on a services site's front page, which then shows
+	// the cards and no form.
+	Picked string
 }
 
 type methodView struct {
@@ -121,6 +124,9 @@ func (s *Server) shopView(w http.ResponseWriter, r *http.Request, form map[strin
 	}
 	if msg := byField["method"]; msg != "" && formErr == "" {
 		v.FormError = msg
+	}
+	if s.isServices() {
+		v.Picked = form[p.ServiceCatalog.Field]
 	}
 	return v
 }
