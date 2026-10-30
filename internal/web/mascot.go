@@ -40,5 +40,7 @@ func spin(id int64) template.HTML {
 	if n < 0 {
 		n = -n
 	}
-	return template.HTML(fmt.Sprintf(`<img class="mascot pixel" src="/static/spin/spin-%d.gif" alt="Готовится под заказ" width="200" height="248" loading="lazy" decoding="async">`, n+1))
+	// under the pointer the walking kitten gives way to a purring one with hearts rising (CSS .love)
+	return template.HTML(fmt.Sprintf(`<img class="mascot pixel" src="/static/spin/spin-%d.gif" alt="Готовится под заказ" width="200" height="248" loading="lazy" decoding="async">`+
+		`<img class="mascot pixel love" src="/static/spin/love-%d.gif" alt="" width="200" height="248" loading="lazy" decoding="async">`, n+1, n+1))
 }

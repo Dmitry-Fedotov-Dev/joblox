@@ -303,6 +303,14 @@ body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { align-s
 .real-close { position: fixed; top: 12px; right: 16px; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%;
   background: rgba(255, 255, 255, .14); color: #fff; font-size: 30px; text-decoration: none; }
 .mascot.pixel { image-rendering: pixelated; }
+.media:has(.love), .noimg:has(.love) { position: relative; }
+.mascot.love { position: absolute; inset: 0; opacity: 0; transition: opacity .25s; }
+.pcard:hover .mascot.love, .noimg:hover .mascot.love { opacity: 1; }
+/* the knitting shop keeps knitting in a corner: slow needles and a ball of yarn, never in the way */
+.knit-corner { position: fixed; left: 14px; bottom: 12px; z-index: 1; width: 110px; height: auto; opacity: .9;
+  image-rendering: pixelated; pointer-events: none; }
+@media (max-width: 720px) { .knit-corner { width: 76px; left: 8px; bottom: 8px; } }
+@media print { .knit-corner { display: none; } }
 /* the order's progress line */
 .track { display: flex; gap: 6px; list-style: none; margin: 14px 0 6px; padding: 0; counter-reset: step; flex-wrap: wrap; }
 .track li { flex: 1 1 0; min-width: 84px; position: relative; padding: 30px 4px 0; text-align: center; font-size: 13px; color: var(--muted); }

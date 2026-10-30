@@ -93,7 +93,7 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 			return template.HTML(strings.Replace(string(pic), `src="/`, `src="`+s.cfg.Prefix+`/`, 1))
 		},
 		"spin": func(id int64) template.HTML {
-			return template.HTML(strings.Replace(string(spin(id)), `src="/`, `src="`+s.cfg.Prefix+`/`, 1))
+			return template.HTML(strings.ReplaceAll(string(spin(id)), `src="/`, `src="`+s.cfg.Prefix+`/`))
 		},
 		"asset": func(name string) string { return s.cfg.Prefix + asset(name) },
 		"p":     func() string { return s.cfg.Prefix },
