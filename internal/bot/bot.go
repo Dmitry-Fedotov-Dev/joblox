@@ -237,6 +237,8 @@ func (b *Bot) OrderChanged(ctx context.Context, o *order.Order, ev order.Event) 
 	switch ev.Kind {
 	case "verified":
 		note = "Клиент подтвердил email"
+	case "reported":
+		note = "💸 Клиент сообщил, что оплатил: проверьте поступление и нажмите «Оплата получена»"
 	case "transition":
 		if ev.Actor == profile.ActorCustomer {
 			note = "Клиент: " + ev.Note

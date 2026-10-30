@@ -152,6 +152,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /o/{token}/code", s.verifyCode)
 	mux.HandleFunc("POST /o/{token}/resend", s.resendCode)
 	mux.HandleFunc("POST /o/{token}/t/{transition}", s.customerTransition)
+	mux.HandleFunc("POST /o/{token}/paid", s.reportPaid)
 	mux.HandleFunc("POST /beat", s.beat)
 	for path, file := range map[string]string{"GET /cover": s.cfg.Cover, "GET /og": s.cfg.OGImage} {
 		if file == "" {

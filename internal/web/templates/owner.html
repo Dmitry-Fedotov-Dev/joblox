@@ -94,6 +94,7 @@
       {{if .Risk}}<dt>Проверка</dt><dd>{{.Risk}}</dd>{{end}}
     </dl>
     {{if .Review}}<p class="banner warn">Заказ ждёт вашей проверки.</p>{{end}}
+    {{if and .O.ReportedAt (not .O.Paid)}}<p class="banner ok">💸 Клиент сообщил, что оплатил. Проверьте поступление и нажмите «Оплата получена».</p>{{end}}
     <div class="actions">
       {{if .Review}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/approve"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Одобрить</button></form>{{end}}
       {{if .Quote}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/price" class="inline"><input type="hidden" name="csrf" value="{{$csrf}}"><input name="total" inputmode="decimal" placeholder="Цена" required aria-label="Цена"><button>Назвать цену</button></form>{{end}}

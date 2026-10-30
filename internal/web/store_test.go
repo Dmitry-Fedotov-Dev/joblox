@@ -360,3 +360,42 @@ func TestPreorder(t *testing.T) {
 		t.Fatalf("a preorder touched the stock: %d", p.Variants[0].Stock)
 	}
 }
+
+// «Я оплатил»: the customer says the money went; the order shows it is being checked, nothing is confirmed.
+func TestReportPaid(t *testing.T) {
+	s, cat := shopSite(t)
+	ctx := context.Background()
+	if _, err := cat.Save(ctx, 0, shop.Input{Title: "Платье", Price: 450000, Variants: []shop.VariantInput{{Stock: 2}}}); err != nil {
+		t.Fatal(err)
+	}
+	_, page := s.get(t, "/p/plate")
+	s.post(t, "/cart", url.Values{"csrf": {match(t, csrfRe, page)}, "add": {"1"}, "qty": {"1"}, "item": {match(t, itemRe, page)}})
+	s.srv.svc.Now = func() time.Time { return time.Now().Add(time.Minute) }
+	_, cart := s.get(t, "/cart")
+	r, _ := s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, cart)}, "stamp": {match(t, stampRe, cart)},
+		"f_name": {"Анна"}, "f_phone": {"+996 700 000 000"}, "f_email": {"anna@example.com"}, "f_delivery": {"Самовывоз со склада"},
+		"method": {profile.MethodTransfer}})
+	link := r.Header.Get("Location")
+	// the email code confirmed and the anti-fraud check passed, as the customer and the owner would
+	o, err := s.svc.Store.ByToken(ctx, strings.TrimPrefix(link, "/o/"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	o.VerifiedAt, o.Approved = &now, true
+	if err := s.svc.Store.Save(ctx, o, order.Event{}); err != nil {
+		t.Fatal(err)
+	}
+	_, page = s.get(t, link)
+	if !strings.Contains(page, ">Я оплатил</button>") || !strings.Contains(page, `class="track"`) {
+		t.Fatal("no «Я оплатил» or no track on the order page")
+	}
+	s.post(t, link+"/paid", url.Values{"csrf": {match(t, csrfRe, page)}})
+	_, page = s.get(t, link)
+	if !strings.Contains(page, "Проверяем оплату") || strings.Contains(page, ">Я оплатил</button>") {
+		t.Fatal("the report is not shown")
+	}
+	if o, _ = s.svc.Store.ByToken(ctx, strings.TrimPrefix(link, "/o/")); o.Paid || o.ReportedAt == nil {
+		t.Fatalf("report: paid=%v reported=%v", o.Paid, o.ReportedAt)
+	}
+}

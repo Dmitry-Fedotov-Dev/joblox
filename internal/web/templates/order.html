@@ -50,6 +50,12 @@
   <p class="muted small">Укажите сумму и назначение платежа точно как здесь: по ним оператор находит оплату. Реквизиты действуют только для этого заказа.</p>
   {{if .Note}}<p class="muted small">{{.Note}}</p>{{end}}
   {{if $.P.Texts.Rules}}<p class="muted small">{{$.P.Texts.Rules}}</p>{{end}}
+  {{if $.O.ReportedAt}}<p class="banner ok" role="status">Вы сообщили об оплате. Продавец проверит поступление и подтвердит заказ.</p>
+  {{else}}<form method="post" action="{{p}}/o/{{$.O.Token}}/paid">
+    <input type="hidden" name="csrf" value="{{$.CSRF}}">
+    <button class="cta" type="submit">Я оплатил</button>
+    <p class="muted small">Нажмите после перевода: продавец увидит это сразу и проверит поступление.</p>
+  </form>{{end}}
 </section>
 {{end}}
 

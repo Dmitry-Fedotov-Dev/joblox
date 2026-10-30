@@ -28,6 +28,8 @@ type Order struct {
 	Paid     bool
 	PaidAt   *time.Time
 	PaidNote string
+	// ReportedAt: the customer pressed «Я оплатил»; the operator still checks and confirms the payment.
+	ReportedAt *time.Time
 
 	VerifiedAt   *time.Time
 	CodeHash     string

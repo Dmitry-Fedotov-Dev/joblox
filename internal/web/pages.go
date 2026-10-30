@@ -463,3 +463,19 @@ func cloneText(kind string) string {
 	}
 	return "такой же сайт"
 }
+
+// reportPaid is the customer's «Я оплатил».
+func (s *Server) reportPaid(w http.ResponseWriter, r *http.Request) {
+	o, ok := s.formOrder(w, r)
+	if !ok {
+		return
+	}
+	if err := s.svc.ReportPaid(r.Context(), o); err != nil {
+		if !errors.Is(err, order.ErrForbidden) && !errors.Is(err, order.ErrConflict) {
+			s.log.Error("report paid", "err", err)
+		}
+		s.render(w, "order", http.StatusConflict, s.orderView(w, r, o, "", "Сейчас это не нужно: обновите страницу."))
+		return
+	}
+	s.redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
+}

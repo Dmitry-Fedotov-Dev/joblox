@@ -482,3 +482,17 @@ func (s *Service) Sweep(ctx context.Context) (int, error) {
 	}
 	return n, nil
 }
+
+// ReportPaid records the customer's «Я оплатил» and tells the operators. It confirms nothing: only an
+// operator marks an order paid. Reporting twice changes nothing.
+func (s *Service) ReportPaid(ctx context.Context, o *Order) error {
+	if o.Paid || o.ReportedAt != nil {
+		return nil
+	}
+	if s.IsFinal(o.State) || o.Method != profile.MethodTransfer || !o.Priced {
+		return ErrForbidden
+	}
+	now := s.Now()
+	o.ReportedAt, o.UpdatedAt = &now, now
+	return s.save(ctx, o, Event{At: now, Actor: profile.ActorCustomer, Kind: "reported", Note: "клиент сообщил, что оплатил"})
+}
