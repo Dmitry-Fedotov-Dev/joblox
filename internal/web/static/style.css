@@ -304,3 +304,4 @@ body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { text-sh
 .real-title { margin: 0; color: #f4f1ea; font-weight: 700; }
 .real-close { position: fixed; top: 12px; right: 16px; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%;
   background: rgba(255, 255, 255, .14); color: #fff; font-size: 30px; text-decoration: none; }
+.mascot.pixel { image-rendering: pixelated; }

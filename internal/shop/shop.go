@@ -30,6 +30,7 @@ type Product struct {
 	Price       money.Amount
 	OldPrice    money.Amount // crossed out next to the price; 0 when there is no discount
 	Hidden      bool
+	Preorder    bool // can be ordered without stock: made to order, nothing is reserved
 	Position    int
 	Images      []Image // the showcase pictures: the cover and the gallery
 	Real        []Image // photos of the very item, as it is, behind «Посмотреть настоящее изображение»
@@ -53,8 +54,11 @@ type Image struct {
 	Real bool // a plain photo of the item rather than a showcase picture
 }
 
-// InStock says whether anything of the product can be bought.
+// InStock says whether anything of the product can be bought; a preorder always can.
 func (p *Product) InStock() bool {
+	if p.Preorder {
+		return true
+	}
 	for _, v := range p.Variants {
 		if v.Stock > 0 {
 			return true
@@ -156,6 +160,7 @@ var migrations = []string{
 	);
 	CREATE INDEX shop_images_product ON shop_images(product_id, position);`,
 	`ALTER TABLE shop_images ADD COLUMN real INTEGER NOT NULL DEFAULT 0;`,
+	`ALTER TABLE shop_products ADD COLUMN preorder INTEGER NOT NULL DEFAULT 0;`,
 }
 
 // Open brings the shop tables up to date in db (the orders database).
@@ -189,7 +194,7 @@ func Open(ctx context.Context, db *sql.DB) (*Catalog, error) {
 
 // List returns the products in the owner's order; all includes the hidden ones.
 func (c *Catalog) List(ctx context.Context, all bool) ([]*Product, error) {
-	q := `SELECT id, slug, title, description, price, old_price, hidden, position, created_at FROM shop_products`
+	q := `SELECT id, slug, title, description, price, old_price, hidden, position, created_at, preorder FROM shop_products`
 	if !all {
 		q += ` WHERE hidden = 0`
 	}
@@ -225,11 +230,12 @@ type scanner interface{ Scan(...any) error }
 func scanProduct(r scanner) (*Product, error) {
 	var p Product
 	var price, old, created int64
-	var hidden int
-	if err := r.Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &price, &old, &hidden, &p.Position, &created); err != nil {
+	var hidden, preorder int
+	if err := r.Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &price, &old, &hidden, &p.Position, &created, &preorder); err != nil {
 		return nil, err
 	}
 	p.Price, p.OldPrice, p.Hidden, p.CreatedAt = money.Amount(price), money.Amount(old), hidden != 0, time.UnixMilli(created).UTC()
+	p.Preorder = preorder != 0
 	return &p, nil
 }
 
@@ -281,7 +287,7 @@ func (c *Catalog) fill(ctx context.Context, byID map[int64]*Product) error {
 }
 
 func (c *Catalog) one(ctx context.Context, where string, arg any) (*Product, error) {
-	row := c.db.QueryRowContext(ctx, `SELECT id, slug, title, description, price, old_price, hidden, position, created_at
+	row := c.db.QueryRowContext(ctx, `SELECT id, slug, title, description, price, old_price, hidden, position, created_at, preorder
 		FROM shop_products WHERE `+where, arg)
 	p, err := scanProduct(row)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -315,6 +321,7 @@ type Input struct {
 	Title, Description string
 	Price, OldPrice    money.Amount
 	Hidden             bool
+	Preorder           bool
 	Variants           []VariantInput
 }
 
@@ -361,6 +368,8 @@ func (in *Input) clean(services bool) Problems {
 	}
 	if services {
 		vs = nil // a service has no sizes and no stock
+	} else if len(vs) == 0 && in.Preorder {
+		vs = []VariantInput{{}} // made to order: one size, nothing in stock
 	} else if len(vs) == 0 {
 		bad = append(bad, "хотя бы одна строка с остатком")
 	}
@@ -396,9 +405,9 @@ func (c *Catalog) Save(ctx context.Context, id int64, in Input) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		res, err := tx.ExecContext(ctx, `INSERT INTO shop_products (slug, title, description, price, old_price, hidden, position, created_at)
-			VALUES (?,?,?,?,?,?,?,?)`, slug, in.Title, in.Description, int64(in.Price), int64(in.OldPrice), b2i(in.Hidden), pos,
-			c.now().UnixMilli())
+		res, err := tx.ExecContext(ctx, `INSERT INTO shop_products (slug, title, description, price, old_price, hidden, position, created_at, preorder)
+			VALUES (?,?,?,?,?,?,?,?,?)`, slug, in.Title, in.Description, int64(in.Price), int64(in.OldPrice), b2i(in.Hidden), pos,
+			c.now().UnixMilli(), b2i(in.Preorder))
 		if err != nil {
 			return 0, err
 		}
@@ -406,8 +415,8 @@ func (c *Catalog) Save(ctx context.Context, id int64, in Input) (int64, error) {
 			return 0, err
 		}
 	} else {
-		res, err := tx.ExecContext(ctx, `UPDATE shop_products SET title = ?, description = ?, price = ?, old_price = ?, hidden = ?
-			WHERE id = ?`, in.Title, in.Description, int64(in.Price), int64(in.OldPrice), b2i(in.Hidden), id)
+		res, err := tx.ExecContext(ctx, `UPDATE shop_products SET title = ?, description = ?, price = ?, old_price = ?, hidden = ?,
+			preorder = ? WHERE id = ?`, in.Title, in.Description, int64(in.Price), int64(in.OldPrice), b2i(in.Hidden), b2i(in.Preorder), id)
 		if err != nil {
 			return 0, err
 		}
@@ -584,8 +593,11 @@ func (c *Catalog) Items(ctx context.Context) ([]profile.Item, error) {
 			if v.Name != "" {
 				title += ", " + v.Name
 			}
-			items = append(items, profile.Item{ID: ItemID(v.ID), Title: title, Price: p.Price, Unit: "шт", MaxQty: v.Stock,
-				Hidden: v.Stock == 0})
+			item := profile.Item{ID: ItemID(v.ID), Title: title, Price: p.Price, Unit: "шт", MaxQty: v.Stock, Hidden: v.Stock == 0}
+			if p.Preorder {
+				item.Title, item.MaxQty, item.Hidden = title+" (предзаказ)", 20, false
+			}
+			items = append(items, item)
 		}
 	}
 	return items, nil
@@ -611,6 +623,11 @@ func (c *Catalog) adjust(ctx context.Context, qty map[string]int, sign int) erro
 		id, ok := ParseItemID(item)
 		if !ok || n <= 0 {
 			continue
+		}
+		var preorder int
+		if err := tx.QueryRowContext(ctx, `SELECT p.preorder FROM shop_variants v JOIN shop_products p ON p.id = v.product_id
+			WHERE v.id = ?`, id).Scan(&preorder); err == nil && preorder != 0 {
+			continue // made to order: nothing to reserve or put back
 		}
 		if sign > 0 {
 			if _, err := tx.ExecContext(ctx, `UPDATE shop_variants SET stock = stock + ? WHERE id = ? AND gone = 0`, n, id); err != nil {

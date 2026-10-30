@@ -101,6 +101,9 @@ type productCard struct {
 }
 
 func label(p *shop.Product) (string, bool) {
+	if p.Preorder {
+		return "Предзаказ", true
+	}
 	switch n := p.Stock(); {
 	case n == 0:
 		return "Нет в наличии", false
@@ -214,7 +217,7 @@ func (s *Server) cartUpdate(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case !found:
 			s.message(w, r, http.StatusNotFound, "Товар не найден", "Возможно, его уже убрали с витрины.")
-		case v.Stock < c[item]+max(q, 1):
+		case !p.Preorder && v.Stock < c[item]+max(q, 1):
 			msg := "Этого размера больше нет."
 			if v.Stock > 0 {
 				msg = "В наличии только " + strconv.Itoa(v.Stock) + " шт., и они уже в корзине."
@@ -294,7 +297,7 @@ func (s *Server) cartView(w http.ResponseWriter, r *http.Request, c cart, form m
 				continue
 			}
 			l := cartLine{Item: item, Product: p, Variant: vr, Qty: q, Sum: p.Price.MulQty(q), Error: byField["item_"+item]}
-			if l.Error == "" && q > vr.Stock {
+			if l.Error == "" && q > vr.Stock && !p.Preorder {
 				l.Error = "в наличии " + strconv.Itoa(vr.Stock)
 				if vr.Stock == 0 {
 					l.Error = "этого уже нет в наличии"

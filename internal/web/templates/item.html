@@ -86,6 +86,7 @@
     <p class="hint">Обычные снимки самой вещи, без обработки: покупатель откроет их кнопкой «Посмотреть настоящее изображение».</p>
   </div>
   {{end}}
+  {{if not .Services}}<label class="radio"><input type="checkbox" name="preorder" value="1"{{if .Preorder}} checked{{end}}> Предзаказ: можно заказать, даже если нет в наличии (под заказ)</label>{{end}}
   <label class="radio"><input type="checkbox" name="hidden" value="1"{{if .Hidden}} checked{{end}}> Скрыть с витрины</label>
   <button class="cta" type="submit">Сохранить</button>
 </form>

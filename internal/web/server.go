@@ -86,7 +86,11 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		"inc":   func(i int) int { return i + 1 },
 		"sign":  func() string { return currencySign(svc.P.Business.Currency) },
 		"mascot": func(id int64) template.HTML {
-			return template.HTML(strings.Replace(string(mascot(id)), `src="/`, `src="`+s.cfg.Prefix+`/`, 1))
+			pic := mascot(id)
+			if s.svc.P.Business.Placeholder == "knit" {
+				pic = knit(id)
+			}
+			return template.HTML(strings.Replace(string(pic), `src="/`, `src="`+s.cfg.Prefix+`/`, 1))
 		},
 		"asset": func(name string) string { return s.cfg.Prefix + asset(name) },
 		"p":     func() string { return s.cfg.Prefix },

@@ -32,12 +32,12 @@
         <legend>Размер</legend>
         {{$first := true}}
         {{range $p.Variants}}
-        <label><input type="radio" name="item" value="v{{.ID}}"{{if not .Stock}} disabled{{else if $first}} checked{{$first = false}}{{end}} required><span>{{.Name}}</span></label>
+        <label><input type="radio" name="item" value="v{{.ID}}"{{if and (not .Stock) (not $p.Preorder)}} disabled{{else if $first}} checked{{$first = false}}{{end}} required><span>{{.Name}}</span></label>
         {{end}}
       </fieldset>
       {{else}}{{range $p.Variants}}<input type="hidden" name="item" value="v{{.ID}}">{{end}}{{end}}
       <div class="sticky-buy">
-        <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>В корзину</button>
+        <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>{{if $p.Preorder}}Предзаказ{{else}}В корзину{{end}}</button>
       </div>
     </form>
     {{else}}

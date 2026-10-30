@@ -56,7 +56,7 @@ type productForm struct {
 	Product                   *shop.Product // nil for a new one
 	Title, Description        string
 	Price, OldPrice           string
-	Hidden                    bool
+	Hidden, Preorder          bool
 	Rows                      []variantRow
 	Problems                  []string
 	Saved                     bool
@@ -68,7 +68,7 @@ func (s *Server) productFormView(w http.ResponseWriter, r *http.Request, p *shop
 	v := productForm{base: s.base(w, r, "Новый товар"), Product: p, Currency: currencySign(s.svc.P.Business.Currency),
 		MaxImages: shop.MaxImages, ImagesLeft: shop.MaxImages, MB: shop.MaxUpload >> 20}
 	if p != nil {
-		v.Title, v.Description, v.Hidden = p.Title, p.Description, p.Hidden
+		v.Title, v.Description, v.Hidden, v.Preorder = p.Title, p.Description, p.Hidden, p.Preorder
 		v.base.Title = p.Title
 		v.Price = p.Price.Plain()
 		if p.OldPrice > 0 {
@@ -137,7 +137,8 @@ func (s *Server) itemSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, _ := strconv.ParseInt(r.PostFormValue("id"), 10, 64)
-	in := shop.Input{Title: r.PostFormValue("title"), Description: r.PostFormValue("description"), Hidden: r.PostFormValue("hidden") == "1"}
+	in := shop.Input{Title: r.PostFormValue("title"), Description: r.PostFormValue("description"), Hidden: r.PostFormValue("hidden") == "1",
+		Preorder: r.PostFormValue("preorder") == "1"}
 	var problems []string
 	var err error
 	if raw := strings.ReplaceAll(r.PostFormValue("price"), " ", ""); raw == "" && s.isServices() {
@@ -189,8 +190,8 @@ func (s *Server) itemSave(w http.ResponseWriter, r *http.Request) {
 			p, _ = s.cfg.Shop.Get(r.Context(), id)
 		}
 		v := s.productFormView(w, r, p)
-		v.Title, v.Description, v.Price, v.OldPrice, v.Hidden = in.Title, in.Description, r.PostFormValue("price"),
-			r.PostFormValue("old_price"), in.Hidden
+		v.Title, v.Description, v.Price, v.OldPrice, v.Hidden, v.Preorder = in.Title, in.Description, r.PostFormValue("price"),
+			r.PostFormValue("old_price"), in.Hidden, in.Preorder
 		v.Rows, v.Problems = rows, problems
 		v.withBlankRows()
 		s.render(w, "item", http.StatusUnprocessableEntity, v)

@@ -327,3 +327,36 @@ func TestLinkPreviews(t *testing.T) {
 	}
 	resp.Body.Close()
 }
+
+// A preorder sells without stock: the button says «Предзаказ», the order goes through, nothing is reserved.
+func TestPreorder(t *testing.T) {
+	s, cat := shopSite(t)
+	ctx := context.Background()
+	id, err := cat.Save(ctx, 0, shop.Input{Title: "Зайчик", Price: 250000, Preorder: true, Variants: []shop.VariantInput{{Stock: 0}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, home := s.get(t, "/")
+	if !strings.Contains(home, ">Предзаказ<") || strings.Contains(home, "Нет в наличии") {
+		t.Fatal("the preorder is not marked on the storefront")
+	}
+	_, page := s.get(t, "/p/zaychik")
+	if !strings.Contains(page, ">Предзаказ</button>") {
+		t.Fatal("no «Предзаказ» button")
+	}
+	r, _ := s.post(t, "/cart", url.Values{"csrf": {match(t, csrfRe, page)}, "add": {"1"}, "qty": {"1"}, "item": {match(t, itemRe, page)}})
+	if r.StatusCode != http.StatusSeeOther {
+		t.Fatalf("add a preorder: %d", r.StatusCode)
+	}
+	s.srv.svc.Now = func() time.Time { return time.Now().Add(time.Minute) }
+	_, cart := s.get(t, "/cart")
+	r, _ = s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, cart)}, "stamp": {match(t, stampRe, cart)},
+		"f_name": {"Анна"}, "f_phone": {"+996 700 000 000"}, "f_email": {"anna@example.com"}, "f_delivery": {"Самовывоз со склада"},
+		"method": {profile.MethodTransfer}})
+	if r.StatusCode != http.StatusSeeOther || !strings.HasPrefix(r.Header.Get("Location"), "/o/") {
+		t.Fatalf("order a preorder: %d", r.StatusCode)
+	}
+	if p, _ := cat.Get(ctx, id); p.Variants[0].Stock != 0 {
+		t.Fatalf("a preorder touched the stock: %d", p.Variants[0].Stock)
+	}
+}
