@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 
 	xdraw "golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"
@@ -59,9 +60,12 @@ func (ph *Photos) Save(r io.Reader) (Image, error) {
 	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width*cfg.Height > maxPixels {
 		return Image{}, errors.New("фото слишком большое по размеру в пикселях")
 	}
-	src, _, err := image.Decode(bytes.NewReader(raw))
+	// a phone photo decodes to tens of megabytes: the decoded picture lives only inside upright, and the
+	// memory goes back when done, so a dozen photos fit into a small container one after another
+	defer debug.FreeOSMemory()
+	full, err := upright(raw)
 	if err != nil {
-		return Image{}, ErrNotImage
+		return Image{}, err
 	}
 	if err := os.MkdirAll(ph.Dir, 0o750); err != nil {
 		return Image{}, err
@@ -71,8 +75,6 @@ func (ph *Photos) Save(r io.Reader) (Image, error) {
 		return Image{}, err
 	}
 	name := hex.EncodeToString(id)
-	// scale first, then turn: the longer side stays the longer side, and turning a small picture is cheap
-	full := orient(fit(src, FullSide), exifOrientation(raw))
 	if err := writeJPEG(filepath.Join(ph.Dir, name+".jpg"), full, 85); err != nil {
 		return Image{}, err
 	}
@@ -82,6 +84,16 @@ func (ph *Photos) Save(r io.Reader) (Image, error) {
 	}
 	b := full.Bounds()
 	return Image{File: name, W: b.Dx(), H: b.Dy()}, nil
+}
+
+// upright decodes the upload and returns it scaled to FullSide and turned by its EXIF orientation. Scale
+// first, then turn: the longer side stays the longer side, and turning a small picture is cheap.
+func upright(raw []byte) (image.Image, error) {
+	src, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return nil, ErrNotImage
+	}
+	return orient(fit(src, FullSide), exifOrientation(raw)), nil
 }
 
 // Remove deletes both files of a photo; missing files are fine.

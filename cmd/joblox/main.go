@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"syscall"
@@ -42,6 +43,7 @@ var version = "dev"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	fitMemory()
 	// started without arguments, by a double click or from the installer: the owner's quick start
 	implicit := len(os.Args) == 1 && os.Getenv("JOBLOX_PROFILE") == ""
 	cmd := "serve"
@@ -256,6 +258,10 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 			return err
 		}
 		photos = &shop.Photos{Dir: filepath.Join(dirOf(cfg.DB), "photos")}
+		// uploads spill to disk above a megabyte; in a container /tmp is memory, the data volume is a disk
+		if tmp := filepath.Join(dirOf(cfg.DB), "tmp"); os.MkdirAll(tmp, 0o700) == nil {
+			_ = os.Setenv("TMPDIR", tmp)
+		}
 		if p.ServiceCatalog != nil {
 			catalog.Services = true // cards of services: no stock to reserve
 			if err := shop.SeedServices(ctx, catalog, p.Services); err != nil {
@@ -508,4 +514,22 @@ func marketURL() string {
 	default:
 		return v
 	}
+}
+
+// fitMemory keeps the Go heap inside a container's memory limit: without it the garbage collector does not
+// know the limit and a burst (a dozen phone photos at once) gets the program killed. GOMEMLIMIT, when set,
+// wins.
+func fitMemory() {
+	if os.Getenv("GOMEMLIMIT") != "" {
+		return
+	}
+	raw, err := os.ReadFile("/sys/fs/cgroup/memory.max") // cgroup v2; "max" means no limit
+	if err != nil {
+		return
+	}
+	limit, err := strconv.ParseInt(strings.TrimSpace(string(raw)), 10, 64)
+	if err != nil || limit <= 0 {
+		return
+	}
+	debug.SetMemoryLimit(limit * 3 / 4)
 }

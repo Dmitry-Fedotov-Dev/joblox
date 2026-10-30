@@ -124,7 +124,7 @@ func (s *Server) itemSave(w http.ResponseWriter, r *http.Request) {
 	rc := http.NewResponseController(w)
 	_ = rc.SetReadDeadline(time.Now().Add(10 * time.Minute))
 	_ = rc.SetWriteDeadline(time.Now().Add(12 * time.Minute))
-	if err := r.ParseMultipartForm(8 << 20); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+	if err := r.ParseMultipartForm(1 << 20); err != nil && !errors.Is(err, http.ErrNotMultipart) {
 		s.message(w, r, http.StatusRequestEntityTooLarge, "Слишком много за раз",
 			"Загрузите фото частями, по несколько штук. Не больше 100 МБ за одно сохранение.")
 		return
