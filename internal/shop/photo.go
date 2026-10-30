@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	_ "image/gif" // decoders for uploads
 	"image/jpeg"
@@ -96,6 +97,42 @@ func upright(raw []byte) (image.Image, error) {
 	return orient(fit(src, FullSide), exifOrientation(raw)), nil
 }
 
+// shrink brings a big picture close to side by averaging blocks of pixels, reading a JPEG's YCbCr planes
+// directly. A 12-megapixel phone photo then costs its decoded planes and one small RGBA copy, instead of
+// the hundreds of megabytes the general scaler spends on it.
+func shrink(src image.Image, side int) image.Image {
+	b := src.Bounds()
+	k := max(b.Dx(), b.Dy()) / side
+	if k < 2 {
+		return src
+	}
+	w, h := b.Dx()/k, b.Dy()/k
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	yc, isYCbCr := src.(*image.YCbCr)
+	n := uint32(k * k)
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			var r, g, bl uint32
+			for dy := 0; dy < k; dy++ {
+				for dx := 0; dx < k; dx++ {
+					px, py := b.Min.X+x*k+dx, b.Min.Y+y*k+dy
+					if isYCbCr {
+						yi, ci := yc.YOffset(px, py), yc.COffset(px, py)
+						cr, cg, cb := color.YCbCrToRGB(yc.Y[yi], yc.Cb[ci], yc.Cr[ci])
+						r, g, bl = r+uint32(cr), g+uint32(cg), bl+uint32(cb)
+						continue
+					}
+					cr, cg, cb, _ := src.At(px, py).RGBA()
+					r, g, bl = r+cr>>8, g+cg>>8, bl+cb>>8
+				}
+			}
+			i := dst.PixOffset(x, y)
+			dst.Pix[i], dst.Pix[i+1], dst.Pix[i+2], dst.Pix[i+3] = uint8(r/n), uint8(g/n), uint8(bl/n), 255
+		}
+	}
+	return dst
+}
+
 // Remove deletes both files of a photo; missing files are fine.
 func (ph *Photos) Remove(file string) {
 	for _, n := range []string{file + ".jpg", file + "_t.jpg"} {
@@ -126,6 +163,8 @@ func writeJPEG(path string, img image.Image, quality int) error {
 // fit scales the picture down so its longer side is at most side; smaller pictures are only copied onto an
 // opaque canvas (JPEG has no transparency: transparent parts become white).
 func fit(src image.Image, side int) image.Image {
+	// average blocks down to near the size, then a light bilinear step: no buffer the size of the picture
+	src = shrink(src, side)
 	b := src.Bounds()
 	w, h := b.Dx(), b.Dy()
 	if w > side || h > side {
@@ -137,7 +176,7 @@ func fit(src image.Image, side int) image.Image {
 	}
 	dst := image.NewRGBA(image.Rect(0, 0, w, h))
 	draw.Draw(dst, dst.Bounds(), image.White, image.Point{}, draw.Src)
-	xdraw.CatmullRom.Scale(dst, dst.Bounds(), src, b, xdraw.Over, nil)
+	xdraw.ApproxBiLinear.Scale(dst, dst.Bounds(), src, b, xdraw.Over, nil)
 	return dst
 }
 
@@ -206,7 +245,12 @@ func orient(src image.Image, o int) image.Image {
 	if o <= 1 || o > 8 {
 		return src
 	}
-	b := src.Bounds()
+	rgba, ok := src.(*image.RGBA)
+	if !ok {
+		rgba = image.NewRGBA(image.Rect(0, 0, src.Bounds().Dx(), src.Bounds().Dy()))
+		draw.Draw(rgba, rgba.Bounds(), src, src.Bounds().Min, draw.Src)
+	}
+	b := rgba.Bounds()
 	w, h := b.Dx(), b.Dy()
 	dw, dh := w, h
 	if o >= 5 {
@@ -232,7 +276,8 @@ func orient(src image.Image, o int) image.Image {
 			case 8:
 				dx, dy = y, w-1-x
 			}
-			dst.Set(dx, dy, src.At(b.Min.X+x, b.Min.Y+y))
+			si, di := rgba.PixOffset(b.Min.X+x, b.Min.Y+y), dst.PixOffset(dx, dy)
+			copy(dst.Pix[di:di+4], rgba.Pix[si:si+4])
 		}
 	}
 	return dst
