@@ -270,7 +270,7 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 @media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: 56%; } }
 @media (max-width: 720px) {
   .hero.with-cover { min-height: 0; }
-  .hero-cover { width: 100vw; height: 82vh; opacity: .22; }
+  .hero-cover { top: 112px; bottom: auto; right: -12px; width: 82vw; height: calc(100vh - 112px); object-position: right top; opacity: .42; }
 }
 /* «make yourself the same»: every performer's site is also an invitation */
 .clone { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 8px 0 28px; padding: 18px 22px; border-radius: var(--radius);

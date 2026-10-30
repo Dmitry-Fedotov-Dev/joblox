@@ -252,7 +252,7 @@ func TestCover(t *testing.T) {
 	}
 	s.srv.cfg.Cover = file
 	s.http.Config.Handler = s.srv.Handler()
-	if _, home := s.get(t, "/"); !strings.Contains(home, `class="hero-cover" src="/cover"`) {
+	if _, home := s.get(t, "/"); !strings.Contains(home, `class="hero-cover" src="/cover?v=`) {
 		t.Fatal("no cover on the storefront")
 	}
 	if code, _ := s.get(t, "/cover"); code != http.StatusOK {

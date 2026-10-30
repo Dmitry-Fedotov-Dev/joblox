@@ -21,7 +21,7 @@ type base struct {
 	Shop     bool // a shop with photos: the header shows the cart
 	Cart     int  // items in the cart
 	Demo     bool
-	Cover    bool // the profile has a cover picture for the top of the site
+	Cover    string // the address of the cover picture with its version; empty: no cover
 	// Clone is the «make yourself the same» button of the public pages: what to call it and where it leads.
 	CloneText, CloneURL string
 }
@@ -29,7 +29,7 @@ type base struct {
 func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base {
 	v := s.visitor(w, r)
 	s.rec.Seen(v)
-	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Demo: s.cfg.Demo, Cover: s.cfg.Cover != ""}
+	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Demo: s.cfg.Demo, Cover: s.coverURL()}
 	if b.Shop {
 		b.Cart = s.readCart(r).count()
 	}

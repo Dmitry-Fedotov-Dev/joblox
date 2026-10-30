@@ -13,7 +13,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/netip"
+	"os"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -192,6 +194,18 @@ func (s *Server) redirect(w http.ResponseWriter, r *http.Request, path string, c
 		path = s.cfg.Prefix + path
 	}
 	http.Redirect(w, r, path, code)
+}
+
+// coverURL is the cover's address with a version from the file, so a new picture is not hidden by the cache.
+func (s *Server) coverURL() string {
+	if s.cfg.Cover == "" {
+		return ""
+	}
+	v := ""
+	if fi, err := os.Stat(s.cfg.Cover); err == nil {
+		v = strconv.FormatInt(fi.ModTime().Unix()^fi.Size(), 36)
+	}
+	return s.cfg.Prefix + "/cover?v=" + v
 }
 
 // cookiePath keeps the cookies of a site under a prefix to that prefix.
