@@ -338,7 +338,7 @@ func TestCloneButton(t *testing.T) {
 	s := newSite(t, "master")
 	s.srv.cfg.MarketURL = "https://joblox.example"
 	_, home := s.get(t, "/")
-	if !strings.Contains(home, `href="https://joblox.example/start#master"`) || !strings.Contains(home, "Сделать себе такую же страничку мастера") {
+	if !strings.Contains(home, `href="https://joblox.example/start?for=master"`) || !strings.Contains(home, "Сделать себе такую же страничку мастера") {
 		t.Fatal("no «make yourself the same» button")
 	}
 	s.srv.cfg.MarketURL = ""

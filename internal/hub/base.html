@@ -164,6 +164,24 @@ li { margin: 4px 0; }
 .principles { display: grid; gap: 4px 16px; }
 @media (min-width: 760px) { .principles { grid-template-columns: 1fr 1fr; } }
 .lead { font-size: 18px; }
+/* the start page: three tariffs */
+.lead { font-size: 18px; color: var(--muted); }
+.tariffs { display: grid; gap: 14px; margin: 18px 0; }
+@media (min-width: 820px) { .tariffs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.tariff { display: flex; flex-direction: column; gap: 6px; padding: 22px; border-radius: 24px; background: var(--panel); border: 1px solid var(--line); }
+.tariff.hot { border: 2px solid var(--accent); }
+.tariff .price { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -.03em; }
+.tariff .price small { font-size: 15px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.tariff ul { margin: 6px 0 14px; padding-left: 18px; font-size: 15px; }
+.tariff .btn { margin-top: auto; display: block; text-align: center; padding: 14px; border-radius: 16px; background: var(--accent); color: var(--accent-fg);
+  font-weight: 800; text-decoration: none; }
+.tariff .btn.ghost { background: var(--soft); color: var(--fg); }
+.soon { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); font-size: 12px; font-weight: 700; }
+.cmp { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 14px; }
+.cmp th, .cmp td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.cmp th { font-size: 13px; color: var(--muted); }
+.cmp td:first-child { color: var(--muted); }
+@media (max-width: 620px) { .cmp { font-size: 12.5px; } .cmp th, .cmp td { padding: 7px 5px; } }
 footer { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--muted); margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); }
 </style>
 </head>

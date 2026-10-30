@@ -37,7 +37,7 @@ func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base
 		b.Cart = s.readCart(r).count()
 	}
 	if s.cfg.MarketURL != "" && !strings.HasPrefix(r.URL.Path, "/owner") && !strings.HasPrefix(r.URL.Path, "/admin") {
-		b.CloneText, b.CloneURL = cloneText(s.svc.P.Business.Kind), strings.TrimRight(s.cfg.MarketURL, "/")+"/start#"+s.svc.P.Business.Kind
+		b.CloneText, b.CloneURL = cloneText(s.svc.P.Business.Kind), strings.TrimRight(s.cfg.MarketURL, "/")+"/start?for="+s.svc.P.Business.Kind
 	}
 	return b
 }

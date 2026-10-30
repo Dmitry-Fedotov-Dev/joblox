@@ -245,3 +245,18 @@ func TestPrune(t *testing.T) {
 		t.Fatalf("rows after prune: %d", n)
 	}
 }
+
+// The start page opens with the tariffs; the paid ones lead to the sales chat with the request typed in.
+func TestStartTariffs(t *testing.T) {
+	_, srv, _ := newHub(t)
+	page := get(t, srv.URL+"/start?for=master").body
+	for _, want := range []string{"Сделать себе такую же страничку мастера", "Бесплатно", "7 $", "от 100 $",
+		`href="https://t.me/HowManyRoads?text=`, strings.ReplaceAll(url.QueryEscape("такую же страничку мастера на хостинге"), "+", "%20"), `id="self"`} {
+		if !strings.Contains(page, want) {
+			t.Errorf("start page has no %q", want)
+		}
+	}
+	if plain := get(t, srv.URL+"/start?for=nonsense").body; !strings.Contains(plain, "Свой сайт для заказов") {
+		t.Error("an unknown kind is not ignored")
+	}
+}

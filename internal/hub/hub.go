@@ -92,6 +92,8 @@ type Hub struct {
 	AdminToken string
 	// Contact is where people report a card, shown on the market.
 	Contact string
+	// Sales is the Telegram chat for hosting and turnkey requests (JOBLOX_HUB_SALES); empty: DefaultSales.
+	Sales string
 
 	db   *sql.DB
 	log  *slog.Logger
@@ -234,7 +236,7 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/market", h.market)
 	mux.HandleFunc("POST /api/v1/hide", h.hide)
 	mux.HandleFunc("GET /{$}", h.home)
-	mux.HandleFunc("GET /start", h.static("start.html"))
+	mux.HandleFunc("GET /start", h.start)
 	mux.HandleFunc("GET /terms", h.static("terms.html"))
 	mux.HandleFunc("GET /api", h.static("api.html"))
 	mux.HandleFunc("GET /about", h.static("about.html"))
