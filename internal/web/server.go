@@ -48,6 +48,8 @@ type Config struct {
 	Demo   bool // a showcase site: a banner on every page says orders will not be fulfilled
 	// Prefix is the path the site lives under ("/demo-shop"), taken from the base address; empty at the root.
 	Prefix string
+	// Cover is the file of the profile's cover picture, served at /cover; empty: no cover.
+	Cover string
 }
 
 type Server struct {
@@ -141,6 +143,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /o/{token}/resend", s.resendCode)
 	mux.HandleFunc("POST /o/{token}/t/{transition}", s.customerTransition)
 	mux.HandleFunc("POST /beat", s.beat)
+	if s.cfg.Cover != "" {
+		mux.HandleFunc("GET /cover", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+			http.ServeFile(w, r, s.cfg.Cover)
+		})
+	}
 	if s.isShop() {
 		s.storeRoutes(mux)
 	}

@@ -1,6 +1,7 @@
 {{define "content"}}
 {{if .P.Services}}
-<section class="hero">
+<section class="hero{{if .Cover}} with-cover{{end}}">
+  {{if .Cover}}<img class="hero-cover" src="{{p}}/cover" alt="" decoding="async">{{end}}
   <h1>{{whole .Business.Name}}</h1>
   {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}
   <ul class="hero-meta">

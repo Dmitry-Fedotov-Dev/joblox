@@ -270,7 +270,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
-		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL)}, log)
+		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: coverOf(cfg.Profile, p)}, log)
 	if err != nil {
 		return err
 	}
@@ -471,4 +471,12 @@ func pathOf(base string) string {
 		return ""
 	}
 	return strings.TrimRight(u.Path, "/")
+}
+
+// coverOf is the file of the profile's cover picture, which lies next to the profile.
+func coverOf(profilePath string, p *profile.Profile) string {
+	if p.Business.Cover == "" {
+		return ""
+	}
+	return filepath.Join(filepath.Dir(profilePath), p.Business.Cover)
 }

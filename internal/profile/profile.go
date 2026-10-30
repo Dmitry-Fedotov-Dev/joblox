@@ -77,6 +77,8 @@ type Business struct {
 	Currency    string `yaml:"currency"` // ISO code, shown next to sums
 	Timezone    string `yaml:"timezone"`
 	Contact     string `yaml:"contact"` // shown in the footer: phone, email or messenger
+	// Cover is a picture for the top of the site: a JPEG, PNG or WebP file next to the profile.
+	Cover string `yaml:"cover"`
 }
 
 type Item struct {
@@ -260,6 +262,8 @@ func (p *Profile) defaults() {
 
 var idRe = regexp.MustCompile(`^[a-z][a-z0-9_]{0,39}$`)
 
+var coverRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,80}\.(jpg|jpeg|png|webp)$`)
+
 // Validate checks that the workflow is a closed graph and every reference points somewhere.
 func (p *Profile) Validate() error {
 	var errs []error
@@ -316,6 +320,9 @@ func (p *Profile) Validate() error {
 		if f.Type == FieldEmail && f.ID == "email" {
 			hasEmail = f.Required
 		}
+	}
+	if c := p.Business.Cover; c != "" && (!coverRe.MatchString(c)) {
+		add("business.cover %q: a .jpg, .png or .webp file name next to the profile", c)
 	}
 	for i, sv := range p.Services {
 		if strings.TrimSpace(sv.Title) == "" {

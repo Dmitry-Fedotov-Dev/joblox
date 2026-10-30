@@ -11,6 +11,7 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -239,5 +240,22 @@ func TestUnderPrefix(t *testing.T) {
 	}
 	if code, _ := s.get(t, "/cart"); code != http.StatusNotFound {
 		t.Fatalf("the site answers outside its prefix: %d", code)
+	}
+}
+
+// A cover picture next to the profile is served at /cover and shown at the top of the site.
+func TestCover(t *testing.T) {
+	s, _ := shopSite(t)
+	file := filepath.Join(t.TempDir(), "cover.jpg")
+	if err := os.WriteFile(file, testJPEG(t), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s.srv.cfg.Cover = file
+	s.http.Config.Handler = s.srv.Handler()
+	if _, home := s.get(t, "/"); !strings.Contains(home, `class="hero-cover" src="/cover"`) {
+		t.Fatal("no cover on the storefront")
+	}
+	if code, _ := s.get(t, "/cover"); code != http.StatusOK {
+		t.Fatalf("cover: %d", code)
 	}
 }
