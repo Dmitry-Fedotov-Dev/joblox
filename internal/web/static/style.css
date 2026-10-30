@@ -265,7 +265,7 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 /* a cover picture: a cut-out figure pinned to the right half of the window, behind the whole page; the
    content scrolls over it */
 .hero.with-cover { min-height: 460px; }
-.hero-cover { position: fixed; z-index: -1; right: 0; bottom: 0; width: 50vw; height: calc(100vh - 40px); object-fit: contain;
+.hero-cover { position: fixed; z-index: -1; right: 0; bottom: 0; width: 50vw; height: calc(100vh - 130px); object-fit: contain;
   object-position: right bottom; pointer-events: none; }
 @media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: 56%; } }
 @media (max-width: 720px) {
