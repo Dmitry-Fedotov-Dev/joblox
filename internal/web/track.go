@@ -62,7 +62,7 @@ func track(p *profile.Profile, o *order.Order) []Step {
 		if i == 0 {
 			title = "Оформлен"
 		}
-		steps = append(steps, Step{Title: title, Done: i < at, Now: i == at && !(i == 0 && needsPayment(o))})
+		steps = append(steps, Step{Title: title, Done: i < at, Now: i == at && (i != 0 || !needsPayment(o))})
 		if i == 0 && needsPayment(o) {
 			steps = append(steps, Step{Title: "Оплачен", Done: o.Paid || at > 0, Now: !o.Paid && at == 0})
 			steps[0].Done = true
