@@ -270,7 +270,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
-		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: coverOf(cfg.Profile, p)}, log)
+		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: coverOf(cfg.Profile, p), MarketURL: marketURL()}, log)
 	if err != nil {
 		return err
 	}
@@ -483,4 +483,20 @@ func coverOf(profilePath string, p *profile.Profile) string {
 		return "" // a profile copied without its picture (joblox up): no cover rather than a broken one
 	}
 	return file
+}
+
+// marketURL is where the «Сделать себе такой же» button leads: the network's market, the default one when
+// the installation does not report to a network of its own. JOBLOX_MARKET_URL=off hides the button.
+func marketURL() string {
+	switch v := env("JOBLOX_MARKET_URL", ""); v {
+	case "off":
+		return ""
+	case "":
+		if n := env("JOBLOX_NETWORK_URL", ""); strings.HasPrefix(n, "https://") {
+			return n
+		}
+		return "https://joblox.openline.one"
+	default:
+		return v
+	}
 }

@@ -50,6 +50,8 @@ type Config struct {
 	Prefix string
 	// Cover is the file of the profile's cover picture, served at /cover; empty: no cover.
 	Cover string
+	// MarketURL is the network's market where anyone can start the same kind of site; empty: no button.
+	MarketURL string
 }
 
 type Server struct {

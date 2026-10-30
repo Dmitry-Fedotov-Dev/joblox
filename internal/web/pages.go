@@ -22,6 +22,8 @@ type base struct {
 	Cart     int  // items in the cart
 	Demo     bool
 	Cover    bool // the profile has a cover picture for the top of the site
+	// Clone is the «make yourself the same» button of the public pages: what to call it and where it leads.
+	CloneText, CloneURL string
 }
 
 func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base {
@@ -30,6 +32,9 @@ func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base
 	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Demo: s.cfg.Demo, Cover: s.cfg.Cover != ""}
 	if b.Shop {
 		b.Cart = s.readCart(r).count()
+	}
+	if s.cfg.MarketURL != "" && !strings.HasPrefix(r.URL.Path, "/owner") && !strings.HasPrefix(r.URL.Path, "/admin") {
+		b.CloneText, b.CloneURL = cloneText(s.svc.P.Business.Kind), strings.TrimRight(s.cfg.MarketURL, "/")+"/start#"+s.svc.P.Business.Kind
 	}
 	return b
 }
@@ -413,4 +418,23 @@ func (s *Server) adminLive(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	_ = json.NewEncoder(w).Encode(map[string]any{"live": s.rec.Live(), "orders": st, "open": list,
 		"revenue": st.RevenueDay.String(), "paused": s.svc.Paused()})
+}
+
+// cloneText is the end of «Сделать себе …» for a kind of business.
+func cloneText(kind string) string {
+	switch kind {
+	case "shop":
+		return "такой же магазин"
+	case "master":
+		return "такую же страничку мастера"
+	case "taxi":
+		return "такой же таксопарк"
+	case "bakery":
+		return "такую же пекарню"
+	case "delivery":
+		return "такую же доставку"
+	case "freight":
+		return "такой же сервис перевозок"
+	}
+	return "такой же сайт"
 }
