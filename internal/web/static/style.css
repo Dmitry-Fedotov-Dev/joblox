@@ -250,3 +250,17 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 .gallery .noimg { display: block; }
 .demo-bar { margin: 0; padding: 8px 16px; background: var(--ink); color: var(--ink-fg); font-size: 13px; font-weight: 600; text-align: center; }
 .demo-bar a { color: var(--accent); }
+/* the kitten of products without photos: a slow tail, a blink now and then, a twitching ear, a rising «z» */
+.mascot .tail { transform-box: fill-box; transform-origin: 0% 100%; animation: mascot-tail 3.2s ease-in-out infinite; }
+.mascot .tail-slow { animation-duration: 6s; }
+.mascot .blink { transform-box: fill-box; transform-origin: center; animation: mascot-blink 5.5s infinite; }
+.mascot .ear-r { transform-box: fill-box; transform-origin: 50% 100%; animation: mascot-ear 7s infinite; }
+.mascot .zzz { animation: mascot-z 3.4s ease-in-out infinite; opacity: 0; }
+.mascot .zzz-2 { animation-delay: 1.4s; }
+.mascot .yarn { transform-box: fill-box; transform-origin: center; animation: mascot-yarn 4s ease-in-out infinite; }
+@keyframes mascot-tail { 0%, 100% { rotate: 0deg; } 50% { rotate: 9deg; } }
+@keyframes mascot-blink { 0%, 92%, 100% { scale: 1 1; } 95% { scale: 1 .1; } }
+@keyframes mascot-ear { 0%, 88%, 100% { rotate: 0deg; } 91% { rotate: 12deg; } 94% { rotate: -4deg; } }
+@keyframes mascot-z { 0% { opacity: 0; translate: 0 4px; } 40% { opacity: .8; } 100% { opacity: 0; translate: 8px -14px; } }
+@keyframes mascot-yarn { 0%, 100% { rotate: 0deg; translate: 0 0; } 50% { rotate: -25deg; translate: -3px 0; } }
+@media (prefers-reduced-motion: reduce) { .mascot * { animation: none !important; } .mascot .zzz { opacity: .6; } }
