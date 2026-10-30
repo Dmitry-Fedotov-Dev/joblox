@@ -269,8 +269,13 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
   object-position: right bottom; pointer-events: none; }
 @media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: 56%; } }
 @media (max-width: 720px) {
-  .hero.with-cover { min-height: 0; }
-  .hero-cover { top: 112px; bottom: auto; right: -12px; width: 82vw; height: calc(100vh - 112px); object-position: right top; opacity: .42; }
+  /* on a phone the cover fills the first screen: the figure on top, the text over its lower part, and the
+     first service tiles peeking from below; scrolling slides them over the figure */
+  .hero.with-cover { position: relative; display: flex; flex-direction: column; justify-content: flex-end;
+    min-height: calc(100svh - 112px - 92px); padding-bottom: 14px; }
+  .hero-cover { position: absolute; top: 0; right: -24px; bottom: auto; width: auto; height: 100%; max-width: none;
+    object-fit: contain; object-position: right top; opacity: 1; }
+  .hero.with-cover h1, .hero.with-cover .lead { text-shadow: 0 2px 18px var(--bg), 0 0 4px var(--bg); }
 }
 /* «make yourself the same»: every performer's site is also an invitation */
 .clone { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 8px 0 28px; padding: 18px 22px; border-radius: var(--radius);
