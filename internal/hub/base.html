@@ -77,21 +77,106 @@ pre { padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-
 ol, ul { padding-left: 22px; }
 li { margin: 4px 0; }
 .step { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 4px 20px 16px; margin: 12px 0; }
+/* the home page: scattered cubes, like the shortcuts of a super app. Each one leans a little, floats on its own
+   beat and straightens up and lifts when pointed at. */
+.cubes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 6px 2px 10px; }
+@media (min-width: 700px) { .cubes { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+.cube { --tint: #ece6da; --tint-fg: var(--fg); position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 150px;
+  padding: 18px; border-radius: 28px; background: var(--tint); color: var(--tint-fg); text-decoration: none; overflow: hidden; min-width: 0;
+  rotate: calc((mod(var(--i) * 3, 7) - 3) * .6deg); animation: float 6s ease-in-out infinite; animation-delay: calc(var(--i) * -.9s);
+  transition: rotate .35s cubic-bezier(.2, .8, .2, 1.4), scale .35s cubic-bezier(.2, .8, .2, 1.4), box-shadow .3s ease;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .04), 0 14px 30px -22px rgba(20, 19, 18, .5); }
+.cube:hover, .cube:focus-visible { rotate: 0deg; scale: 1.045; z-index: 2; box-shadow: 0 24px 50px -24px rgba(20, 19, 18, .55); outline: none; }
+.cube:active { scale: .97; }
+.cube.wide { grid-column: span 2; min-height: 200px; }
+.cube.k-start { grid-column: 1 / -1; min-height: 110px; }
+.cube.wide, .cube.k-start { rotate: calc((mod(var(--i) * 3, 7) - 3) * .2deg); }
+/* the search is a tile too: same radius, same weight */
+.search { position: relative; margin: 18px 0 22px; }
+.search input { width: 100%; height: 84px; padding: 0 92px 0 28px; border: 0; border-radius: 28px; background: var(--panel); color: var(--fg);
+  font: 800 clamp(24px, 4vw, 34px)/1 var(--sans); letter-spacing: -.03em; box-shadow: 0 1px 0 rgba(0, 0, 0, .04), 0 18px 40px -26px rgba(20, 19, 18, .55);
+  outline: 2px solid transparent; transition: outline-color .2s ease, box-shadow .2s ease; }
+.search input::placeholder { color: var(--fg); opacity: .9; }
+.search input:focus { outline-color: var(--accent); }
+.search button { position: absolute; right: 12px; top: 12px; width: 60px; height: 60px; border: 0; border-radius: 20px; background: var(--accent);
+  color: var(--accent-fg); font: 800 26px/1 var(--sans); cursor: pointer; transition: scale .2s ease; }
+.search button:hover { scale: 1.06; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cube .emoji { position: absolute; right: -6px; bottom: -14px; font-size: 92px; line-height: 1; transition: rotate .4s cubic-bezier(.2, .8, .2, 1.4), scale .4s ease;
+  rotate: -12deg; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .15)); }
+.cube:hover .emoji { rotate: 6deg; scale: 1.12; }
+.cube.wide .emoji { font-size: 128px; right: 10px; }
+.cube b { position: relative; font-size: 21px; line-height: 1.1; letter-spacing: -.025em; max-width: 72%; overflow-wrap: anywhere; }
+.cube.wide b { font-size: clamp(24px, 3vw, 34px); }
+.cube small { position: relative; font-size: 13px; line-height: 1.4; opacity: .78; max-width: 74%; display: -webkit-box; -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical; overflow: hidden; }
+.cube .tag { position: relative; align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, .7); color: #141312;
+  font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; margin-bottom: auto; }
+.cube .tag.live { color: var(--ok); }
+.k-shop { --tint: #ffd8e4; } .k-master { --tint: #ffe2a6; } .k-taxi { --tint: #fff0a0; } .k-delivery { --tint: #ffd2bd; }
+.k-bakery { --tint: #f6dfc4; } .k-freight { --tint: #cfe0ff; } .k-agent { --tint: #cdeedb; } .k-radio { --tint: #e2d8ff; }
+.k-call { --tint: #c8edf7; } .k-idea { --tint: #141312; --tint-fg: #f4f1ea; } .k-start { --tint: var(--accent); --tint-fg: var(--accent-fg); }
+.k-idea .tag, .k-start .tag { background: rgba(255, 255, 255, .16); color: inherit; }
+@media (prefers-color-scheme: dark) {
+  .cube { --tint-fg: #141312; }
+  .k-idea { --tint: #f1ede4; --tint-fg: #141312; } .k-idea .tag { background: rgba(0, 0, 0, .08); }
+  .k-start { --tint-fg: #160b06; }
+}
+@keyframes float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+@media (prefers-reduced-motion: reduce) { .cube { animation: none; rotate: 0deg; } }
+
+/* template pages: a phone with the site inside */
+.showcase { display: grid; gap: 32px; align-items: start; margin-top: 8px; }
+@media (min-width: 860px) { .showcase { grid-template-columns: 360px minmax(0, 1fr); gap: 56px; } }
+.phone { width: 100%; max-width: 360px; margin: 0 auto; padding: 12px; border-radius: 46px; background: #141312;
+  box-shadow: 0 40px 80px -40px rgba(20, 19, 18, .7); rotate: -2deg; transition: rotate .5s ease; }
+.phone:hover { rotate: 0deg; }
+.screen { min-height: 640px; border-radius: 36px; background: #f4f1ea; color: #141312; padding: 18px 16px 22px; overflow: hidden; font-size: 13px; }
+.m-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.m-brand { font-weight: 800; display: inline-flex; gap: 6px; align-items: center; }
+.m-brand::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #ff5a1f; }
+.m-pill, .m-cart { padding: 5px 10px; border-radius: 999px; background: #141312; color: #f4f1ea; font-weight: 700; font-size: 11px; }
+.m-cart i { font-style: normal; background: #ff5a1f; color: #fff; border-radius: 999px; padding: 0 6px; margin-left: 4px; }
+.m-eyebrow { margin: 0; color: #ff5a1f; font-weight: 800; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.m-h { margin: 4px 0 6px; font-size: 38px; line-height: .95; font-weight: 800; letter-spacing: -.05em; }
+.m-lead { margin: 0 0 12px; color: #6c675f; }
+.m-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.m-chips span { padding: 5px 10px; border: 1px solid #e3ddd2; border-radius: 999px; background: #fffdf8; font-weight: 600; font-size: 12px; }
+.m-card { background: #fffdf8; border: 1px solid #e3ddd2; border-radius: 20px; padding: 12px; }
+.m-label { margin: 0 0 3px; font-weight: 700; font-size: 11px; }
+.m-field { margin: 0 0 9px; padding: 8px 10px; border: 1.5px solid #e3ddd2; border-radius: 10px; }
+.m-btn { margin: 4px 0 0; padding: 12px; border-radius: 14px; background: #ff5a1f; color: #fff; text-align: center; font-weight: 800; }
+.m-status { margin-top: 12px; padding: 12px; border-radius: 16px; background: #141312; color: #f4f1ea; display: flex; flex-direction: column; gap: 2px; }
+.m-status span { opacity: .7; font-size: 11px; }
+.m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+.m-p { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.m-p b { font-weight: 600; }
+.m-p > span:last-child { font-weight: 800; }
+.m-p s { color: #6c675f; font-weight: 500; }
+.m-img { position: relative; aspect-ratio: 4 / 5; border-radius: 16px; }
+.m-img em { position: absolute; top: 7px; left: 7px; font-style: normal; font-size: 9px; font-weight: 800; padding: 3px 7px; border-radius: 999px; background: #fffdf8; }
+.m-img em.hot { background: #ff5a1f; color: #fff; }
+.g1 { background: linear-gradient(160deg, #e9c9a8, #b98b63); } .g2 { background: linear-gradient(160deg, #c7d3e8, #7d8fb3); }
+.g3 { background: linear-gradient(160deg, #e8d1d8, #b88a9a); } .g4 { background: linear-gradient(160deg, #cfe3d4, #7fa58b); }
+.about-tpl .lead { font-size: 19px; color: var(--muted); }
+.about-tpl .cta { margin-top: 24px; }
+.principles { display: grid; gap: 4px 16px; }
+@media (min-width: 760px) { .principles { grid-template-columns: 1fr 1fr; } }
+.lead { font-size: 18px; }
 footer { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--muted); margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); }
 </style>
 </head>
 <body>
 <main>
-<header class="top"><a class="brand" href="/">Joblox</a><span class="muted small">товары и услуги от людей рядом</span></header>
+<header class="top"><a class="brand" href="/">Joblox</a><a class="muted small" href="/about">Идея</a></header>
 {{end}}
 
 {{define "foot"}}
 <footer>
-  <a href="/">Биржа</a>
-  <a href="/start">Стать исполнителем</a>
-  <a href="/terms">Пользовательское соглашение</a>
-  <a href="/api">Открытое API</a>
-  <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Исходный код</a>
+  <a href="/about">Идея</a>
+  <a href="/terms">Условия</a>
+  <a href="/api">API</a>
+  <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Код</a>
   {{if .Contact}}<span>Пожаловаться на карточку: {{.Contact}}</span>{{end}}
 </footer>
 </main>

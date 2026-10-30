@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -128,7 +129,7 @@ func TestPublicPages(t *testing.T) {
 	_, srv, _ := newHub(t)
 	post(t, srv.URL, `{"id":"`+idA+`","kind":"bakery","version":"1","online":3,"orders_today":2}`)
 	home := get(t, srv.URL+"/")
-	for _, want := range []string{"OpenLine Радио", "Agent Pay", "Трубка: Контакт", `class="sticky"`, "Стать исполнителем", `href="/?kind=radio"`} {
+	for _, want := range []string{"OpenLine Радио", "Agent Pay", "Трубка: Контакт", "Мамина мастерская", `name="q"`, "Стать исполнителем"} {
 		if !strings.Contains(home.body, want) {
 			t.Errorf("market page has no %q", want)
 		}
@@ -137,10 +138,18 @@ func TestPublicPages(t *testing.T) {
 		t.Fatal("market page without CSP")
 	}
 	radio := get(t, srv.URL+"/?kind=radio").body
-	if !strings.Contains(radio, "OpenLine Радио") || strings.Contains(radio, "Agent Pay") || !strings.Contains(radio, `class="chip on"`) {
-		t.Error("the radio chip does not filter the tiles")
+	if !strings.Contains(radio, "OpenLine Радио") || strings.Contains(radio, "Agent Pay") {
+		t.Error("kind does not filter the tiles")
 	}
-	for path, want := range map[string]string{"/start": "Termux", "/terms": "Пользовательское соглашение", "/api": "/api/v1/market"} {
+	found := get(t, srv.URL+"/?q="+url.QueryEscape("радио станц")).body
+	if !strings.Contains(found, "OpenLine Радио") || strings.Contains(found, "Agent Pay") || !strings.Contains(found, `value="радио станц"`) {
+		t.Error("the search does not filter the tiles")
+	}
+	if none := get(t, srv.URL+"/?q=zzzz").body; !strings.Contains(none, "Ничего не нашлось") {
+		t.Error("an empty search result is not explained")
+	}
+	for path, want := range map[string]string{"/start": "Termux", "/terms": "Пользовательское соглашение", "/api": "/api/v1/market",
+		"/about": "AGPL-3.0", "/t/master": "Мастер на выезд", "/t/shop": "Магазин с фото"} {
 		if p := get(t, srv.URL+path); p.code != http.StatusOK || !strings.Contains(p.body, want) {
 			t.Errorf("%s: %d, no %q", path, p.code, want)
 		}

@@ -1,0 +1,45 @@
+{{template "top" (print "Шаблон «" .Title "» · Joblox")}}
+<p class="small"><a href="/">← Все сервисы</a></p>
+<div class="showcase">
+  <div class="phone" aria-label="Так сайт выглядит на телефоне">
+    <div class="screen">
+    {{if eq .ID "master"}}
+      <div class="m-top"><span class="m-brand">Мастер Азамат</span><span class="m-pill">+996 700 000 000</span></div>
+      <p class="m-eyebrow">Мастер на выезд</p>
+      <p class="m-h">Сделаю за&nbsp;день</p>
+      <p class="m-lead">Сборка мебели, полки и карнизы, мелкий ремонт. Выезд в день заявки.</p>
+      <div class="m-chips"><span>🪑 Мебель</span><span>🔩 Полки</span><span>🚰 Сантехника</span><span>💡 Свет</span></div>
+      <div class="m-card">
+        <p class="m-label">Что нужно сделать</p><p class="m-field">Собрать шкаф-купе ▾</p>
+        <p class="m-label">Когда удобно</p><p class="m-field">Завтра, 18:00</p>
+        <p class="m-label">Адрес</p><p class="m-field">Чолпон-Ата, ул. Советская</p>
+        <p class="m-btn">Оставить заявку</p>
+      </div>
+      <div class="m-status"><b>Мастер назвал цену: 1 500 сом</b><span>Оплата после работы, на месте или переводом</span></div>
+    {{else}}
+      <div class="m-top"><span class="m-brand">Лавка «Шерсть»</span><span class="m-cart">Корзина <i>2</i></span></div>
+      <p class="m-h">Лавка «Шерсть»</p>
+      <p class="m-lead">Вязаные вещи ручной работы из кыргызской шерсти.</p>
+      <div class="m-grid">
+        <div class="m-p"><span class="m-img g1"><em>Последний</em></span><b>Свитер «Ала-Тоо»</b><span>4 800 сом</span></div>
+        <div class="m-p"><span class="m-img g2"><em class="hot">Скидка</em></span><b>Шапка-ушанка</b><span>1 200 сом <s>1 500</s></span></div>
+        <div class="m-p"><span class="m-img g3"></span><b>Носки, 3 пары</b><span>900 сом</span></div>
+        <div class="m-p"><span class="m-img g4"><em>Новинка</em></span><b>Плед «Иссык-Куль»</b><span>6 500 сом</span></div>
+      </div>
+    {{end}}
+    </div>
+  </div>
+
+  <div class="about-tpl">
+    <p class="badge">Шаблон Joblox</p>
+    <h1>{{.Title}}</h1>
+    <p class="lead">{{.Lead}}</p>
+    <h3>Кому подойдёт</h3>
+    <ul>{{range .For}}<li>{{.}}</li>{{end}}</ul>
+    <h3>Что умеет</h3>
+    <ul>{{range .Features}}<li>{{.}}</li>{{end}}</ul>
+    <a class="cta" href="/start#{{.ID}}">Запустить такой же</a>
+    <p class="muted small">Бесплатно и без посредника: сайт работает на вашем телефоне или сервере, деньги клиенты платят прямо вам. <a href="/about">Как это устроено</a>.</p>
+  </div>
+</div>
+{{template "foot" .}}

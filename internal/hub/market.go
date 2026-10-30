@@ -32,16 +32,26 @@ type Card struct {
 	Badge   string `json:"badge,omitempty"`  // "OpenLine" for the author's own projects
 	Invite  bool   `json:"invite,omitempty"` // "start your own": leads to the launch instructions
 	Online  int    `json:"online,omitempty"`
+	Wide    bool   `json:"-"` // a double tile on the home page
 }
 
-// Featured are the author's projects. They stand in the same grid as everyone else's cards.
+// Featured are the author's projects, the network's own pages and the ready-made templates. They stand in
+// the same grid as everyone else's cards.
 var Featured = []Card{
+	{Kind: "shop", Title: "Мамина мастерская", About: "Одежда ручной работы, лимитированные коллекции. Доставка по России.",
+		URL: "https://mama-couture.openline.one/", Badge: "Магазин", Wide: true},
+	{Kind: "master", Title: "Мастер на выезд", About: "Шаблон сайта для мастера: сборка мебели, мелкий ремонт, ручная работа. Клиент оставляет заявку, мастер называет цену.",
+		URL: "/t/master", Badge: "Шаблон"},
+	{Kind: "shop", Title: "Магазин с фото", About: "Шаблон магазина: товары с фото и размерами, остатки, корзина. Товары добавляются с телефона.",
+		URL: "/t/shop", Badge: "Шаблон"},
 	{Kind: "call", Title: "Трубка: Контакт", About: "Позвоните клиенту или другу по ссылке и говорите один на один. Только голос, без регистрации и номеров.",
 		URL: "https://openline.one/", Badge: "OpenLine"},
 	{Kind: "radio", Title: "OpenLine Радио", About: "Открытое радио в браузере: крутите ручку между станциями или займите свою волну с микрофоном и музыкой.",
 		URL: "https://openline.one/radio/", Badge: "OpenLine"},
 	{Kind: "agent", Title: "Agent Pay", About: "Оплата зарубежных услуг и IT-сервисов для ООО и ИП через агента, с полным комплектом документов для бухгалтерии.",
 		URL: "https://pay.openline.one", Badge: "OpenLine"},
+	{Kind: "idea", Title: "Идея Joblox", About: "Свой сайт у каждого мастера и лавки, без посредника и комиссии. Открытый код.",
+		URL: "/about", Badge: "Joblox"},
 }
 
 // Roles are the "become a performer" choices under the big button: one per ready-made profile.
@@ -50,17 +60,18 @@ var Roles = []Card{
 	{Kind: "delivery", Title: "Курьер", About: "Доставка посылок, продуктов и документов по селу или городу.", URL: "/start#delivery", Invite: true},
 	{Kind: "bakery", Title: "Пекарня у дома", About: "Хлеб и выпечка с самовывозом к удобному времени.", URL: "/start#bakery", Invite: true},
 	{Kind: "freight", Title: "Перевозчик", About: "Переезды и грузы. Клиент описывает задачу, вы называете цену.", URL: "/start#freight", Invite: true},
-	{Kind: "shop", Title: "Продавец", About: "Свой каталог с корзиной, доставка или самовывоз.", URL: "/start#shop", Invite: true},
+	{Kind: "shop", Title: "Продавец", About: "Товары с фото и размерами, корзина, доставка или самовывоз.", URL: "/start#shop", Invite: true},
+	{Kind: "master", Title: "Мастер на выезд", About: "Ремонт, сборка мебели, ручная работа. Клиент описывает задачу, вы называете цену.", URL: "/start#master", Invite: true},
 }
 
 var kindTitles = map[string]string{
 	"taxi": "Такси", "bakery": "Пекарни", "delivery": "Доставка", "freight": "Грузоперевозки", "shop": "Магазины",
-	"agent": "Оплата услуг", "radio": "Радио", "call": "Связь", "other": "Другое",
+	"agent": "Оплата услуг", "radio": "Радио", "call": "Связь", "master": "Мастера", "idea": "О проекте", "other": "Другое",
 }
 
 var kindIcons = map[string]string{
 	"taxi": "🚕", "delivery": "📦", "bakery": "🥐", "freight": "🚚", "shop": "🛍️",
-	"agent": "💳", "radio": "📻", "call": "📞",
+	"agent": "💳", "radio": "📻", "call": "📞", "master": "🛠️", "idea": "💡",
 }
 
 // KindIcon is the tile's picture: an emoji, so it needs no image files and looks native on every phone.

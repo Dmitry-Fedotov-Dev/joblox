@@ -1,0 +1,55 @@
+# Мастер на выезд: сборка мебели, мелкий ремонт, ручная работа. Клиент выбирает, что сделать, и описывает
+# задачу, мастер называет цену, клиент подтверждает, мастер приезжает. Оплата после работы, на месте или
+# переводом. Цена по запросу, потому что зависит от объёма и материалов.
+business:
+  name: Мастер Азамат
+  kind: master
+  description: Сборка мебели, мелкий ремонт, полки и карнизы, сантехника по мелочи. Выезд в день заявки.
+  currency: KGS
+  timezone: Asia/Bishkek
+  contact: "+996 700 000 000"
+
+pricing:
+  mode: quote
+  min_total: 500
+
+checkout:
+  fields:
+    - {id: work, label: Что нужно сделать, type: select, required: true, options: [Собрать мебель, Повесить полки или карниз, Мелкий ремонт, Сантехника, Электрика по мелочи, Другое]}
+    - {id: details, label: Подробнее, type: textarea, required: true, max_len: 800, hint: "Что именно, сколько штук, есть ли материалы и инструмент. Можно ссылку на фото"}
+    - {id: address, label: Адрес, type: textarea, required: true, max_len: 300}
+    - {id: when, label: Когда удобно, type: datetime, required: true}
+    - {id: name, label: Как к вам обращаться, type: text, required: true, max_len: 80}
+    - {id: phone, label: Телефон, type: phone, required: true}
+    - {id: email, label: Email, type: email, required: true}
+
+payment:
+  methods: [cash, transfer]
+  require_email_code: true
+  reference_prefix: MA
+  window_hours: 48
+
+workflow:
+  initial: request
+  states:
+    - {id: request, title: Заявка, customer: "Заявка получена, мастер посмотрит и назовёт цену"}
+    - {id: quoted, title: Цена названа, customer: "Мастер назвал цену, подтвердите заказ"}
+    - {id: booked, title: Записан, customer: "Мастер записал вас и приедет в выбранное время"}
+    - {id: working, title: В работе, customer: "Мастер на месте и работает"}
+    - {id: done, title: Готово, customer: "Работа выполнена. Спасибо!", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true}
+    - {id: expired, title: Истёк, customer: "Заявка закрыта без подтверждения", final: true}
+  transitions:
+    - {id: quote, title: Цена названа, from: request, to: quoted, by: operator, requires: [priced, approved], notify: true}
+    - {id: book, title: Подтвердить заказ, from: quoted, to: booked, by: customer, requires: [verified]}
+    - {id: arrive, title: Приехал, from: booked, to: working, by: operator, notify: true}
+    - {id: finish, title: Готово, from: working, to: done, by: operator, requires: [paid], notify: true}
+    - {id: cancel, title: Отменить, from: [request, quoted, booked], to: cancelled, by: [customer, operator], notify: true}
+    - {id: expire, title: Истёк срок, from: quoted, to: expired, by: system}
+
+antifraud:
+  max_orders_per_ip_hour: 3
+  review_above: 30000
+
+texts:
+  intro: Опишите задачу, мастер назовёт цену. Платите после работы, на месте или переводом.

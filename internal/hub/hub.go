@@ -237,12 +237,14 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("GET /start", h.static("start.html"))
 	mux.HandleFunc("GET /terms", h.static("terms.html"))
 	mux.HandleFunc("GET /api", h.static("api.html"))
+	mux.HandleFunc("GET /about", h.static("about.html"))
+	mux.HandleFunc("GET /t/{id}", h.showcase)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.Handle("GET /kitten/", http.StripPrefix("/kitten", kitten.Handler()))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// the only scripts are the kitten's, from this host; the page refreshes itself with a meta tag
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; img-src 'self' data:; "+
-			"frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+			"frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		r.Body = http.MaxBytesReader(w, r.Body, 4096)
@@ -306,14 +308,9 @@ func (h *Hub) stats(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(st)
 }
 
-type chip struct {
-	Kind, Title string
-	On          bool
-}
-
-// home is the market as a customer sees it: one grid of tiles with everything that is available right now
-// (performers on line first, then the network's own services), chips to filter by kind, and the sticky
-// «Стать исполнителем» button.
+// home is the market as a customer sees it, like the home screen of a super app: a big «Что нужно?» search
+// and the tiles of everything available right now (performers on line first, then the network's own
+// services and templates). ?q= searches the tiles, ?kind= keeps one kind.
 func (h *Hub) home(w http.ResponseWriter, r *http.Request) {
 	st, err := h.Stats(r.Context())
 	if err != nil {
@@ -326,24 +323,30 @@ func (h *Hub) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	kind := r.URL.Query().Get("kind")
-	seen := map[string]bool{}
-	chips := []chip{{Kind: "", Title: "Все", On: kind == ""}}
+	q := clip(r.URL.Query().Get("q"), 60)
 	var tiles []Card
 	for _, c := range all {
-		if !seen[c.Kind] {
-			seen[c.Kind] = true
-			chips = append(chips, chip{Kind: c.Kind, Title: KindTitle(c.Kind), On: c.Kind == kind})
-		}
-		if kind == "" || c.Kind == kind {
+		if (kind == "" || c.Kind == kind) && matches(c, q) {
 			tiles = append(tiles, c)
 		}
 	}
 	h.render(w, "market.html", struct {
 		Stats
-		Chips   []chip
 		Tiles   []Card
+		Query   string
 		Contact string
-	}{st, chips, tiles, h.Contact})
+	}{st, tiles, q, h.Contact})
+}
+
+// matches is the search of the home page: every word of the query is somewhere in the card.
+func matches(c Card, q string) bool {
+	text := strings.ToLower(c.Title + " " + c.About + " " + c.Place + " " + KindTitle(c.Kind))
+	for _, w := range strings.Fields(strings.ToLower(q)) {
+		if !strings.Contains(text, w) {
+			return false
+		}
+	}
+	return true
 }
 
 func (h *Hub) static(page string) http.HandlerFunc {

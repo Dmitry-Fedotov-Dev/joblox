@@ -1,30 +1,24 @@
-{{template "top" "Joblox: товары и услуги от людей рядом"}}
-<section class="hero">
-  <h1>Что нужно<em>?</em></h1>
-  <p>Товары, услуги, лавки и кухни на районе. Каждый исполнитель работает сам: заказ и оплата идут напрямую ему.</p>
-  <p class="stats"><span>На связи: <b>{{.Installations}}</b></span><span>Заказов за сутки: <b>{{.OrdersToday}}</b></span></p>
-</section>
+{{template "top" "Joblox: всё рядом"}}
+<form class="search" method="get" action="/" role="search">
+  <label class="sr" for="q">Что нужно?</label>
+  <input id="q" name="q" value="{{.Query}}" placeholder="Что нужно?" autocomplete="off" enterkeyhint="search">
+  <button type="submit" aria-label="Найти">→</button>
+</form>
 
-<nav class="chips" aria-label="Виды услуг">
-  {{range .Chips}}<a class="chip{{if .On}} on{{end}}" href="/{{if .Kind}}?kind={{.Kind}}{{end}}">{{if .Kind}}{{kindIcon .Kind}} {{end}}{{.Title}}</a>{{end}}
-</nav>
-
-<div class="tiles">
-  {{range .Tiles}}
-  <a class="tile k-{{.Kind}}" href="{{.URL}}" rel="{{if .Badge}}noopener{{else}}nofollow noopener ugc{{end}}">
-    <span class="icon" aria-hidden="true">{{kindIcon .Kind}}</span>
-    <b>{{.Title}}</b>
-    <small>{{if .Badge}}{{.About}}{{else}}{{if .Place}}{{.Place}} · {{end}}{{if .About}}{{.About}}{{else}}{{kindTitle .Kind}}{{end}}{{end}}</small>
+<div class="cubes">
+  {{range $i, $c := .Tiles}}
+  <a class="cube k-{{.Kind}}{{if .Wide}} wide{{end}}" style="--i: {{$i}}" href="{{.URL}}" title="{{.About}}" rel="{{if .Badge}}noopener{{else}}nofollow noopener ugc{{end}}">
+    <span class="emoji" aria-hidden="true">{{kindIcon .Kind}}</span>
     {{if .Badge}}<span class="tag">{{.Badge}}</span>{{else}}<span class="tag live"><span class="dot"></span>на связи</span>{{end}}
+    <b>{{.Title}}</b>
   </a>
   {{else}}
-  <p class="empty">Здесь пока никого нет. Станьте первым: кнопка внизу.</p>
+  <p class="empty">Ничего не нашлось. <a href="/">Показать всё</a></p>
   {{end}}
-</div>
-
-<p class="muted small fine">Каждый исполнитель работает сам и сам отвечает за свои услуги. Joblox только показывает ссылки и не принимает деньги. <a href="/terms">Пользовательское соглашение</a>.</p>
-
-<div class="sticky">
-  <a class="cta" href="/start">Стать исполнителем</a>
+  <a class="cube k-start" style="--i: 9" href="/start">
+    <span class="emoji" aria-hidden="true">✨</span>
+    <span class="tag">Бесплатно</span>
+    <b>Стать исполнителем</b>
+  </a>
 </div>
 {{template "foot" .}}
