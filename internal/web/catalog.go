@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -209,7 +210,13 @@ func (s *Server) savePhotos(r *http.Request, product int64) string {
 		return ""
 	}
 	var failed []string
-	for _, fh := range r.MultipartForm.File["photos"] {
+	var files []*multipart.FileHeader
+	real := map[*multipart.FileHeader]bool{}
+	for _, fh := range r.MultipartForm.File["real_photos"] {
+		real[fh] = true
+	}
+	files = append(append(files, r.MultipartForm.File["photos"]...), r.MultipartForm.File["real_photos"]...)
+	for _, fh := range files {
 		if fh.Size == 0 {
 			continue
 		}
@@ -220,6 +227,7 @@ func (s *Server) savePhotos(r *http.Request, product int64) string {
 		}
 		im, err := s.cfg.Photos.Save(f)
 		_ = f.Close()
+		im.Real = real[fh]
 		if err != nil {
 			s.log.Info("photo refused", "file", fh.Filename, "err", err)
 			failed = append(failed, fh.Filename+" ("+err.Error()+")")

@@ -21,6 +21,20 @@
     {{end}}
   </div>
   {{else}}<p class="muted">Фото пока нет. Добавьте их ниже, в форме товара.</p>{{end}}
+  {{if .Product.Real}}
+  <h2>Настоящие фото</h2>
+  <p class="muted small">Их покупатель видит по кнопке «Посмотреть настоящее изображение» на фото товара.</p>
+  <div class="photos">
+    {{range $i, $im := .Product.Real}}
+    <div class="photo">
+      <img src="{{p}}/img/{{$im.File}}_t.jpg" alt="Настоящее фото {{inc $i}}" loading="lazy">
+      <div class="acts">
+        <form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-del-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Удалить</button></form>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
 </section>
 {{end}}
 
@@ -65,6 +79,13 @@
     <input id="photos" name="photos" type="file" accept="image/*" multiple>
     <p class="hint">Можно сразу несколько, до {{.MaxImages}} на товар (осталось {{.ImagesLeft}}), каждое до {{.MB}} МБ. Мы сами повернём их как надо, уменьшим и уберём из файлов место съёмки.</p>
   </div>
+  {{if not .Services}}
+  <div class="field">
+    <label for="real_photos">Добавить настоящие фото</label>
+    <input id="real_photos" name="real_photos" type="file" accept="image/*" multiple>
+    <p class="hint">Обычные снимки самой вещи, без обработки: покупатель откроет их кнопкой «Посмотреть настоящее изображение».</p>
+  </div>
+  {{end}}
   <label class="radio"><input type="checkbox" name="hidden" value="1"{{if .Hidden}} checked{{end}}> Скрыть с витрины</label>
   <button class="cta" type="submit">Сохранить</button>
 </form>

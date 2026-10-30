@@ -286,3 +286,21 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 body:has(.hero-cover) .svc, body:has(.hero-cover) .card, body:has(.hero-cover) .hero-meta li {
   background: color-mix(in srgb, var(--panel) 78%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { text-shadow: 0 1px 10px var(--bg), 0 0 3px var(--bg); }
+/* «Посмотреть настоящее изображение»: a round button on the gallery opens the plain photos over the page */
+.gallery-wrap { position: relative; }
+.real-btn { position: absolute; z-index: 3; top: 14px; right: 14px; display: flex; align-items: center; gap: 10px; height: 58px; min-width: 58px;
+  max-width: 58px; padding: 0 16px; border-radius: 999px; overflow: hidden; white-space: nowrap; text-decoration: none; color: #fff;
+  background: rgba(20, 19, 18, .55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 10px 30px -12px rgba(0, 0, 0, .6);
+  transition: max-width .45s cubic-bezier(.2, .8, .2, 1), background .3s ease; }
+.real-btn .real-icon { flex: none; font-size: 24px; line-height: 1; }
+.real-btn .real-text { font-size: 19px; font-weight: 800; letter-spacing: -.01em; opacity: 0; transition: opacity .3s ease; }
+.real-btn:hover, .real-btn:focus-visible { max-width: 520px; background: rgba(20, 19, 18, .72); }
+.real-btn:hover .real-text, .real-btn:focus-visible .real-text { opacity: .92; }
+@media (hover: none) { .real-btn { max-width: 520px; } .real-btn .real-text { opacity: .92; font-size: 15px; } }
+.real { display: none; }
+.real:target { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; gap: 14px; overflow-y: auto;
+  padding: 64px 16px 40px; background: rgba(12, 11, 10, .94); }
+.real img { width: auto; max-width: min(100%, 900px); height: auto; border-radius: 16px; }
+.real-title { margin: 0; color: #f4f1ea; font-weight: 700; }
+.real-close { position: fixed; top: 12px; right: 16px; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%;
+  background: rgba(255, 255, 255, .14); color: #fff; font-size: 30px; text-decoration: none; }

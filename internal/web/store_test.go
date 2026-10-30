@@ -269,3 +269,31 @@ func TestCover(t *testing.T) {
 		t.Fatalf("cover: %d", code)
 	}
 }
+
+// Real photos stay off the storefront's gallery and open with the round button on the product page.
+func TestRealPhotos(t *testing.T) {
+	s, cat := shopSite(t)
+	ctx := context.Background()
+	id, err := cat.Save(ctx, 0, shop.Input{Title: "Грибок", Price: 100000, Variants: []shop.VariantInput{{Stock: 1}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cat.AddImage(ctx, id, shop.Image{File: "aaaaaaaaaaaaaaaaaaaaaaaa", W: 10, H: 10}); err != nil {
+		t.Fatal(err)
+	}
+	if code, page := s.get(t, "/p/gribok"); code != http.StatusOK || strings.Contains(page, `class="real-btn"`) {
+		t.Fatal("a button without real photos")
+	}
+	if err := cat.AddImage(ctx, id, shop.Image{File: "bbbbbbbbbbbbbbbbbbbbbbbb", W: 10, H: 10, Real: true}); err != nil {
+		t.Fatal(err)
+	}
+	_, page := s.get(t, "/p/gribok")
+	if !strings.Contains(page, `href="#real"`) || !strings.Contains(page, "Посмотреть настоящее изображение") ||
+		!strings.Contains(page, "/img/bbbbbbbbbbbbbbbbbbbbbbbb.jpg") {
+		t.Fatal("no real photos on the product page")
+	}
+	p, _ := cat.Get(ctx, id)
+	if len(p.Images) != 1 || len(p.Real) != 1 || p.Cover().File != "aaaaaaaaaaaaaaaaaaaaaaaa" {
+		t.Fatalf("galleries: %+v %+v", p.Images, p.Real)
+	}
+}

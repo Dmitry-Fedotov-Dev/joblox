@@ -1,7 +1,8 @@
 {{define "content"}}
 {{$p := .Product}}
 <article class="product">
-  <div>
+  <div class="gallery-wrap">
+    {{if $p.Real}}<a class="real-btn" href="#real" aria-label="Посмотреть настоящее изображение"><span class="real-icon" aria-hidden="true">📷</span><span class="real-text">Посмотреть настоящее изображение</span></a>{{end}}
     <div class="gallery" id="gallery">
       {{range $i, $im := $p.Images}}<figure id="ph{{$i}}"><img src="{{p}}/img/{{$im.File}}.jpg" alt="{{$p.Title}}, фото {{inc $i}}" width="{{$im.W}}" height="{{$im.H}}"{{if $i}} loading="lazy"{{end}} decoding="async"></figure>
       {{else}}<figure class="noimg">{{mascot $p.ID}}</figure>{{end}}
@@ -47,6 +48,14 @@
     {{if $p.Description}}<div class="desc">{{$p.Description}}</div>{{end}}
   </div>
 </article>
+
+{{if $p.Real}}
+<section class="real" id="real" aria-label="Настоящие фото">
+  <a class="real-close" href="#gallery" aria-label="Закрыть">×</a>
+  <p class="real-title">Настоящие фото: «{{$p.Title}}» как есть</p>
+  {{range $i, $im := $p.Real}}<img src="{{p}}/img/{{$im.File}}.jpg" alt="{{$p.Title}}, настоящее фото {{inc $i}}" width="{{$im.W}}" height="{{$im.H}}" loading="lazy" decoding="async">{{end}}
+</section>
+{{end}}
 
 {{if .More}}
 <section>

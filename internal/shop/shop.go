@@ -31,7 +31,8 @@ type Product struct {
 	OldPrice    money.Amount // crossed out next to the price; 0 when there is no discount
 	Hidden      bool
 	Position    int
-	Images      []Image
+	Images      []Image // the showcase pictures: the cover and the gallery
+	Real        []Image // photos of the very item, as it is, behind «Посмотреть настоящее изображение»
 	Variants    []Variant
 	CreatedAt   time.Time
 }
@@ -49,6 +50,7 @@ type Image struct {
 	ID   int64
 	File string
 	W, H int
+	Real bool // a plain photo of the item rather than a showcase picture
 }
 
 // InStock says whether anything of the product can be bought.
@@ -70,12 +72,15 @@ func (p *Product) Stock() int {
 	return n
 }
 
-// Cover is the first photo, or nil.
+// Cover is the first showcase picture, else the first real photo, or nil.
 func (p *Product) Cover() *Image {
-	if len(p.Images) == 0 {
-		return nil
+	switch {
+	case len(p.Images) > 0:
+		return &p.Images[0]
+	case len(p.Real) > 0:
+		return &p.Real[0]
 	}
-	return &p.Images[0]
+	return nil
 }
 
 // Variant finds a variant of the product.
@@ -150,6 +155,7 @@ var migrations = []string{
 		position INTEGER NOT NULL
 	);
 	CREATE INDEX shop_images_product ON shop_images(product_id, position);`,
+	`ALTER TABLE shop_images ADD COLUMN real INTEGER NOT NULL DEFAULT 0;`,
 }
 
 // Open brings the shop tables up to date in db (the orders database).
@@ -250,7 +256,7 @@ func (c *Catalog) fill(ctx context.Context, byID map[int64]*Product) error {
 	if err := rows.Close(); err != nil {
 		return err
 	}
-	rows, err = c.db.QueryContext(ctx, `SELECT id, product_id, file, w, h FROM shop_images ORDER BY position, id`)
+	rows, err = c.db.QueryContext(ctx, `SELECT id, product_id, file, w, h, real FROM shop_images ORDER BY position, id`)
 	if err != nil {
 		return err
 	}
@@ -258,11 +264,17 @@ func (c *Catalog) fill(ctx context.Context, byID map[int64]*Product) error {
 	for rows.Next() {
 		var im Image
 		var pid int64
-		if err := rows.Scan(&im.ID, &pid, &im.File, &im.W, &im.H); err != nil {
+		var real int
+		if err := rows.Scan(&im.ID, &pid, &im.File, &im.W, &im.H, &real); err != nil {
 			return err
 		}
+		im.Real = real != 0
 		if p := byID[pid]; p != nil {
-			p.Images = append(p.Images, im)
+			if im.Real {
+				p.Real = append(p.Real, im)
+			} else {
+				p.Images = append(p.Images, im)
+			}
 		}
 	}
 	return rows.Err()
@@ -476,7 +488,7 @@ func (c *Catalog) Delete(ctx context.Context, id int64) ([]string, error) {
 		return nil, err
 	}
 	var files []string
-	for _, im := range p.Images {
+	for _, im := range append(p.Images, p.Real...) {
 		files = append(files, im.File)
 	}
 	return files, nil
@@ -485,7 +497,7 @@ func (c *Catalog) Delete(ctx context.Context, id int64) ([]string, error) {
 // MaxImages per product.
 const MaxImages = 12
 
-// AddImage attaches a processed photo at the end of the gallery.
+// AddImage attaches a processed photo at the end of its gallery: the showcase one, or the real photos.
 func (c *Catalog) AddImage(ctx context.Context, product int64, im Image) error {
 	tx, err := c.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -493,15 +505,15 @@ func (c *Catalog) AddImage(ctx context.Context, product int64, im Image) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 	var n, pos int
-	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*), COALESCE(MAX(position), -1) + 1 FROM shop_images WHERE product_id = ?`,
-		product).Scan(&n, &pos); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT COUNT(*), COALESCE(MAX(position), -1) + 1 FROM shop_images WHERE product_id = ? AND real = ?`,
+		product, b2i(im.Real)).Scan(&n, &pos); err != nil {
 		return err
 	}
 	if n >= MaxImages {
 		return fmt.Errorf("не больше %d фото у товара", MaxImages)
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO shop_images (product_id, file, w, h, position) VALUES (?,?,?,?,?)`,
-		product, im.File, im.W, im.H, pos); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO shop_images (product_id, file, w, h, position, real) VALUES (?,?,?,?,?,?)`,
+		product, im.File, im.W, im.H, pos, b2i(im.Real)); err != nil {
 		return err
 	}
 	return tx.Commit()
