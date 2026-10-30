@@ -15,6 +15,7 @@ type Flags struct {
 	Priced   bool
 	Verified bool
 	Approved bool // not held for anti-fraud review, or cleared by the operator
+	Prepaid  bool // the prepayment the order needs is in (or it needs none)
 }
 
 func (f Flags) has(flag string) bool {
@@ -27,6 +28,8 @@ func (f Flags) has(flag string) bool {
 		return f.Verified
 	case profile.FlagApproved:
 		return f.Approved
+	case profile.FlagPrepaid:
+		return f.Prepaid
 	}
 	return false
 }

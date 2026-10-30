@@ -44,12 +44,15 @@
   <dl class="facts">
     <dt>Получатель</dt><dd>{{.Recipient}}</dd>
     {{range .Lines}}<dt>{{.Label}}</dt><dd class="copy">{{.Value}}</dd>{{end}}
-    <dt>Сумма</dt><dd class="copy">{{$.O.Total.Plain}}</dd>
+    {{if $.O.Split}}<dt>Стоимость</dt><dd>{{$.O.Total.Plain}}</dd>
+    <dt>{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}</dt><dd class="copy"><b>{{$.O.Due.Plain}}</b></dd>
+    {{else}}<dt>Сумма</dt><dd class="copy">{{$.O.Total.Plain}}</dd>{{end}}
     <dt>Назначение платежа</dt><dd class="copy">{{$.Purpose}}</dd>
   </dl>
   <p class="muted small">Укажите сумму и назначение платежа точно как здесь: по ним оператор находит оплату. Реквизиты действуют только для этого заказа.</p>
   {{if .Note}}<p class="muted small">{{.Note}}</p>{{end}}
   {{if $.P.Texts.Rules}}<p class="muted small">{{$.P.Texts.Rules}}</p>{{end}}
+  {{if and $.O.Split $.O.AdvanceAt}}<p class="banner ok" role="status">Аванс получен. Остаток можно перевести после работы или отдать на месте.</p>{{end}}
   {{if $.O.ReportedAt}}<p class="banner ok" role="status">Вы сообщили об оплате. Продавец проверит поступление и подтвердит заказ.</p>
   {{else}}<form method="post" action="{{p}}/o/{{$.O.Token}}/paid">
     <input type="hidden" name="csrf" value="{{$.CSRF}}">

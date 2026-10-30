@@ -23,28 +23,33 @@ checkout:
     - {id: comment, label: Комментарий, type: textarea, max_len: 800, hint: "Необязательно: что сделать, адрес, удобное время"}
 
 payment:
-  methods: [cash, transfer]
+  methods: [transfer]
   require_email_code: false
   reference_prefix: MA
   window_hours: 48
+  # аванс до начала работы, остаток после; мастер меняет долю в кабинете: 0, 50 или 100
+  prepay_percent: 50
 
+# Схема Agent Pay: заявка, мастер называет цену, клиент вносит аванс по реквизитам и жмёт «Я оплатил»,
+# мастер отмечает «Аванс получен» и записывает клиента; после работы остаток и «Оплата получена».
 workflow:
   initial: request
   states:
     - {id: request, title: Заявка, customer: "Заявка получена, мастер посмотрит и назовёт цену"}
-    - {id: quoted, title: Цена названа, customer: "Мастер назвал цену, подтвердите заказ"}
-    - {id: booked, title: Записан, customer: "Мастер записал вас и приедет в выбранное время"}
+    - {id: quoted, title: Цена названа, customer: "Мастер назвал цену. Аванс, если он нужен, переведите по реквизитам ниже"}
+    - {id: booked, title: Записан, customer: "Мастер записал вас и приедет в согласованное время"}
     - {id: working, title: В работе, customer: "Мастер на месте и работает"}
-    - {id: done, title: Готово, customer: "Работа выполнена. Спасибо!", final: true}
-    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true}
-    - {id: expired, title: Истёк, customer: "Заявка закрыта без подтверждения", final: true}
+    - {id: done, title: Готово, customer: "Работа выполнена и оплачена. Спасибо!", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён. Если вы вносили аванс, мастер вернёт его тем же способом", final: true}
+    - {id: expired, title: Истёк, customer: "Заявка закрыта: аванс не поступил вовремя", final: true}
   transitions:
     - {id: quote, title: Цена названа, from: request, to: quoted, by: operator, requires: [priced, approved], notify: true}
-    - {id: book, title: Подтвердить заказ, from: quoted, to: booked, by: customer, requires: [verified]}
+    - {id: book, title: Записать, from: quoted, to: booked, by: operator, requires: [prepaid], notify: true}
     - {id: arrive, title: Приехал, from: booked, to: working, by: operator, notify: true}
     - {id: finish, title: Готово, from: working, to: done, by: operator, requires: [paid], notify: true}
-    - {id: cancel, title: Отменить, from: [request, quoted, booked], to: cancelled, by: [customer, operator], notify: true}
-    - {id: expire, title: Истёк срок, from: quoted, to: expired, by: system}
+    - {id: withdraw, title: Отменить заявку, from: [request, quoted], to: cancelled, by: customer}
+    - {id: cancel, title: Отменить, from: [request, quoted, booked, working], to: cancelled, by: operator, notify: true}
+    - {id: expire, title: Истёк срок оплаты, from: quoted, to: expired, by: system}
 
 # Услуги — карточки, которые мастер ведёт в кабинете (/owner/catalog): цена «от», описание, фото выполненных
 # работ, своя страница у каждой. Список ниже только заполняет пустой каталог при первом запуске; карточка
@@ -83,4 +88,4 @@ antifraud:
   review_above: 30000
 
 texts:
-  intro: Опишите задачу, мастер назовёт цену. Платите после работы, на месте или переводом.
+  intro: Опишите задачу, мастер назовёт цену. Аванс переводом по реквизитам из заказа, остаток после работы.

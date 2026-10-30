@@ -1,0 +1,56 @@
+# Хостинг и настройка Joblox (тарифы с joblox.openline.one/start) по схеме Agent Pay: клиент выбирает тариф,
+# сразу платит всё по реквизитам и жмёт «Я оплатил»; заявку рассматривают только после оплаты. Оператор
+# видит деньги, отмечает «Оплата получена», берёт в работу и закрывает «Готово». Не взяли: возврат тем же путём.
+business:
+  name: Openline — хостинг и настройка Joblox
+  kind: hosting
+  description: Сайт заказов на Joblox на нашем сервере или под ключ на вашем. Оплата вперёд, заявку смотрим после оплаты.
+  currency: RUB
+  timezone: Asia/Bishkek
+  contact: Telegram @how_many_roads
+
+catalog:
+  - {id: hosting, title: "Хостинг: сайт имя.openline.one", description: "7 $ в месяц: сервер, адрес, личная проверка бизнеса. Количество — месяцы", price: 700, unit: мес, max_qty: 12}
+  - {id: turnkey, title: "Под ключ: настройка на вашем сервере", description: "Предоплата за настройку, итог от 100 $ согласуем до начала работ", price: 10000, unit: шт, max_qty: 1}
+
+pricing:
+  mode: catalog
+  min_total: 700
+
+checkout:
+  fields:
+    - {id: name, label: Как к вам обращаться, type: text, required: true, max_len: 80}
+    - {id: phone, label: Телефон или Telegram, type: phone, required: true, hint: На этот номер напишем в Telegram или WhatsApp}
+    - {id: site, label: Адрес сайта, type: text, max_len: 40, hint: "Например, valya: будет valya.openline.one"}
+    - {id: business, label: Что продаёте, type: textarea, required: true, max_len: 600, hint: "Товары или услуги, город, как сейчас принимаете заказы"}
+    - {id: email, label: Email для документов, type: email}
+
+payment:
+  methods: [transfer]
+  require_email_code: false
+  reference_prefix: OL
+  window_hours: 72
+  prepay_percent: 100
+
+workflow:
+  initial: new
+  states:
+    - {id: new, title: Ждёт оплаты, customer: "Оплатите заказ по реквизитам ниже и нажмите «Я оплатил»: заявку рассматриваем после оплаты"}
+    - {id: working, title: В работе, customer: "Оплата получена, заявка в работе. Напишем вам в течение рабочего дня"}
+    - {id: done, title: Готово, customer: "Готово: сайт работает. Спасибо!", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён. Если вы платили, деньги вернутся тем же путём", final: true}
+    - {id: expired, title: Истёк, customer: "Оплата не поступила за 3 дня, заказ закрыт", final: true}
+  transitions:
+    - {id: take, title: Взять в работу, from: new, to: working, by: operator, requires: [prepaid, approved], notify: true}
+    - {id: done, title: Готово, from: working, to: done, by: operator, notify: true}
+    - {id: withdraw, title: Отменить заказ, from: new, to: cancelled, by: customer}
+    - {id: cancel, title: Отменить с возвратом, from: [new, working], to: cancelled, by: operator, notify: true}
+    - {id: expire, title: Истёк срок оплаты, from: new, to: expired, by: system}
+
+antifraud:
+  max_orders_per_ip_hour: 5
+
+texts:
+  intro: Выберите тариф и оплатите. Деньги ваших покупателей потом идут прямо вам, процента нет.
+  payment_note: Перевод в рублях по номеру телефона. В назначении укажите номер заказа.
+  rules: "Не взяли заявку в работу — вернём деньги тем же путём в течение 3 рабочих дней."

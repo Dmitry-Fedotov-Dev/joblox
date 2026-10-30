@@ -29,6 +29,7 @@ const (
 	FlagPaid     = "paid"     // payment confirmed by the operator
 	FlagPriced   = "priced"   // the order has a price (catalog total or the operator's quote)
 	FlagVerified = "verified" // the customer confirmed the email with a code
+	FlagPrepaid  = "prepaid"  // the prepayment the order needs is in: none needed, the advance or the whole sum
 	FlagApproved = "approved" // the operator cleared an order the anti-fraud sent to review
 )
 
@@ -157,6 +158,9 @@ type Payment struct {
 	RequireEmailCode bool     `yaml:"require_email_code"`
 	ReferencePrefix  string   `yaml:"reference_prefix"` // "JX" gives the payment reference JX-1042
 	WindowHours      int      `yaml:"window_hours"`     // unpaid transfer orders expire after this
+	// PrepayPercent is how much the customer pays before the work starts: 0 (after the work), 50 (an advance,
+	// the rest after) or 100 (everything up front). The owner can change it in the cabinet for new orders.
+	PrepayPercent int `yaml:"prepay_percent"`
 }
 
 type Workflow struct {
@@ -285,6 +289,9 @@ func (p *Profile) Validate() error {
 
 	if strings.TrimSpace(p.Business.Name) == "" {
 		add("business.name is required")
+	}
+	if p.Payment.PrepayPercent < 0 || p.Payment.PrepayPercent > 100 {
+		add("payment.prepay_percent must be from 0 to 100")
 	}
 	switch p.Pricing.Mode {
 	case PricingCatalog:
@@ -440,8 +447,11 @@ func (p *Profile) Validate() error {
 			}
 		}
 		for _, r := range t.Requires {
-			if r != FlagPaid && r != FlagPriced && r != FlagVerified && r != FlagApproved {
+			if r != FlagPaid && r != FlagPriced && r != FlagVerified && r != FlagApproved && r != FlagPrepaid {
 				add("transition %q: unknown requirement %q", t.ID, r)
+			}
+			if r == FlagVerified && !p.Payment.RequireEmailCode {
+				add("transition %q requires verified, but payment.require_email_code is off: nobody can ever take it", t.ID)
 			}
 		}
 	}

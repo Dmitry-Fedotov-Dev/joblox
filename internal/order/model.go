@@ -30,6 +30,10 @@ type Order struct {
 	PaidNote string
 	// ReportedAt: the customer pressed «Я оплатил»; the operator still checks and confirms the payment.
 	ReportedAt *time.Time
+	// Prepay is the share paid before the work, in percent, fixed when the order is placed; AdvanceAt is when
+	// the operator saw the advance arrive (only for a share between 1 and 99).
+	Prepay    int
+	AdvanceAt *time.Time
 
 	VerifiedAt   *time.Time
 	CodeHash     string
@@ -65,7 +69,34 @@ type FeeLine struct {
 
 // Flags turns the order's facts into what workflow guards check.
 func (o *Order) Flags() flow.Flags {
-	return flow.Flags{Paid: o.Paid, Priced: o.Priced, Verified: o.VerifiedAt != nil, Approved: o.Approved}
+	return flow.Flags{Paid: o.Paid, Priced: o.Priced, Verified: o.VerifiedAt != nil, Approved: o.Approved, Prepaid: o.Prepaid()}
+}
+
+// Prepaid: the order needs no prepayment, or the advance or the whole sum is in.
+func (o *Order) Prepaid() bool {
+	return o.Prepay == 0 || o.Paid || (o.Prepay < 100 && o.AdvanceAt != nil)
+}
+
+// Split says whether the order is paid in two parts: an advance first, the rest after the work.
+func (o *Order) Split() bool { return o.Prepay > 0 && o.Prepay < 100 }
+
+// Advance is the first part of a split order, rounded up to whole units of the currency.
+func (o *Order) Advance() money.Amount {
+	if !o.Split() {
+		return 0
+	}
+	return money.Amount((int64(o.Total)*int64(o.Prepay) + 9999) / 10000 * 100)
+}
+
+// Due is what the customer should transfer now: the advance until it arrives, then the rest.
+func (o *Order) Due() money.Amount {
+	if o.Split() && o.AdvanceAt == nil {
+		return o.Advance()
+	}
+	if o.Split() {
+		return o.Total - o.Advance()
+	}
+	return o.Total
 }
 
 // Event is one line of the order's append-only journal.

@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"math/big"
 	"slices"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -234,6 +235,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*Order, antifraud
 		Token: token, State: s.Flow.Initial(), Lines: lines, Fees: fees, Fields: fields, Email: email, Method: method,
 		Total: total, Priced: priced, Review: d.Action == antifraud.Review, Approved: d.Action == antifraud.Allow,
 		Risk: d.Score, RiskReasons: d.Reasons, ClientHash: client, CreatedAt: now, UpdatedAt: now,
+		Prepay: s.PrepayPercent(ctx),
 	}
 	if o.RiskReasons == nil {
 		o.RiskReasons = []string{}
@@ -431,6 +433,58 @@ func (s *Service) ConfirmPayment(ctx context.Context, o *Order, operatorID, note
 	now := s.Now()
 	o.Paid, o.PaidAt, o.PaidNote, o.UpdatedAt = true, &now, note, now
 	return s.save(ctx, o, Event{At: now, Actor: profile.ActorOperator, ActorID: operatorID, Kind: "paid", Note: note})
+}
+
+// ConfirmAdvance records that the advance of a split order arrived. Only an operator, only once; the customer
+// may then report the rest with «Я оплатил» again.
+func (s *Service) ConfirmAdvance(ctx context.Context, o *Order, operatorID, note string) error {
+	if o.AdvanceAt != nil {
+		return nil
+	}
+	if !o.Split() || o.Paid || !o.Priced || s.IsFinal(o.State) {
+		return ErrForbidden
+	}
+	now := s.Now()
+	o.AdvanceAt, o.ReportedAt, o.UpdatedAt = &now, nil, now
+	return s.save(ctx, o, Event{At: now, Actor: profile.ActorOperator, ActorID: operatorID, Kind: "advance",
+		Note: "аванс " + strconv.Itoa(o.Prepay) + "% получен: " + o.Advance().String() + noteSuffix(note)})
+}
+
+func noteSuffix(note string) string {
+	if note == "" {
+		return ""
+	}
+	return " (" + note + ")"
+}
+
+// metaStore is a store that also keeps the installation's settings (the SQLite one does).
+type metaStore interface {
+	Meta(ctx context.Context, key string) (string, error)
+	SetMeta(ctx context.Context, key, value string) error
+}
+
+// PrepayPercent is the prepayment new orders get: the owner's choice in the cabinet, else the profile's.
+func (s *Service) PrepayPercent(ctx context.Context) int {
+	if ms, ok := s.Store.(metaStore); ok {
+		if v, err := ms.Meta(ctx, "prepay_percent"); err == nil && v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n >= 0 && n <= 100 {
+				return n
+			}
+		}
+	}
+	return s.P.Payment.PrepayPercent
+}
+
+// SetPrepayPercent changes the prepayment for new orders; the orders already placed keep theirs.
+func (s *Service) SetPrepayPercent(ctx context.Context, pct int) error {
+	if pct < 0 || pct > 100 {
+		return ErrForbidden
+	}
+	ms, ok := s.Store.(metaStore)
+	if !ok {
+		return ErrForbidden
+	}
+	return ms.SetMeta(ctx, "prepay_percent", strconv.Itoa(pct))
 }
 
 // SetPrice names the price of a quote order; naming it is the operator's approval.

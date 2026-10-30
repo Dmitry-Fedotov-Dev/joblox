@@ -169,6 +169,9 @@ func (b *Bot) card(o *order.Order) (string, *Keyboard) {
 	if o.Review && !o.Approved && !final {
 		kb.Rows = append(kb.Rows, []Button{{Text: "✅ Одобрить", Data: fmt.Sprintf("a:%d", o.ID)}})
 	}
+	if o.Split() && o.AdvanceAt == nil && !o.Paid && !final && o.Priced {
+		kb.Rows = append(kb.Rows, []Button{{Text: fmt.Sprintf("💵 Аванс %d%% получен", o.Prepay), Data: fmt.Sprintf("v:%d", o.ID)}})
+	}
 	if !o.Paid && !final && o.Priced {
 		kb.Rows = append(kb.Rows, []Button{{Text: "💰 Оплата получена", Data: fmt.Sprintf("p:%d", o.ID)}})
 	}
@@ -292,6 +295,8 @@ func (b *Bot) button(ctx context.Context, cq *CallbackQuery) {
 		err, done = b.svc.Approve(ctx, o, op), "Одобрено"
 	case "p":
 		err, done = b.svc.ConfirmPayment(ctx, o, op, "отмечено в боте"), "Оплата отмечена"
+	case "v":
+		err, done = b.svc.ConfirmAdvance(ctx, o, op, "отмечено в боте"), "Аванс отмечен"
 	case "b":
 		err, done = b.svc.BlockCustomer(ctx, o, op), "Клиент в чёрном списке"
 	case "t":

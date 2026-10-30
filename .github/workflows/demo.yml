@@ -25,7 +25,7 @@ jobs:
       max-parallel: 1 # cd builds one project at a time
       matrix:
         # the demos and the shops that run this code as is, their settings and profile kept on the server
-        project: [uslozhnyaesh, hitagi]
+        project: [uslozhnyaesh, hitagi, openline-order]
     concurrency:
       group: demo-${{ matrix.project }}
       cancel-in-progress: false

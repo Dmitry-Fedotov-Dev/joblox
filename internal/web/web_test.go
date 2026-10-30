@@ -333,7 +333,7 @@ func TestServicesShowcase(t *testing.T) {
 	// a request needs only the service, a name and a phone: no email, no address
 	_, form := s.get(t, "/?s=sborka-mebeli")
 	r, _ := s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, form)}, "stamp": {match(t, stampRe, form)},
-		"f_work": {"Сборка мебели"}, "f_name": {"Анна"}, "f_phone": {"+996 700 000 000"}, "method": {profile.MethodCash}})
+		"f_work": {"Сборка мебели"}, "f_name": {"Анна"}, "f_phone": {"+996 700 000 000"}, "method": {profile.MethodTransfer}})
 	if r.StatusCode != http.StatusSeeOther || !strings.HasPrefix(r.Header.Get("Location"), "/o/") {
 		t.Fatalf("a request without an email: %d", r.StatusCode)
 	}
@@ -389,5 +389,57 @@ func TestOrderTrack(t *testing.T) {
 	o.State = "cancelled"
 	if track(p, o) != nil {
 		t.Fatal("a cancelled order has a track")
+	}
+}
+
+// The master works by the Agent Pay scheme with a 50% advance: the price is named, the order page asks for
+// half, the master marks the advance and only then can book; the rest comes after the work. The owner can
+// switch new orders to no prepayment.
+func TestAdvance(t *testing.T) {
+	ctx := context.Background()
+	s, _ := catalogSite(t, "master")
+	_, form := s.get(t, "/?s=sborka-mebeli")
+	r, _ := s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, form)}, "stamp": {match(t, stampRe, form)},
+		"f_work": {"Сборка мебели"}, "f_name": {"Анна"}, "f_phone": {"+996 700 000 000"}, "method": {profile.MethodTransfer}})
+	loc := r.Header.Get("Location")
+	o, err := s.svc.Store.ByToken(ctx, strings.TrimPrefix(loc, "/o/"))
+	if err != nil || o.Prepay != 50 {
+		t.Fatalf("the order does not carry the 50%% advance: %v %+v", err, o)
+	}
+	if err := s.svc.SetPrice(ctx, o, 1999*100, "owner"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.svc.Transition(ctx, o, "quote", profile.ActorOperator, "owner"); err != nil {
+		t.Fatal(err)
+	}
+	if _, page := s.get(t, loc); !strings.Contains(page, "Аванс 50%") || !strings.Contains(page, "1000.00") {
+		t.Fatal("the order page does not ask for the advance (half of 1999, rounded up)")
+	}
+	if err := s.svc.Transition(ctx, o, "book", profile.ActorOperator, "owner"); err == nil {
+		t.Fatal("booked before the advance")
+	}
+	if err := s.svc.ConfirmAdvance(ctx, o, "owner", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, page := s.get(t, loc); !strings.Contains(page, "Остаток после работы") || !strings.Contains(page, "999.00") {
+		t.Fatal("after the advance the page does not show the rest")
+	}
+	for _, step := range []string{"book", "arrive"} {
+		if err := s.svc.Transition(ctx, o, step, profile.ActorOperator, "owner"); err != nil {
+			t.Fatalf("%s: %v", step, err)
+		}
+	}
+	if err := s.svc.Transition(ctx, o, "finish", profile.ActorOperator, "owner"); err == nil {
+		t.Fatal("finished without the rest")
+	}
+	if err := s.svc.ConfirmPayment(ctx, o, "owner", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.svc.Transition(ctx, o, "finish", profile.ActorOperator, "owner"); err != nil {
+		t.Fatal(err)
+	}
+	// no prepayment: new orders can be booked right after the price
+	if err := s.svc.SetPrepayPercent(ctx, 0); err != nil || s.svc.PrepayPercent(ctx) != 0 {
+		t.Fatal("the switch did not stick")
 	}
 }

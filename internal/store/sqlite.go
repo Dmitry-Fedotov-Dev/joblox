@@ -105,6 +105,8 @@ var migrations = []string{
 	);`,
 	`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);`,
 	`ALTER TABLE orders ADD COLUMN reported_at INTEGER;`,
+	`ALTER TABLE orders ADD COLUMN prepay INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE orders ADD COLUMN advance_at INTEGER;`,
 }
 
 func (s *SQLite) migrate(ctx context.Context) error {
@@ -137,7 +139,7 @@ func (s *SQLite) migrate(ctx context.Context) error {
 
 const columns = `id, token, state, lines, fees, fields, email, method, total, priced, paid, paid_at, paid_note,
 	verified_at, code_hash, code_expires, code_sent_at, code_sends, code_attempts, review, approved, risk,
-	risk_reasons, client_hash, created_at, updated_at, version, reported_at`
+	risk_reasons, client_hash, created_at, updated_at, version, reported_at, prepay, advance_at`
 
 func unix(t time.Time) int64 { return t.UnixMilli() }
 
@@ -187,12 +189,12 @@ func (s *SQLite) Create(ctx context.Context, o *order.Order, ev order.Event) err
 	o.Version = 1
 	res, err := tx.ExecContext(ctx, `INSERT INTO orders (token, state, lines, fees, fields, email, method, total, priced,
 		paid, paid_at, paid_note, verified_at, code_hash, code_expires, code_sent_at, code_sends, code_attempts, review,
-		approved, risk, risk_reasons, client_hash, created_at, updated_at, version, reported_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		approved, risk, risk_reasons, client_hash, created_at, updated_at, version, reported_at, prepay, advance_at)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		o.Token, o.State, lines, fees, fields, o.Email, o.Method, int64(o.Total), b2i(o.Priced), b2i(o.Paid),
 		optUnix(o.PaidAt), o.PaidNote, optUnix(o.VerifiedAt), o.CodeHash, unix(o.CodeExpires), unix(o.CodeSentAt),
 		o.CodeSends, o.CodeAttempts, b2i(o.Review), b2i(o.Approved), o.Risk, reasons, o.ClientHash,
-		unix(o.CreatedAt), unix(o.UpdatedAt), o.Version, optUnix(o.ReportedAt))
+		unix(o.CreatedAt), unix(o.UpdatedAt), o.Version, optUnix(o.ReportedAt), o.Prepay, optUnix(o.AdvanceAt))
 	if err != nil {
 		return err
 	}
@@ -219,10 +221,11 @@ func (s *SQLite) Save(ctx context.Context, o *order.Order, ev order.Event) error
 	res, err := tx.ExecContext(ctx, `UPDATE orders SET state=?, lines=?, fees=?, fields=?, email=?, method=?, total=?,
 		priced=?, paid=?, paid_at=?, paid_note=?, verified_at=?, code_hash=?, code_expires=?, code_sent_at=?,
 		code_sends=?, code_attempts=?, review=?, approved=?, risk=?, risk_reasons=?, updated_at=?, reported_at=?,
-		version=version+1 WHERE id=? AND version=?`,
+		prepay=?, advance_at=?, version=version+1 WHERE id=? AND version=?`,
 		o.State, lines, fees, fields, o.Email, o.Method, int64(o.Total), b2i(o.Priced), b2i(o.Paid), optUnix(o.PaidAt),
 		o.PaidNote, optUnix(o.VerifiedAt), o.CodeHash, unix(o.CodeExpires), unix(o.CodeSentAt), o.CodeSends,
-		o.CodeAttempts, b2i(o.Review), b2i(o.Approved), o.Risk, reasons, unix(o.UpdatedAt), optUnix(o.ReportedAt), o.ID, o.Version)
+		o.CodeAttempts, b2i(o.Review), b2i(o.Approved), o.Risk, reasons, unix(o.UpdatedAt), optUnix(o.ReportedAt),
+		o.Prepay, optUnix(o.AdvanceAt), o.ID, o.Version)
 	if err != nil {
 		return err
 	}
@@ -256,12 +259,12 @@ func scan(r scanner) (*order.Order, error) {
 		lines, fees, fields, reasons            string
 		total                                   int64
 		priced, paid, review, approved          int
-		paidAt, verifiedAt, reportedAt          sql.NullInt64
+		paidAt, verifiedAt, reportedAt, advAt   sql.NullInt64
 		codeExpires, codeSent, created, updated int64
 	)
 	err := r.Scan(&o.ID, &o.Token, &o.State, &lines, &fees, &fields, &o.Email, &o.Method, &total, &priced, &paid,
 		&paidAt, &o.PaidNote, &verifiedAt, &o.CodeHash, &codeExpires, &codeSent, &o.CodeSends, &o.CodeAttempts,
-		&review, &approved, &o.Risk, &reasons, &o.ClientHash, &created, &updated, &o.Version, &reportedAt)
+		&review, &approved, &o.Risk, &reasons, &o.ClientHash, &created, &updated, &o.Version, &reportedAt, &o.Prepay, &advAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, order.ErrNotFound
 	}
@@ -284,6 +287,10 @@ func scan(r scanner) (*order.Order, error) {
 	if reportedAt.Valid {
 		t := fromUnix(reportedAt.Int64)
 		o.ReportedAt = &t
+	}
+	if advAt.Valid {
+		t := fromUnix(advAt.Int64)
+		o.AdvanceAt = &t
 	}
 	if verifiedAt.Valid {
 		t := fromUnix(verifiedAt.Int64)
@@ -396,7 +403,7 @@ func (s *SQLite) Stale(ctx context.Context, states []string, before time.Time) (
 	}
 	args := append(anySlice(states), unix(before))
 	rows, err := s.db.QueryContext(ctx, `SELECT `+columns+` FROM orders WHERE state IN (`+placeholders(len(states))+ // #nosec G202 -- only placeholders and fixed fragments are concatenated, values go as arguments
-		`) AND paid=0 AND updated_at<? ORDER BY id LIMIT 500`, args...)
+		`) AND paid=0 AND advance_at IS NULL AND updated_at<? ORDER BY id LIMIT 500`, args...)
 	if err != nil {
 		return nil, err
 	}

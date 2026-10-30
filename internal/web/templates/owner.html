@@ -74,6 +74,13 @@
       {{if .Shown}}<span>Карточка на бирже показана.</span><button class="secondary" name="show" value="0">Скрыть с биржи</button>
       {{else}}<span>Карточка на бирже скрыта.</span><button class="secondary" name="show" value="1">Показать на бирже</button>{{end}}
     </form>
+    <form method="post" action="{{p}}/owner/prepay" class="actions prepay">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <span>Предоплата для новых заказов:</span>
+      <button name="pct" value="0" class="{{if ne .Prepay 0}}secondary{{end}}" {{if eq .Prepay 0}}aria-pressed="true"{{end}}>Без предоплаты</button>
+      <button name="pct" value="50" class="{{if ne .Prepay 50}}secondary{{end}}" {{if eq .Prepay 50}}aria-pressed="true"{{end}}>Аванс 50%</button>
+      <button name="pct" value="100" class="{{if ne .Prepay 100}}secondary{{end}}" {{if eq .Prepay 100}}aria-pressed="true"{{end}}>Полная 100%</button>
+    </form>
     <form method="post" action="{{p}}/owner/pause" class="actions">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
       {{if .Paused}}<button>Возобновить приём заказов</button>{{else}}<button class="secondary">Остановить приём заказов</button>{{end}}
@@ -90,14 +97,15 @@
       {{range .O.Lines}}<dt>{{.Title}} × {{.Qty}}</dt><dd>{{money .Sum}}</dd>{{end}}
       <dt>Сумма</dt><dd><b>{{.Total}}</b></dd>
       {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}
-      <dt>Оплата</dt><dd>{{.Method}}, {{if .O.Paid}}оплачен{{else}}не оплачен{{end}}</dd>
+      <dt>Оплата</dt><dd>{{.Method}}, {{if .O.Paid}}оплачен{{else if .O.AdvanceAt}}аванс {{.O.Prepay}}% получен, остаток {{money .O.Due}}{{else if .O.Split}}ждём аванс {{.O.Prepay}}%: {{money .O.Advance}}{{else}}не оплачен{{end}}</dd>
       {{if .Risk}}<dt>Проверка</dt><dd>{{.Risk}}</dd>{{end}}
     </dl>
     {{if .Review}}<p class="banner warn">Заказ ждёт вашей проверки.</p>{{end}}
-    {{if and .O.ReportedAt (not .O.Paid)}}<p class="banner ok">💸 Клиент сообщил, что оплатил. Проверьте поступление и нажмите «Оплата получена».</p>{{end}}
+    {{if and .O.ReportedAt (not .O.Paid)}}<p class="banner ok">💸 Клиент сообщил, что оплатил. Проверьте поступление и нажмите «{{if .CanAdv}}Аванс получен{{else}}Оплата получена{{end}}».</p>{{end}}
     <div class="actions">
       {{if .Review}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/approve"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Одобрить</button></form>{{end}}
       {{if .Quote}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/price" class="inline"><input type="hidden" name="csrf" value="{{$csrf}}"><input name="total" inputmode="decimal" placeholder="Цена" required aria-label="Цена"><button>Назвать цену</button></form>{{end}}
+      {{if .CanAdv}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/advance"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Аванс получен</button></form>{{end}}
       {{if .CanPay}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/paid"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Оплата получена</button></form>{{end}}
       {{$id := .O.ID}}
       {{range .Actions}}<form method="post" action="{{p}}/owner/o/{{$id}}/t-{{.ID}}"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="secondary">{{.Title}}</button></form>{{end}}

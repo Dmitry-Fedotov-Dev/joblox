@@ -272,7 +272,7 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 	v.NeedCode = p.Payment.RequireEmailCode && o.VerifiedAt == nil && !st.Final
 	if s.svc.RequisitesVisible(o) {
 		v.Requisites = s.svc.Req
-		v.Purpose = s.svc.Req.PurposeFor(v.Ref, o.Total.Plain())
+		v.Purpose = s.svc.Req.PurposeFor(v.Ref, o.Due().Plain())
 	}
 	v.Actions = s.svc.Flow.Open(o.State, profile.ActorCustomer, o.Flags())
 	v.Steps = track(p, o)

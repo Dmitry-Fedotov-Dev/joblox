@@ -91,6 +91,7 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /owner/setup", s.ownerOnly(s.ownerSetup))
 	mux.HandleFunc("POST /owner/market", s.ownerOnly(s.ownerMarket))
 	mux.HandleFunc("POST /owner/pause", s.ownerOnly(s.ownerPause))
+	mux.HandleFunc("POST /owner/prepay", s.ownerOnly(s.ownerPrepay))
 	mux.HandleFunc("POST /owner/o/{id}/{action}", s.ownerOnly(s.ownerAction))
 	mux.HandleFunc("GET /admin", s.ownerOnly(s.adminPage))
 	mux.HandleFunc("GET /admin/live.json", s.ownerOnly(s.adminLive))
@@ -135,6 +136,7 @@ type ownerView struct {
 	SiteQR     template.HTML
 	Waiting    bool          // the public address is not there yet
 	PhoneQR    template.HTML // the master link: the owner scans it to open the cabinet on a phone
+	Prepay     int           // the prepayment of new orders, percent
 }
 
 type ownerOrder struct {
@@ -146,6 +148,7 @@ type ownerOrder struct {
 	Review  bool
 	Risk    string
 	CanPay  bool
+	CanAdv  bool // a split order whose advance has not been marked yet
 	Quote   bool
 	Actions []profile.Transition
 	Final   bool
@@ -159,6 +162,7 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 		Temporary: strings.Contains(site, ".trycloudflare.com"), MarketURL: ow.MarketURL, Shown: ow.Shown(), DataDir: ow.DataDir,
 		NoMail: s.outbox != nil, Kinds: Kinds, Countries: Countries, Currency: currencySign(s.svc.P.Business.Currency)}
 	v.Form = SetupInput{Kind: Kinds[0].ID, Country: Countries[0].ID, Show: true}
+	v.Prepay = s.svc.PrepayPercent(r.Context())
 	if ow.Portal != nil {
 		v.Portal = ow.Portal(r.Context())
 	}
@@ -182,7 +186,8 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	for _, o := range list {
 		st, _ := p.State(o.State)
 		oo := ownerOrder{O: o, State: st.Title, Method: methodTitle(o.Method), Review: o.Review && !o.Approved, Final: st.Final,
-			Quote: !o.Priced, CanPay: !o.Paid && o.Priced && !st.Final}
+			Quote: !o.Priced, CanPay: !o.Paid && o.Priced && !st.Final,
+			CanAdv: o.Split() && o.AdvanceAt == nil && !o.Paid && o.Priced && !st.Final}
 		oo.Total = "цена по запросу"
 		if o.Priced {
 			oo.Total = o.Total.String() + " " + v.Currency
@@ -316,6 +321,23 @@ func (s *Server) ownerPause(w http.ResponseWriter, r *http.Request) {
 	s.redirect(w, r, "/owner", http.StatusSeeOther)
 }
 
+// ownerPrepay switches the prepayment of new orders: 0, 50 or 100 percent.
+func (s *Server) ownerPrepay(w http.ResponseWriter, r *http.Request) {
+	if !s.ownerForm(w, r) {
+		return
+	}
+	pct, err := strconv.Atoi(r.PostFormValue("pct"))
+	if err != nil || (pct != 0 && pct != 50 && pct != 100) {
+		http.Error(w, "bad prepayment", http.StatusBadRequest)
+		return
+	}
+	if err := s.svc.SetPrepayPercent(r.Context(), pct); err != nil {
+		s.message(w, r, http.StatusInternalServerError, "Не сохранилось", "Попробуйте ещё раз.")
+		return
+	}
+	s.redirect(w, r, "/owner", http.StatusSeeOther)
+}
+
 func (s *Server) ownerAction(w http.ResponseWriter, r *http.Request) {
 	if !s.ownerForm(w, r) {
 		return
@@ -336,6 +358,8 @@ func (s *Server) ownerAction(w http.ResponseWriter, r *http.Request) {
 		err = s.svc.Approve(r.Context(), o, who)
 	case "paid":
 		err = s.svc.ConfirmPayment(r.Context(), o, who, "отмечено в кабинете")
+	case "advance":
+		err = s.svc.ConfirmAdvance(r.Context(), o, who, "отмечено в кабинете")
 	case "block":
 		err = s.svc.BlockCustomer(r.Context(), o, who)
 	case "price":
