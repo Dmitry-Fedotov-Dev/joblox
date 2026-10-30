@@ -478,5 +478,9 @@ func coverOf(profilePath string, p *profile.Profile) string {
 	if p.Business.Cover == "" {
 		return ""
 	}
-	return filepath.Join(filepath.Dir(profilePath), p.Business.Cover)
+	file := filepath.Join(filepath.Dir(profilePath), p.Business.Cover)
+	if _, err := os.Stat(file); err != nil {
+		return "" // a profile copied without its picture (joblox up): no cover rather than a broken one
+	}
+	return file
 }

@@ -8,6 +8,7 @@ business:
   currency: KGS
   timezone: Asia/Bishkek
   contact: "+996 700 000 000"
+  cover: master-cover.jpg
 
 pricing:
   mode: quote

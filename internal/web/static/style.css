@@ -262,13 +262,15 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 .svc b, .svc small, .svc-price { position: relative; z-index: 1; }
 @media (max-width: 520px) { .svc-icon { font-size: 44px; right: -2px; bottom: -6px; } .svc small { max-width: 100%; } }
 .whole { white-space: nowrap; }
-/* a cover picture behind the top of the site: on the right, melting into the page */
-.hero.with-cover { position: relative; isolation: isolate; min-height: 420px; }
+/* a cover picture behind the top of the site: on the right, melting into the page on every side */
+.hero.with-cover { position: relative; isolation: isolate; min-height: 460px; }
 .hero.with-cover > :not(.hero-cover) { position: relative; z-index: 1; }
-.hero-cover { position: absolute; z-index: 0; right: -20px; top: -24px; height: calc(100% + 48px); width: 46%; object-fit: cover;
-  object-position: center 18%; -webkit-mask-image: linear-gradient(to left, #000 45%, transparent 100%), linear-gradient(to top, transparent, #000 25%);
-  mask-image: linear-gradient(to left, #000 45%, transparent 100%); border-radius: 0 0 0 40px; pointer-events: none; }
+.hero-cover { position: absolute; z-index: 0; right: -40px; top: -40px; height: calc(100% + 80px); width: 52%; object-fit: cover;
+  object-position: center 15%; pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side at 50% 46%, #000 62%, transparent 100%);
+  mask-image: radial-gradient(closest-side at 50% 46%, #000 62%, transparent 100%); }
+@media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: 56%; } }
 @media (max-width: 720px) {
   .hero.with-cover { min-height: 0; }
-  .hero-cover { width: 70%; opacity: .32; -webkit-mask-image: linear-gradient(to left, #000 30%, transparent 100%); mask-image: linear-gradient(to left, #000 30%, transparent 100%); }
+  .hero-cover { width: 80%; right: -30px; opacity: .3; }
 }
