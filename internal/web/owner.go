@@ -108,6 +108,7 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /owner/market", s.ownerOnly(s.ownerMarket))
 	mux.HandleFunc("POST /owner/pause", s.ownerOnly(s.ownerPause))
 	mux.HandleFunc("POST /owner/prepay", s.ownerOnly(s.ownerPrepay))
+	mux.HandleFunc("POST /owner/logout", s.ownerOnly(s.ownerLogout))
 	mux.HandleFunc("POST /owner/bot", s.ownerOnly(s.ownerBot))
 	mux.HandleFunc("POST /owner/bot/shared", s.ownerOnly(s.ownerBotShared))
 	// the hub of the shared bot: its call-back while registering, and what the seller pressed
@@ -278,7 +279,21 @@ func (s *Server) ownerPage(w http.ResponseWriter, r *http.Request) {
 		s.message(w, r, http.StatusInternalServerError, "Ошибка", "Не получилось загрузить заказы, обновите страницу.")
 		return
 	}
-	s.render(w, "owner", http.StatusOK, v)
+	page := "owner"
+	if !v.Configured {
+		page = "ownersetup"
+	}
+	s.render(w, page, http.StatusOK, v)
+}
+
+// ownerLogout forgets the owner on this browser; the master link signs in again.
+func (s *Server) ownerLogout(w http.ResponseWriter, r *http.Request) {
+	if !s.ownerForm(w, r) {
+		return
+	}
+	http.SetCookie(w, &http.Cookie{Name: ownerCookie, Value: "", Path: s.cookiePath(), MaxAge: -1, HttpOnly: true,
+		Secure: s.cfg.SecureCookies, SameSite: http.SameSiteLaxMode})
+	s.redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // ---------------------------------------------------------------- actions

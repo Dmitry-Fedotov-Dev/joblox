@@ -1,26 +1,39 @@
 {{define "content"}}
-<div class="a-title"><h1>{{if .Services}}Услуги{{else}}Товары{{end}}</h1></div>
-<p><a class="button cta" href="{{p}}/owner/catalog/new">{{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a></p>
-{{if not .Products}}
-<p class="empty"><b>{{if .Services}}Услуг пока нет{{else}}Товаров пока нет{{end}}</b>{{if .Services}}Добавьте первую: название, цена «от», описание и фото выполненных работ.{{else}}Добавьте первый: название, цена, фото с телефона и сколько штук каждого размера.{{end}}</p>
-{{else}}
-<ul class="plist">
-  {{range $i, $p := .Products}}
-  <li class="prow{{if $p.Hidden}} off{{end}}" id="p{{$p.ID}}">
-    <a class="thumb" href="{{p}}/owner/catalog/{{$p.ID}}">{{with $p.Cover}}<img src="{{p}}/img/{{.File}}_t.jpg" alt="" loading="lazy">{{else}}{{mascot $p.ID}}{{end}}</a>
-    <div class="t">
-      <a href="{{p}}/owner/catalog/{{$p.ID}}">{{$p.Title}}</a>
-      <div class="muted small">{{if $.Services}}{{if $p.Price}}от {{price $p.Price}} {{$.Currency}}{{else}}по договорённости{{end}}{{if $p.Hidden}} · скрыта{{end}}{{else}}{{price $p.Price}} {{$.Currency}} · {{if $p.Hidden}}скрыт{{else if $p.InStock}}в наличии {{$p.Stock}}{{else}}нет в наличии{{end}}{{if gt (len $p.Variants) 1}} · {{range $k, $v := $p.Variants}}{{if $k}}, {{end}}{{$v.Name}}: {{$v.Stock}}{{end}}{{end}}{{end}}</div>
-    </div>
-    <div class="acts">
-      <a class="button secondary" href="{{p}}/owner/catalog/{{$p.ID}}">Изменить</a>
-      <form method="post" action="{{p}}/owner/catalog/{{$p.ID}}/{{if $p.Hidden}}show{{else}}hide{{end}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">{{if $p.Hidden}}Показать{{else}}Скрыть{{end}}</button></form>
-      {{if $i}}<form method="post" action="{{p}}/owner/catalog/{{$p.ID}}/up"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit" aria-label="Выше">↑</button></form>{{end}}
-      <form method="post" action="{{p}}/owner/catalog/{{$p.ID}}/down"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit" aria-label="Ниже">↓</button></form>
-    </div>
-  </li>
+<div class="a-title"><h1>{{if .Services}}Услуги{{else}}Товары{{end}}</h1><a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a></div>
+<div class="a-card">
+  {{if .Products}}
+  <table class="a-table resp">
+    <thead><tr><th></th><th>Название</th><th>Цена</th><th>{{if .Services}}Порядок{{else}}В наличии{{end}}</th><th>На сайте</th></tr></thead>
+    <tbody>
+    {{range $i, $p := .Products}}
+      <tr class="click" data-href="{{p}}/owner/catalog/{{$p.ID}}" id="p{{$p.ID}}">
+        <td class="c-img">{{with $p.Cover}}<img class="thumb" src="{{p}}/img/{{.File}}_t.jpg" alt="" loading="lazy">{{else}}<span class="thumb"></span>{{end}}</td>
+        <td><a href="{{p}}/owner/catalog/{{$p.ID}}">{{$p.Title}}</a>
+          <div style="font-size:13px;color:var(--muted)">{{if $p.Preorder}}предзаказ{{else if not $.Services}}{{range $k, $v := $p.Variants}}{{if $k}} · {{end}}{{if $v.Name}}{{$v.Name}}: {{end}}{{$v.Stock}}{{end}}{{end}}</div></td>
+        <td>{{if $.Services}}{{if $p.Price}}от {{price $p.Price}} {{$.Currency}}{{else}}по договорённости{{end}}{{else}}{{price $p.Price}} {{$.Currency}}{{end}}</td>
+        <td class="c-hide">
+          {{if not $.Services}}{{if $p.Preorder}}под заказ{{else}}{{$p.Stock}} шт.{{end}}{{end}}
+          <span class="order-arrows">
+            {{if $i}}<form method="post" action="{{p}}/owner/catalog/{{$p.ID}}/up"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="link-btn" type="submit" title="Выше">↑</button></form>{{end}}
+            <form method="post" action="{{p}}/owner/catalog/{{$p.ID}}/down"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="link-btn" type="submit" title="Ниже">↓</button></form>
+          </span>
+        </td>
+        <td>
+          <form method="post" action="{{p}}/owner/catalog/{{$p.ID}}/{{if $p.Hidden}}show{{else}}hide{{end}}" style="margin:0">
+            <input type="hidden" name="csrf" value="{{$.CSRF}}">
+            <button class="status {{if $p.Hidden}}off{{else}}work{{end}}" type="submit" title="Нажмите, чтобы переключить">{{if $p.Hidden}}Скрыт{{else}}Показан{{end}}</button>
+          </form>
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <div class="empty" style="border:0;padding:30px 10px">
+    <h2>{{if .Services}}Услуг пока нет{{else}}Товаров пока нет{{end}}</h2>
+    <p>{{if .Services}}Добавьте первую: название, цена «от», описание и фото выполненных работ.{{else}}Добавьте первую вещь — с фото, ценой и размерами.{{end}}</p>
+    <a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a>
+  </div>
   {{end}}
-</ul>
+</div>
 {{end}}
-{{end}}
-{{define "kitten"}}{{end}}

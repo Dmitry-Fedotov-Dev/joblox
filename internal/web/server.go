@@ -136,14 +136,26 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		},
 	}
 	s.tpl = map[string]*template.Template{}
+	// the back office has its own layout, made after the admin of Mama's workshop; the rest is the site's
+	office := map[string]bool{"home": true, "orders": true, "aorder": true, "owner": true, "catalog": true, "item": true}
 	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms", "store", "product", "cart", "catalog", "item",
 		"home", "orders", "aorder"} {
-		t, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, "templates/layout.html", "templates/partials.html", "templates/"+page+".html")
+		layout := "layout.html"
+		if office[page] {
+			layout = "alayout.html"
+		}
+		t, err := template.New(layout).Funcs(funcs).ParseFS(templateFS, "templates/"+layout, "templates/partials.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, err
 		}
 		s.tpl[page] = t
 	}
+	// a new installation's setup («Кем вы будете?») stays in the site's look
+	setup, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, "templates/layout.html", "templates/partials.html", "templates/owner.html")
+	if err != nil {
+		return nil, err
+	}
+	s.tpl["ownersetup"] = setup
 	return s, nil
 }
 

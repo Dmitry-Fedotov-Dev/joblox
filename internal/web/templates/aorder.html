@@ -1,13 +1,23 @@
 {{define "content"}}
 {{$csrf := .CSRF}}{{$next := printf "/admin/orders/%d" .O.ID}}
 <div class="a-title"><h1>Заказ №{{.O.ID}}</h1><span class="status {{.Row.Tone}}">{{.State}}</span></div>
-{{if .Review}}<p class="banner warn">Заказ ждёт вашей проверки: {{.Risk}}</p>{{end}}
-{{if and .O.ReportedAt (not .O.Paid)}}<p class="banner ok">💸 Покупатель сообщил, что оплатил. Проверьте поступление и нажмите «{{if .CanAdv}}Аванс получен{{else}}Оплата получена{{end}}».</p>{{end}}
+{{if .Review}}<div class="alert warn">Заказ ждёт вашей проверки: {{.Risk}}</div>{{end}}
+{{if and .O.ReportedAt (not .O.Paid)}}<div class="alert ok">💸 Покупатель сообщил, что оплатил. Проверьте поступление и нажмите «{{if .CanAdv}}Аванс получен{{else}}Оплата получена{{end}}».</div>{{end}}
 <div class="edit-grid">
   <div>
     <div class="a-card">
-      <h2>{{if .Lines}}Состав{{else}}Заявка{{end}}</h2>
-      {{range .O.Lines}}<div class="sum-row"><span>{{.Title}} × {{.Qty}}</span><span>{{money .Sum}}</span></div>{{end}}
+      <h2>{{if .Lines}}Товары{{else}}Заявка{{end}}</h2>
+      {{if .Lines}}
+      <div class="mini-lines">
+        {{range .O.Lines}}
+        <div class="mini-line">
+          <span class="ph"></span>
+          <div><b>{{.Title}}</b><small>{{.Qty}} шт. × {{money .Price}}</small></div>
+          <span>{{money .Sum}}</span>
+        </div>
+        {{end}}
+      </div>
+      {{end}}
       {{range .O.Fees}}<div class="sum-row"><span>{{.Title}}</span><span>{{money .Sum}}</span></div>{{end}}
       <div class="sum-row total"><span>Итого</span><span>{{.Total}}</span></div>
       {{if .O.Split}}<div class="sum-row"><span>Аванс {{.O.Prepay}}%</span><span>{{money .O.Advance}} · {{if .O.AdvanceAt}}✓ получен{{else}}ждём{{end}}</span></div>{{end}}
@@ -15,38 +25,52 @@
     </div>
     <div class="a-card">
       <h2>Покупатель</h2>
-      <dl class="facts">{{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}<dt>Создан</dt><dd>{{.Row.When}}</dd></dl>
+      <dl class="kv" style="margin:0">
+        {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}
+        <dt>Создан</dt><dd>{{.Row.When}}</dd>
+      </dl>
     </div>
     {{if .Events}}
     <div class="a-card">
       <h2>История</h2>
-      <ul class="timeline">{{range .Events}}<li><span>{{.What}} <small>({{.Who}})</small></span><time>{{.When}}</time></li>{{end}}</ul>
+      <ul class="timeline">{{range .Events}}<li><span>{{.What}} <small>· {{.Who}}</small></span><time>{{.When}}</time></li>{{end}}</ul>
     </div>
     {{end}}
   </div>
   <div>
     <div class="a-card">
-      <h2>Что сделать</h2>
+      <h2>Статус</h2>
+      {{if .Final}}<p style="margin:0;color:var(--muted)">Заказ завершён.</p>{{else}}
       <div class="status-actions">
-        {{if .Review}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/approve"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button>Одобрить</button></form>{{end}}
-        {{if .Quote}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/price" class="inline"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><input name="total" inputmode="decimal" placeholder="Цена" required aria-label="Цена"><button>Назвать цену</button></form>{{end}}
-        {{if .CanAdv}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/advance"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button>💵 Аванс получен</button></form>{{end}}
-        {{if .CanPay}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/paid"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button>✅ Оплата получена</button></form>{{end}}
-        {{range .Actions}}<form method="post" action="{{p}}/owner/o/{{$.O.ID}}/t-{{.ID}}"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button class="{{if or (eq .To "cancelled") (eq .To "rejected")}}danger{{else}}secondary{{end}}">{{.Title}}</button></form>{{end}}
+        {{if .Review}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/approve"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button class="btn small rose" type="submit">✅ Одобрить</button></form>{{end}}
+        {{if .Quote}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/price" class="inline"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><input name="total" inputmode="decimal" placeholder="Цена" required aria-label="Цена"><button class="btn small rose" type="submit">Назвать цену</button></form>{{end}}
+        {{if .CanAdv}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/advance"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button class="btn small rose" type="submit">💵 Аванс получен</button></form>{{end}}
+        {{if .CanPay}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/paid"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button class="btn small rose" type="submit">✅ Оплата получена</button></form>{{end}}
+        {{range .Actions}}
+        {{$cancel := or (eq .To "cancelled") (eq .To "rejected")}}
+        <form method="post" action="{{p}}/owner/o/{{$.O.ID}}/t-{{.ID}}"{{if $cancel}} data-confirm="{{.Title}}? Товары вернутся в наличие."{{end}}><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button class="btn small {{if $cancel}}danger{{else}}ghost{{end}}" type="submit">{{if $cancel}}✖️ {{end}}{{.Title}}</button></form>
+        {{end}}
       </div>
-      {{if .Final}}<p class="muted">Заказ завершён.</p>{{end}}
-      {{if .Call}}<p><a class="button secondary" href="{{.Call}}" target="_blank" rel="noopener">Позвонить клиенту</a></p>{{end}}
+      {{end}}
     </div>
+    {{if .Call}}
+    <div class="a-card">
+      <h2>Звонок</h2>
+      <a class="btn ghost small" href="{{.Call}}" target="_blank" rel="noopener">Позвонить клиенту</a>
+    </div>
+    {{end}}
     <div class="a-card">
       <h2>Ссылка для покупателя</h2>
-      <p class="muted small">Страница со статусом{{if eq .O.Method "transfer"}} и реквизитами{{end}}:</p>
-      <p class="copy small"><b>{{.Link}}</b></p>
+      <p class="help" style="margin:0 0 10px">Страница со статусом{{if eq .O.Method "transfer"}} и реквизитами{{end}}:</p>
+      <div class="copy-item"><b style="font-size:13px">{{.Link}}</b><button type="button" data-copy="{{.Link}}">Копировать</button></div>
     </div>
     <div class="a-card">
-      <form method="post" action="{{p}}/owner/o/{{.O.ID}}/block"><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button class="link">Покупателя в чёрный список</button></form>
+      <div class="danger-zone">
+        <span>Не продавать этому покупателю</span>
+        <form method="post" action="{{p}}/owner/o/{{.O.ID}}/block" data-confirm="Отправить покупателя в чёрный список? Новые заказы с его телефоном и почтой не пройдут."><input type="hidden" name="csrf" value="{{$csrf}}"><input type="hidden" name="next" value="{{$next}}"><button class="btn danger small" type="submit">В чёрный список</button></form>
+      </div>
     </div>
   </div>
 </div>
 <p><a href="{{p}}/admin/orders">← Все заказы</a></p>
 {{end}}
-{{define "kitten"}}{{end}}

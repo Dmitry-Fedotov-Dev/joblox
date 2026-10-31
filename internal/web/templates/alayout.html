@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{.Title}} · {{.Business.Name}}</title>
+  <link rel="icon" href="{{asset "favicon.svg"}}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{asset "office.css"}}">
+</head>
+<body class="admin">
+  <header class="a-head">
+    <div class="wrap">
+      <a class="logo" href="{{p}}/admin"><span class="logo-mark" aria-hidden="true"></span><span class="logo-text">{{.Business.Name}}</span></a>
+      <nav class="a-nav" aria-label="Админка">
+        <a href="{{p}}/admin" class="{{if eq .Nav "home"}}on{{end}}">Главная</a>
+        {{if .Catalog}}<a href="{{p}}/owner/catalog" class="{{if eq .Nav "products"}}on{{end}}">{{if .Services}}Услуги{{else}}Товары{{end}}</a>{{end}}
+        <a href="{{p}}/admin/orders" class="{{if eq .Nav "orders"}}on{{end}}">Заказы</a>
+        <a href="{{p}}/owner" class="{{if eq .Nav "settings"}}on{{end}}">Настройки</a>
+        <a href="{{p}}/" target="_blank" rel="noopener">Сайт ↗</a>
+        <form method="post" action="{{p}}/owner/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button type="submit">Выйти</button></form>
+      </nav>
+    </div>
+  </header>
+  <main class="a-main">
+    <div class="wrap">
+      {{if .Paused}}<div class="alert">Приём новых заказов остановлен. Включить: «Настройки» → «Приём заказов».</div>{{end}}
+      {{block "content" .}}{{end}}
+    </div>
+  </main>
+  {{block "scripts" .}}{{end}}
+  <script src="{{asset "app.js"}}" defer></script>
+  <script src="{{asset "office.js"}}" defer></script>
+</body>
+</html>

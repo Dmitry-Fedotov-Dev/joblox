@@ -1,104 +1,120 @@
 {{define "content"}}
-<p><a href="{{p}}/owner/catalog">← {{if .Services}}Все услуги{{else}}Все товары{{end}}</a></p>
-<h1>{{if .Product}}{{.Product.Title}}{{else if .Services}}Новая услуга{{else}}Новый товар{{end}}</h1>
-{{if .Saved}}<p class="banner ok" role="status">Сохранено.{{if .Product}} <a href="{{p}}/p/{{.Product.Slug}}" target="_blank" rel="noopener">Открыть на витрине</a>{{end}}</p>{{end}}
-{{if .Problems}}<p class="banner error" role="alert">Проверьте: {{join .Problems ", "}}.</p>{{end}}
+<div class="a-title">
+  <h1>{{if .Product}}{{.Product.Title}}{{else if .Services}}Новая услуга{{else}}Новый товар{{end}}</h1>
+  {{if and .Product (not .Hidden)}}<a class="btn ghost small" href="{{p}}/p/{{.Product.Slug}}" target="_blank" rel="noopener">Открыть на сайте ↗</a>{{end}}
+</div>
+{{if .Saved}}<div class="alert ok" role="status">Сохранено.</div>{{end}}
+{{if .Problems}}<div class="alert" role="alert">Проверьте: {{join .Problems ", "}}.</div>{{end}}
 
-{{if .Product}}
-<section class="card" id="photos">
-  <h2>{{if .Services}}Примеры работ{{else}}Фото{{end}}</h2>
-  {{if .Product.Images}}
-  <div class="photos">
-    {{range $i, $im := .Product.Images}}
-    <div class="photo">
-      <img src="{{p}}/img/{{$im.File}}_t.jpg" alt="Фото {{inc $i}}" loading="lazy">
-      {{if not $i}}<span class="pill hot first">Обложка</span>{{end}}
-      <div class="acts">
-        {{if $i}}<form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-cover-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Обложка</button></form>{{end}}
-        <form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-del-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Удалить</button></form>
+<div class="edit-grid">
+  <form id="product-form" method="post" action="{{p}}/owner/catalog/save" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <input type="hidden" name="id" value="{{if .Product}}{{.Product.ID}}{{end}}">
+    <div class="a-card">
+      <h2>Описание</h2>
+      <div class="field"><label for="title">Название <span class="req">*</span></label>
+        <input id="title" name="title" value="{{.Title}}" maxlength="80" required placeholder="{{if .Services}}Сборка мебели{{else}}Например, платье «Ромашка»{{end}}"></div>
+      <div class="row-2">
+        <div class="field"><label for="price">{{if .Services}}Цена от, {{.Currency}}{{else}}Цена, {{.Currency}} <span class="req">*</span>{{end}}</label>
+          <input id="price" name="price" value="{{.Price}}" inputmode="decimal"{{if not .Services}} required{{end}} placeholder="{{if .Services}}0 — по договорённости{{else}}4500{{end}}"></div>
+        <div class="field"><label for="old_price">Старая цена, {{.Currency}}</label>
+          <input id="old_price" name="old_price" value="{{.OldPrice}}" inputmode="decimal" placeholder="для скидки, можно пусто"></div>
+      </div>
+      <div class="field"><label for="description">Описание</label>
+        <textarea id="description" name="description" rows="6" maxlength="3000" placeholder="{{if .Services}}Что входит, сколько занимает{{else}}Какая вещь, с чем носить, как сидит…{{end}}">{{.Description}}</textarea></div>
+    </div>
+
+    {{if not .Services}}
+    <div class="a-card">
+      <h2>Размеры и количество</h2>
+      <p class="help">Сколько штук каждого размера есть. Когда вещь покупают, количество уменьшается само. Если размер один — оставьте название пустым и укажите количество. Пустая строка не сохраняется.</p>
+      <div class="variant-head"><span>Размер</span><span>Штук</span><span></span></div>
+      <div class="variants">
+        {{range $i, $r := .Rows}}
+        <div class="variant-row">
+          <input type="hidden" name="v_id_{{$i}}" value="{{if $r.ID}}{{$r.ID}}{{end}}">
+          <input name="v_name_{{$i}}" value="{{$r.Name}}" maxlength="30" placeholder="M" aria-label="Размер">
+          <input name="v_stock_{{$i}}" value="{{$r.Stock}}" inputmode="numeric" placeholder="0" aria-label="Количество">
+          <span></span>
+        </div>
+        {{end}}
       </div>
     </div>
     {{end}}
-  </div>
-  {{else}}<p class="muted">Фото пока нет. Добавьте их ниже, в форме товара.</p>{{end}}
-  {{if .Product.Real}}
-  <h2>Настоящие фото</h2>
-  <p class="muted small">Их покупатель видит по кнопке «Посмотреть настоящее изображение» на фото товара.</p>
-  <div class="photos">
-    {{range $i, $im := .Product.Real}}
-    <div class="photo">
-      <img src="{{p}}/img/{{$im.File}}_t.jpg" alt="Настоящее фото {{inc $i}}" loading="lazy">
-      <div class="acts">
-        <form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-del-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Удалить</button></form>
-      </div>
-    </div>
-    {{end}}
-  </div>
-  {{end}}
-</section>
-{{end}}
 
-<form class="card" method="post" action="{{p}}/owner/catalog/save" enctype="multipart/form-data">
-  <input type="hidden" name="csrf" value="{{.CSRF}}">
-  <input type="hidden" name="id" value="{{if .Product}}{{.Product.ID}}{{end}}">
-  <div class="field">
-    <label for="title">Название <span class="req">*</span></label>
-    <input id="title" name="title" value="{{.Title}}" maxlength="80" required placeholder="{{if .Services}}Сборка мебели{{else}}Платье льняное{{end}}">
-  </div>
-  <div class="vrow">
-    <div class="field">
-      <label for="price">{{if .Services}}Цена от, {{.Currency}}{{else}}Цена, {{.Currency}} <span class="req">*</span>{{end}}</label>
-      <input id="price" name="price" value="{{.Price}}" inputmode="decimal"{{if not .Services}} required{{end}} placeholder="{{if .Services}}0 — по договорённости{{else}}4500{{end}}">
-    </div>
-    <div class="field">
-      <label for="old_price">Старая цена</label>
-      <input id="old_price" name="old_price" value="{{.OldPrice}}" inputmode="decimal" placeholder="—">
-    </div>
-  </div>
-  <div class="field">
-    <label for="description">Описание</label>
-    <textarea id="description" name="description" rows="5" maxlength="3000" placeholder="Ткань, размеры, уход">{{.Description}}</textarea>
-  </div>
-  {{if not .Services}}
-  <fieldset class="field">
-    <legend>Размеры и остаток</legend>
-    <p class="hint">Одна строка на размер. Если размера нет, оставьте название пустым и укажите количество. Пустая строка не сохраняется.</p>
-    <div class="vrows">
-      {{range $i, $r := .Rows}}
-      <div class="vrow">
-        <input type="hidden" name="v_id_{{$i}}" value="{{if $r.ID}}{{$r.ID}}{{end}}">
-        <input name="v_name_{{$i}}" value="{{$r.Name}}" maxlength="30" placeholder="Размер, например 44" aria-label="Размер">
-        <input name="v_stock_{{$i}}" value="{{$r.Stock}}" inputmode="numeric" placeholder="Штук" aria-label="Остаток">
-      </div>
+    <div class="a-card">
+      <label class="switch"><input type="checkbox" name="hidden" value="1"{{if .Hidden}} checked{{end}}>
+        <span><b>Скрыть с сайта</b><small>Товар пропадёт с витрины, но не удалится</small></span></label>
+      {{if not .Services}}
+      <label class="switch" style="margin-bottom:0"><input type="checkbox" name="preorder" value="1"{{if .Preorder}} checked{{end}}>
+        <span><b>Предзаказ</b><small>Можно заказать, даже если нет в наличии: сделаете под заказ</small></span></label>
       {{end}}
     </div>
-  </fieldset>
-  {{end}}
-  <div class="field">
-    <label for="photos">{{if .Services}}Добавить фото работ{{else}}Добавить фото{{end}}</label>
-    <input id="photos" name="photos" type="file" accept="image/*" multiple>
-    <p class="hint">Можно сразу несколько, до {{.MaxImages}} на товар (осталось {{.ImagesLeft}}), каждое до {{.MB}} МБ. Мы сами повернём их как надо, уменьшим и уберём из файлов место съёмки.</p>
-  </div>
-  {{if not .Services}}
-  <div class="field">
-    <label for="real_photos">Добавить настоящие фото</label>
-    <input id="real_photos" name="real_photos" type="file" accept="image/*" multiple>
-    <p class="hint">Обычные снимки самой вещи, без обработки: покупатель откроет их кнопкой «Посмотреть настоящее изображение».</p>
-  </div>
-  {{end}}
-  {{if not .Services}}<label class="radio"><input type="checkbox" name="preorder" value="1"{{if .Preorder}} checked{{end}}> Предзаказ: можно заказать, даже если нет в наличии (под заказ)</label>{{end}}
-  <label class="radio"><input type="checkbox" name="hidden" value="1"{{if .Hidden}} checked{{end}}> Скрыть с витрины</label>
-  <button class="cta" type="submit">Сохранить</button>
-</form>
 
-{{if .Product}}
-<form method="post" action="{{p}}/owner/catalog/{{.Product.ID}}/delete" class="card">
-  <input type="hidden" name="csrf" value="{{.CSRF}}">
-  <h2>{{if .Services}}Удалить услугу{{else}}Удалить товар{{end}}</h2>
-  <p class="muted small">Товар и его фото исчезнут насовсем. Заказы с ним останутся как были.</p>
-  <label class="radio"><input type="checkbox" name="sure" value="1" required> Да, удалить насовсем</label>
-  <button class="danger" type="submit">Удалить</button>
-</form>
+    <div class="save-bar">
+      <button class="btn rose" type="submit">{{if .Product}}Сохранить{{else if .Services}}Создать услугу{{else}}Создать товар{{end}}</button>
+      <a class="btn ghost" href="{{p}}/owner/catalog">Назад</a>
+    </div>
+  </form>
+
+  <div>
+    <div class="a-card" id="photos">
+      <h2>{{if .Services}}Примеры работ{{else}}Фотографии{{end}}</h2>
+      {{if .Product}}{{if .Product.Images}}
+      <div class="photos">
+        {{range $i, $im := .Product.Images}}
+        <div class="photo">
+          <img src="{{p}}/img/{{$im.File}}_t.jpg" alt="Фото {{inc $i}}" loading="lazy">
+          {{if not $i}}<span class="pill rose cover">Обложка</span>{{end}}
+          <div class="photo-tools">
+            {{if $i}}<form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-cover-{{$im.ID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button type="submit" title="Сделать обложкой">★</button></form>{{end}}
+            <form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-del-{{$im.ID}}" data-confirm="Удалить это фото?"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="del" type="submit" title="Удалить">🗑</button></form>
+          </div>
+        </div>
+        {{end}}
+      </div>
+      {{end}}{{end}}
+      <label class="dropzone" data-dropzone>
+        <b>{{if and .Product .Product.Images}}Добавить фото{{else}}Выбрать фото{{end}}</b><small data-picked>Можно сразу несколько. Первое станет обложкой.</small>
+        <input type="file" name="photos" accept="image/*" multiple form="product-form" data-photo-input>
+      </label>
+      <p class="help" style="margin:12px 0 0">До {{.MaxImages}} фото (осталось {{.ImagesLeft}}), каждое до {{.MB}} МБ. Мы сами повернём их как надо, уменьшим и уберём из файлов место съёмки. Фото загрузятся, когда нажмёте «{{if .Product}}Сохранить{{else}}Создать{{end}}».</p>
+    </div>
+
+    {{if not .Services}}
+    <div class="a-card">
+      <h2>Настоящие фото</h2>
+      <p class="help">Обычные снимки самой вещи, без обработки: покупатель откроет их кнопкой «Посмотреть настоящее изображение».</p>
+      {{if .Product}}{{if .Product.Real}}
+      <div class="photos">
+        {{range $i, $im := .Product.Real}}
+        <div class="photo">
+          <img src="{{p}}/img/{{$im.File}}_t.jpg" alt="Настоящее фото {{inc $i}}" loading="lazy">
+          <div class="photo-tools">
+            <form method="post" action="{{p}}/owner/catalog/{{$.Product.ID}}/img-del-{{$im.ID}}" data-confirm="Удалить это фото?"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="del" type="submit" title="Удалить">🗑</button></form>
+          </div>
+        </div>
+        {{end}}
+      </div>
+      {{end}}{{end}}
+      <label class="dropzone" data-dropzone>
+        <b>Добавить настоящие фото</b><small data-picked>Можно сразу несколько</small>
+        <input type="file" name="real_photos" accept="image/*" multiple form="product-form" data-photo-input>
+      </label>
+    </div>
+    {{end}}
+
+    {{if .Product}}
+    <div class="a-card">
+      <div class="danger-zone">
+        <span>Удалить {{if .Services}}услугу{{else}}товар{{end}} навсегда вместе с фото</span>
+        <form method="post" action="{{p}}/owner/catalog/{{.Product.ID}}/delete" data-confirm="Удалить «{{.Product.Title}}»? Это нельзя отменить. Чтобы просто спрятать — отметьте «Скрыть с сайта».">
+          <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="sure" value="1">
+          <button class="btn danger small" type="submit">Удалить</button>
+        </form>
+      </div>
+    </div>
+    {{end}}
+  </div>
+</div>
 {{end}}
-{{end}}
-{{define "kitten"}}{{end}}

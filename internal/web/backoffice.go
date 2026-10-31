@@ -42,6 +42,8 @@ type homeView struct {
 	Low                       []string // products running out
 	NoBot                     bool
 	Prepay                    int
+	Paid                      int    // paid orders of all time
+	Revenue                   string // and their sum
 }
 
 type ordersView struct {
@@ -110,7 +112,15 @@ func (s *Server) loc() *time.Location {
 
 func (s *Server) adminHome(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	v := homeView{base: s.base(w, r, "Главная"), Prepay: s.svc.PrepayPercent(ctx)}
+	if o := s.cfg.Owner; o != nil && o.Configured != nil && !o.Configured() {
+		s.redirect(w, r, "/owner", http.StatusSeeOther) // a new installation starts with the setup
+		return
+	}
+	cur := " " + currencySign(s.svc.P.Business.Currency)
+	v := homeView{base: s.base(w, r, "Главная"), Prepay: s.svc.PrepayPercent(ctx), Month: "0" + cur, Revenue: "0" + cur}
+	if all, err := s.svc.Store.Stats(ctx, time.Unix(0, 0), s.svc.Finals()); err == nil {
+		v.Paid, v.Revenue = all.PaidToday, all.RevenueDay.String()+cur
+	}
 	v.Nav = "home"
 	open, err := s.svc.Store.List(ctx, order.Filter{Open: true, Limit: 500}, s.svc.Finals())
 	if err != nil {

@@ -1,39 +1,44 @@
 {{define "content"}}
-<div class="a-title"><h1>Здравствуйте!</h1>{{if .Catalog}}<a class="button cta" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a>{{end}}</div>
-{{if .NoBot}}<p class="banner warn">Telegram-бот не подключён: заказы видно только здесь. <a href="{{p}}/owner#bot">Подключить за 2 минуты</a></p>{{end}}
-{{if .Review}}<p class="banner warn">{{.Review}} {{plural .Review "заказ ждёт" "заказа ждут" "заказов ждут"}} вашей проверки.</p>{{end}}
+<div class="a-title"><h1>Здравствуйте! 🌸</h1>{{if .Catalog}}<a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a>{{end}}</div>
+{{if .NoBot}}<div class="alert">Telegram-бот не подключён — заказы видно только здесь. <a href="{{p}}/owner#bot">Подключить</a></div>{{end}}
+{{if .Review}}<div class="alert warn">{{.Review}} {{plural .Review "заказ ждёт" "заказа ждут" "заказов ждут"}} вашей проверки.</div>{{end}}
 <div class="stats">
-  <a class="stat hl" href="{{p}}/admin/orders?status=active"><b>{{.Wait}}</b><span>ждут цены или оплаты</span></a>
+  <a class="stat hl" href="{{p}}/admin/orders?status=active"><b>{{.Wait}}</b><span>ждут оплаты</span></a>
   <a class="stat hl" href="{{p}}/admin/orders?status=active"><b>{{.Check}}</b><span>проверить оплату</span></a>
   <a class="stat" href="{{p}}/admin/orders?status=active"><b>{{.Work}}</b><span>в работе</span></a>
-  <div class="stat"><b>{{if .Month}}{{.Month}}{{else}}0{{end}}</b><span>за месяц · {{.MonthOrders}} {{plural .MonthOrders "заказ" "заказа" "заказов"}}</span></div>
+  <div class="stat"><b>{{.Month}}</b><span>за месяц · {{.MonthOrders}} {{plural .MonthOrders "заказ" "заказа" "заказов"}}</span></div>
 </div>
 <div class="edit-grid">
   <div class="a-card">
     <h2>Заказы в работе</h2>
     {{if .Rows}}
     <table class="a-table resp orders">
-      <thead><tr><th>№</th><th class="c-hide">Когда</th><th class="c-hide">Покупатель</th><th>Сумма</th><th>Статус</th></tr></thead>
-      <tbody>{{range .Rows}}{{template "orow" .}}{{end}}</tbody>
+      <thead><tr><th>№</th><th>Покупатель</th><th>Сумма</th><th>Статус</th></tr></thead>
+      <tbody>{{range .Rows}}
+        <tr class="click" data-href="{{p}}/admin/orders/{{.ID}}">
+          <td><a href="{{p}}/admin/orders/{{.ID}}">№{{.ID}}</a></td>
+          <td class="c-hide">{{.Customer}}</td>
+          <td>{{.Total}}</td>
+          <td><span class="status {{.Tone}}">{{.State}}</span></td>
+        </tr>{{end}}
+      </tbody>
     </table>
-    <p><a href="{{p}}/admin/orders">Все заказы →</a></p>
-    {{else}}<p class="muted">Пока заказов нет. Они появятся здесь{{if not .NoBot}} и придут в Telegram{{end}}.</p>{{end}}
+    {{else}}<p style="color:var(--muted);margin:0">Пока заказов нет. Они появятся здесь{{if not .NoBot}} и придут в Telegram{{end}}.</p>{{end}}
   </div>
   <div>
     {{if .Catalog}}
     <div class="a-card">
       <h2>{{if .Services}}Услуги{{else}}Товары{{end}}</h2>
-      <p>На сайте {{.Shown}} из {{.Products}}.</p>
-      {{if .Low}}<h3>Заканчивается</h3><ul class="small">{{range .Low}}<li>{{.}}</li>{{end}}</ul>{{end}}
-      <a class="button secondary" href="{{p}}/owner/catalog">{{if .Services}}Все услуги{{else}}Все товары{{end}}</a>
+      <p style="margin:0 0 14px">На сайте {{.Shown}} из {{.Products}}.</p>
+      {{if .Low}}<h3>Заканчивается</h3>
+      <ul style="margin:0;padding-left:18px;font-size:14px">{{range .Low}}<li>{{.}}</li>{{end}}</ul>{{end}}
+      <a class="btn ghost small" href="{{p}}/owner/catalog" style="margin-top:16px">{{if .Services}}Все услуги{{else}}Все товары{{end}}</a>
     </div>
     {{end}}
     <div class="a-card">
-      <h2>Оплата</h2>
-      <p>{{if eq .Prepay 0}}Без предоплаты: платят после.{{else if eq .Prepay 100}}Полная предоплата: заказ в работу после оплаты.{{else}}Аванс {{.Prepay}}% до начала, остаток после.{{end}}</p>
-      <a class="button secondary" href="{{p}}/owner">Изменить</a>
+      <h2>Всего</h2>
+      <p style="margin:0">{{.Paid}} {{plural .Paid "оплаченный заказ" "оплаченных заказа" "оплаченных заказов"}} на {{.Revenue}}</p>
     </div>
   </div>
 </div>
 {{end}}
-{{define "kitten"}}{{end}}

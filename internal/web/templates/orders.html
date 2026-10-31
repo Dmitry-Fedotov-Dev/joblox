@@ -8,10 +8,18 @@
 <div class="a-card">
   {{if .Rows}}
   <table class="a-table resp orders">
-    <thead><tr><th>№</th><th class="c-hide">Когда</th><th class="c-hide">Покупатель</th><th>Сумма</th><th>Статус</th></tr></thead>
-    <tbody>{{range .Rows}}{{template "orow" .}}{{end}}</tbody>
+    <thead><tr><th>№</th><th>Дата</th><th>Покупатель</th><th>Товары</th><th>Сумма</th><th>Статус</th></tr></thead>
+    <tbody>{{range .Rows}}
+      <tr class="click" data-href="{{p}}/admin/orders/{{.ID}}">
+        <td><a href="{{p}}/admin/orders/{{.ID}}">№{{.ID}}</a></td>
+        <td class="c-hide">{{.When}}</td>
+        <td class="c-hide">{{.Customer}}{{if .Phone}}<div style="font-size:13px;color:var(--muted)">{{.Phone}}</div>{{end}}</td>
+        <td class="c-hide">{{if .Items}}{{.Items}} шт.{{else}}—{{end}}</td>
+        <td>{{.Total}}</td>
+        <td><span class="status {{.Tone}}">{{.State}}</span></td>
+      </tr>{{end}}
+    </tbody>
   </table>
-  {{else}}<p class="muted">Здесь пока пусто.</p>{{end}}
+  {{else}}<p style="color:var(--muted);margin:0">Здесь пока пусто.</p>{{end}}
 </div>
 {{end}}
-{{define "kitten"}}{{end}}
