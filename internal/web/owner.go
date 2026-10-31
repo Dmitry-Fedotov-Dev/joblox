@@ -417,7 +417,8 @@ func (s *Server) ownerRequisites(w http.ResponseWriter, r *http.Request) {
 		img, rerr := io.ReadAll(io.LimitReader(f, 1<<20+1))
 		_ = f.Close()
 		ct := http.DetectContentType(img)
-		if rerr != nil || !(ct == "image/png" || ct == "image/jpeg" || ct == "image/webp") {
+		picture := ct == "image/png" || ct == "image/jpeg" || ct == "image/webp"
+		if rerr != nil || !picture {
 			s.redirect(w, r, "/owner?req="+url.QueryEscape("QR должен быть картинкой PNG, JPG или WebP")+"#pay", http.StatusSeeOther)
 			return
 		}
