@@ -105,7 +105,7 @@ func (m *Manager) operators(ctx context.Context) ([]int64, error) {
 }
 
 // ErrBadToken: Telegram does not know the token.
-var ErrBadToken = errors.New("Telegram не принял токен: скопируйте его из @BotFather целиком")
+var ErrBadToken = errors.New("токен не подошёл: скопируйте его из @BotFather целиком")
 
 // Connect checks the token with Telegram, saves it and starts the bot; the old bot, if any, stops.
 func (m *Manager) Connect(ctx context.Context, token string) error {
@@ -138,7 +138,8 @@ func validToken(t string) bool {
 		return false
 	}
 	for _, r := range secret {
-		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
+		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_'
+		if !ok {
 			return false
 		}
 	}
