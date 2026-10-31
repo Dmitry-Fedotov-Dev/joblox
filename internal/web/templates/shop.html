@@ -17,7 +17,7 @@
 </section>
 {{if .Services}}
 <section aria-label="Услуги">
-  <div class="grid" data-paginate>{{range .Cards}}{{template "scard" .}}{{end}}</div>
+  <div class="grid" data-paginate="1">{{range .Cards}}{{template "scard" .}}{{end}}</div>
 </section>
 {{else}}
 <section class="services" aria-label="Услуги">

@@ -54,7 +54,7 @@ document.addEventListener("click", function (e) {
   if (row && !e.target.closest("a, button, form")) location.href = row.getAttribute("data-href");
 });
 
-// the storefront shows two rows of cards a page, however many fit in a row; without scripts, all of them
+// the storefront shows a few rows of cards a page (data-paginate: how many), however many fit in a row; without scripts, all of them
 (function () {
   var grids = document.querySelectorAll("[data-paginate]");
   Array.prototype.forEach.call(grids, function (grid) {
@@ -64,7 +64,7 @@ document.addEventListener("click", function (e) {
     grid.parentNode.insertBefore(pager, grid.nextSibling);
     function perPage() {
       var cols = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
-      return cols * 2;
+      return cols * (+grid.getAttribute("data-paginate") || 2); // rows a page: services 1, a shop 2
     }
     function show(n, scroll) {
       var per = perPage(), pages = Math.max(1, Math.ceil(items.length / per));
