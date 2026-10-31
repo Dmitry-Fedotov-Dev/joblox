@@ -443,3 +443,14 @@ func TestAdvance(t *testing.T) {
 		t.Fatal("the switch did not stick")
 	}
 }
+
+// A button elsewhere opens the order with its item already chosen (?add=item).
+func TestAddFromLink(t *testing.T) {
+	s := newSite(t, "openline")
+	if _, page := s.get(t, "/?add=hosting"); !strings.Contains(page, `name="item_hosting" min="0" max="12" step="1" inputmode="numeric" value="1"`) {
+		t.Fatal("the hosting is not chosen")
+	}
+	if _, page := s.get(t, "/?add=nonsense"); strings.Contains(page, `value="1" placeholder`) {
+		t.Fatal("an unknown item was chosen")
+	}
+}

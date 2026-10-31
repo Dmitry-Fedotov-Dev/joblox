@@ -52,7 +52,7 @@ func (h *Hub) start(w http.ResponseWriter, r *http.Request) {
 		what = want
 	}
 	h.render(w, "start.html", startView{Roles: Roles, Contact: h.Contact, Kind: kind, Want: want,
-		Hosting: h.orderLink(), Turnkey: h.orderLink(),
+		Hosting: h.orderLink() + "?add=hosting#order", Turnkey: h.orderLink() + "?add=turnkey#order",
 		Ask: h.salesLink("Здравствуйте! Вопрос про " + what + " на openline.one:")})
 }
 

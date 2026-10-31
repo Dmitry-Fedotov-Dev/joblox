@@ -151,7 +151,16 @@ func (s *Server) shop(w http.ResponseWriter, r *http.Request) {
 			form = map[string]string{name: val} // the tile the customer pressed is already chosen
 		}
 	}
-	v := s.shopView(w, r, form, nil, "", nil)
+	// ?add=<item> comes from a button elsewhere («Хочу на хостинг»): that item is already in the order
+	var qty map[string]int
+	if add := r.URL.Query().Get("add"); add != "" {
+		for _, it := range s.svc.P.Catalog {
+			if it.ID == add && !it.Hidden {
+				qty = map[string]int{add: 1}
+			}
+		}
+	}
+	v := s.shopView(w, r, form, qty, "", nil)
 	if s.isServices() {
 		list, err := s.cfg.Shop.List(r.Context(), false)
 		if err != nil {
