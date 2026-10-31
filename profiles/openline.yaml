@@ -35,7 +35,7 @@ payment:
 workflow:
   initial: new
   states:
-    - {id: new, title: Ждёт оплаты, customer: "Оплатите заказ по реквизитам ниже и нажмите «Я оплатил»: заявку рассматриваем после оплаты"}
+    - {id: new, title: Ожидает оплаты, customer: "Ожидает оплаты"}
     - {id: working, title: В работе, customer: "Оплата получена, заявка в работе. Напишем вам в течение рабочего дня"}
     - {id: done, title: Готово, customer: "Готово: сайт работает. Спасибо!", final: true}
     - {id: cancelled, title: Отменён, customer: "Заказ отменён. Если вы платили, деньги вернутся тем же путём", final: true}

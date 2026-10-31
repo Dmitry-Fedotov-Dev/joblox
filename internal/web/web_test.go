@@ -379,7 +379,7 @@ func TestOrderTrack(t *testing.T) {
 		}
 		titles = append(titles, st.Title+mark)
 	}
-	if got := strings.Join(titles, " "); got != "Оформлен+ Оплачен* Собирается Передан в доставку Получен" {
+	if got := strings.Join(titles, " "); got != "Оформлен+ Ожидает оплаты* Собирается Передан в доставку Получен" {
 		t.Fatalf("track: %s", got)
 	}
 	o.State, o.Paid = "shipped", true

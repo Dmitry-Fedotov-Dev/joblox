@@ -64,11 +64,19 @@ func track(p *profile.Profile, o *order.Order) []Step {
 		}
 		steps = append(steps, Step{Title: title, Done: i < at, Now: i == at && (i != 0 || !needsPayment(o))})
 		if i == 0 && needsPayment(o) {
-			title := "Оплачен"
-			if !o.Paid && o.ReportedAt != nil {
+			// the step says where the money is: still awaited, being checked, or in
+			title, done := "Ожидает оплаты", o.Paid || at > 0
+			switch {
+			case o.Paid:
+				title = "Оплачен"
+			case o.Split() && o.AdvanceAt != nil:
+				title, done = "Аванс получен", true
+			case o.ReportedAt != nil:
 				title = "Проверяем оплату"
+			case o.Split():
+				title = "Ожидает аванса"
 			}
-			steps = append(steps, Step{Title: title, Done: o.Paid || at > 0, Now: !o.Paid && at == 0})
+			steps = append(steps, Step{Title: title, Done: done, Now: !done && at == 0})
 			steps[0].Done = true
 		}
 	}
