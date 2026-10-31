@@ -282,7 +282,17 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if err != nil {
 		return fmt.Errorf("JOBLOX_TRUSTED_PROXIES: %w", err)
 	}
-	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Trusted: trusted, Dev: cfg.Env == "dev",
+	// the bot: from the server's environment, or the one the owner connects in the cabinet
+	var botMgr *bot.Manager
+	if cfg.BotToken == "" {
+		botMgr = bot.NewManager(svc, st, version, log)
+		svc.Notify = botMgr
+	}
+	var botPanel web.BotPanel
+	if botMgr != nil {
+		botPanel = botMgr
+	}
+	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
 		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: fileNextTo(cfg.Profile, p.Business.Cover), OGImage: fileNextTo(cfg.Profile, p.Business.OGImage),
 		MarketURL: marketURL()}, log)
@@ -300,6 +310,8 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 		svc.Notify = b
 		go b.Run(ctx)
 		b.Started(ctx, version)
+	} else if err := botMgr.Start(ctx); err != nil {
+		log.Warn("the cabinet's bot did not start", "err", err)
 	}
 	go sweep(ctx, svc, log)
 	if url := env("JOBLOX_NETWORK_URL", ""); url != "" && url != "off" {

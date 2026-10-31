@@ -7,6 +7,7 @@ import (
 	"errors"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -31,6 +32,13 @@ type Owner struct {
 	// Portal returns the market's cards to show in the owner's area: who is already working, the network's
 	// own services. Nil or an empty answer hides the block.
 	Portal func(context.Context) []hub.Card
+}
+
+// BotPanel is the operator bot the owner connects in the cabinet with a token from @BotFather.
+type BotPanel interface {
+	BotStatus(ctx context.Context) (name string, operators int, link string)
+	Connect(ctx context.Context, token string) error
+	Disconnect(ctx context.Context) error
 }
 
 // SetupInput is the "become a performer" form.
@@ -92,6 +100,7 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /owner/market", s.ownerOnly(s.ownerMarket))
 	mux.HandleFunc("POST /owner/pause", s.ownerOnly(s.ownerPause))
 	mux.HandleFunc("POST /owner/prepay", s.ownerOnly(s.ownerPrepay))
+	mux.HandleFunc("POST /owner/bot", s.ownerOnly(s.ownerBot))
 	mux.HandleFunc("POST /owner/o/{id}/{action}", s.ownerOnly(s.ownerAction))
 	mux.HandleFunc("GET /admin", s.ownerOnly(s.adminPage))
 	mux.HandleFunc("GET /admin/live.json", s.ownerOnly(s.adminLive))
@@ -127,6 +136,11 @@ type ownerView struct {
 	Orders     []ownerOrder
 	Letters    []mail.Message
 	NoMail     bool
+	BotPanel   bool   // the bot can be connected here
+	BotName    string // @username of the running bot
+	BotOps     int
+	BotLink    string
+	BotError   string
 	Form       SetupInput
 	FormError  string
 	Kinds      any
@@ -162,6 +176,11 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 		Temporary: strings.Contains(site, ".trycloudflare.com"), MarketURL: ow.MarketURL, Shown: ow.Shown(), DataDir: ow.DataDir,
 		NoMail: s.outbox != nil, Kinds: Kinds, Countries: Countries, Currency: currencySign(s.svc.P.Business.Currency)}
 	v.Form = SetupInput{Kind: Kinds[0].ID, Country: Countries[0].ID, Show: true}
+	if s.cfg.Bot != nil {
+		v.BotPanel = true
+		v.BotName, v.BotOps, v.BotLink = s.cfg.Bot.BotStatus(r.Context())
+		v.BotError = r.URL.Query().Get("bot")
+	}
 	v.Prepay = s.svc.PrepayPercent(r.Context())
 	if ow.Portal != nil {
 		v.Portal = ow.Portal(r.Context())
@@ -319,6 +338,24 @@ func (s *Server) ownerPause(w http.ResponseWriter, r *http.Request) {
 		s.svc.Pause()
 	}
 	s.redirect(w, r, "/owner", http.StatusSeeOther)
+}
+
+// ownerBot connects the operator bot with a token, or turns it off.
+func (s *Server) ownerBot(w http.ResponseWriter, r *http.Request) {
+	if !s.ownerForm(w, r) || s.cfg.Bot == nil {
+		return
+	}
+	var err error
+	if r.PostFormValue("off") == "1" {
+		err = s.cfg.Bot.Disconnect(r.Context())
+	} else {
+		err = s.cfg.Bot.Connect(r.Context(), r.PostFormValue("token"))
+	}
+	if err != nil {
+		s.redirect(w, r, "/owner?bot="+url.QueryEscape(err.Error())+"#bot", http.StatusSeeOther)
+		return
+	}
+	s.redirect(w, r, "/owner#bot", http.StatusSeeOther)
 }
 
 // ownerPrepay switches the prepayment of new orders: 0, 50 or 100 percent.

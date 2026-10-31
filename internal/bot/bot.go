@@ -26,6 +26,10 @@ type Bot struct {
 	svc       *order.Service
 	operators map[int64]bool
 	log       *slog.Logger
+	// Join lets someone become an operator with the code from the cabinet's link (/start CODE); nil: the
+	// operators are only those the server was started with.
+	Join func(ctx context.Context, id int64, code string) bool
+	opMu sync.RWMutex
 
 	mu        sync.Mutex
 	refused   int       // refused attempts since the last summary
@@ -43,7 +47,15 @@ func New(api *API, svc *order.Service, operators []int64, log *slog.Logger) *Bot
 	return &Bot{api: api, svc: svc, operators: ops, log: log}
 }
 
+func (b *Bot) isOperator(id int64) bool {
+	b.opMu.RLock()
+	defer b.opMu.RUnlock()
+	return b.operators[id]
+}
+
 func (b *Bot) operatorIDs() []int64 {
+	b.opMu.RLock()
+	defer b.opMu.RUnlock()
 	ids := make([]int64, 0, len(b.operators))
 	for id := range b.operators {
 		ids = append(ids, id)
@@ -97,13 +109,21 @@ func (b *Bot) Run(ctx context.Context) {
 func (b *Bot) Handle(ctx context.Context, u Update) {
 	switch {
 	case u.Message != nil && u.Message.From != nil:
-		if !b.operators[u.Message.From.ID] {
+		if cmd, code, ok := strings.Cut(strings.TrimSpace(u.Message.Text), " "); ok && cmd == "/start" && b.Join != nil &&
+			!b.isOperator(u.Message.From.ID) && b.Join(ctx, u.Message.From.ID, strings.TrimSpace(code)) {
+			b.opMu.Lock()
+			b.operators[u.Message.From.ID] = true
+			b.opMu.Unlock()
+			_, _ = b.api.Send(ctx, u.Message.Chat.ID, "✅ Готово: новые заказы будут приходить сюда, с кнопками.\n\n"+html.EscapeString(help), nil)
+			return
+		}
+		if !b.isOperator(u.Message.From.ID) {
 			_, _ = b.api.Send(ctx, u.Message.Chat.ID, fmt.Sprintf("Этот бот только для операторов. Ваш id: <code>%d</code>.", u.Message.From.ID), nil)
 			return
 		}
 		b.command(ctx, u.Message)
 	case u.Callback != nil:
-		if !b.operators[u.Callback.From.ID] {
+		if !b.isOperator(u.Callback.From.ID) {
 			_ = b.api.Answer(ctx, u.Callback.ID, "Нет доступа")
 			return
 		}

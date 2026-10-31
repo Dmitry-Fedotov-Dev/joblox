@@ -56,6 +56,8 @@ type Config struct {
 	OGImage string
 	// MarketURL is the network's market where anyone can start the same kind of site; empty: no button.
 	MarketURL string
+	// Bot connects the operator bot from the cabinet; nil when the server's environment sets the bot.
+	Bot BotPanel
 }
 
 type Server struct {

@@ -97,6 +97,13 @@ func (a *API) call(ctx context.Context, method string, payload, out any) error {
 	return nil
 }
 
+// Me asks Telegram who the bot is: it also checks the token.
+func (a *API) Me(ctx context.Context) (User, error) {
+	var u User
+	err := a.call(ctx, "getMe", map[string]any{}, &u)
+	return u, err
+}
+
 func (a *API) Updates(ctx context.Context, offset int64, timeout int) ([]Update, error) {
 	var out []Update
 	err := a.call(ctx, "getUpdates", map[string]any{"offset": offset, "timeout": timeout,

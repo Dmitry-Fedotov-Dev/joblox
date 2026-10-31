@@ -87,6 +87,30 @@
     </form>
   </div>
 
+  {{if .BotPanel}}
+  <div class="card" id="bot">
+    <p class="eyebrow">Telegram-бот</p>
+    {{if .BotName}}
+      <p>Бот <b>@{{.BotName}}</b> работает. Заказы получают: {{if .BotOps}}<b>{{.BotOps}}</b> {{plural .BotOps "человек" "человека" "человек"}}{{else}}пока никто{{end}}.</p>
+      <a class="cta button" href="{{.BotLink}}" target="_blank" rel="noopener">{{if .BotOps}}Добавить ещё один телефон{{else}}Получать заказы в Telegram{{end}}</a>
+      <p class="muted small">Откройте ссылку на телефоне и нажмите «Start»: бот пришлёт туда новые заказы с кнопками «Оплата получена», «Аванс получен» и сменой статуса. Ссылка одноразовая, никому её не пересылайте.</p>
+      <form method="post" action="{{p}}/owner/bot" class="actions"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="off" value="1"><button class="link">Отключить бота</button></form>
+    {{else}}
+      <p>Заказы будут приходить в Telegram, с кнопками для ответа. Нужно 2 минуты:</p>
+      <ol class="small">
+        <li>Откройте <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a>, отправьте <code>/newbot</code>, придумайте имя и адрес бота.</li>
+        <li>BotFather пришлёт токен: длинную строку вида <code>123456789:AAH…</code>. Скопируйте её сюда.</li>
+      </ol>
+      <form method="post" action="{{p}}/owner/bot" class="inline">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <input name="token" autocomplete="off" spellcheck="false" placeholder="123456789:AAH…" required aria-label="Токен бота">
+        <button>Запустить бота</button>
+      </form>
+    {{end}}
+    {{if .BotError}}<p class="field-error">{{.BotError}}</p>{{end}}
+  </div>
+  {{end}}
+
   <h2>Заказы <a class="small" href="{{p}}/owner">обновить</a></h2>
   {{if not .Orders}}<p class="muted">Открытых заказов нет. Новые появятся здесь сами.</p>{{end}}
   {{$csrf := .CSRF}}
