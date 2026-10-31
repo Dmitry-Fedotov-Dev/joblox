@@ -18,7 +18,9 @@ services:
         VERSION: ${VERSION:-dev}
     command: ["hub"]
     restart: unless-stopped
-    env_file: # JOBLOX_HUB_ADMIN_TOKEN, JOBLOX_HUB_CONTACT: deploy/hub/.env, в git не попадает
+    env_file: # JOBLOX_HUB_BOT_TOKEN, JOBLOX_HUB_ADMIN_TOKEN, JOBLOX_HUB_CONTACT: на сервере, вне папки с кодом
+      - path: /etc/joblox-hub.env
+        required: false
       - path: .env
         required: false
     environment:

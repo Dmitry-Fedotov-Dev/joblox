@@ -289,6 +289,9 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	var botMgr *bot.Manager
 	if cfg.BotToken == "" {
 		botMgr = bot.NewManager(svc, st, version, log)
+		if u := env("JOBLOX_NETWORK_URL", ""); u != "off" && cfg.Env == "prod" {
+			botMgr.SetHub(u) // the hosting's shared bot lives at the network
+		}
 		svc.Notify = botMgr
 	}
 	var botPanel web.BotPanel
@@ -401,6 +404,11 @@ func runHub(log *slog.Logger) error {
 	h.Order = env("JOBLOX_HUB_ORDER", hub.DefaultOrder)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if token := os.Getenv("JOBLOX_HUB_BOT_TOKEN"); token != "" { // the shared bot of the hosting tariff
+		if err := h.StartBot(ctx, token); err != nil {
+			log.Warn("the shared bot did not start", "err", err)
+		}
+	}
 	addr := env("JOBLOX_HUB_ADDR", "127.0.0.1:8099")
 	log.Info("joblox network hub started", "addr", addr, "version", version)
 	return h.Run(ctx, addr)

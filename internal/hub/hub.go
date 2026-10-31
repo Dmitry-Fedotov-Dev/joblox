@@ -103,6 +103,7 @@ type Hub struct {
 	page *template.Template
 
 	mu     sync.Mutex
+	relay  *relay               // the shared bot of the hosting tariff; nil when it is off
 	seen   map[string]time.Time // id → last accepted beat, for the per-id rate
 	newIDs map[string][]time.Time
 }
@@ -132,6 +133,11 @@ func Open(path string, log *slog.Logger) (*Hub, error) {
 	// the card column came with the market; databases of the counter-only hub get it here
 	if _, err := db.Exec(`ALTER TABLE installs ADD COLUMN listing TEXT NOT NULL DEFAULT ''`); err != nil &&
 		!strings.Contains(err.Error(), "duplicate column") {
+		_ = db.Close()
+		return nil, err
+	}
+	h0 := &Hub{db: db}
+	if err := h0.relayTables(); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
@@ -243,6 +249,7 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("GET /api", h.static("api.html"))
 	mux.HandleFunc("GET /about", h.static("about.html"))
 	mux.HandleFunc("GET /t/{id}", h.showcase)
+	h.relayRoutes(mux)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.Handle("GET /kitten/", http.StripPrefix("/kitten", kitten.Handler()))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

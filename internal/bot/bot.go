@@ -29,7 +29,10 @@ type Bot struct {
 	// Join lets someone become an operator with the code from the cabinet's link (/start CODE); nil: the
 	// operators are only those the server was started with.
 	Join func(ctx context.Context, id int64, code string) bool
-	opMu sync.RWMutex
+	// Relay: the bot works through the hub's shared bot; the hub lets through only the chats linked to this
+	// shop, so all of them are operators, and «everyone» is chat 0.
+	Relay bool
+	opMu  sync.RWMutex
 
 	mu        sync.Mutex
 	refused   int       // refused attempts since the last summary
@@ -48,12 +51,18 @@ func New(api *API, svc *order.Service, operators []int64, log *slog.Logger) *Bot
 }
 
 func (b *Bot) isOperator(id int64) bool {
+	if b.Relay {
+		return true
+	}
 	b.opMu.RLock()
 	defer b.opMu.RUnlock()
 	return b.operators[id]
 }
 
 func (b *Bot) operatorIDs() []int64 {
+	if b.Relay {
+		return []int64{0}
+	}
 	b.opMu.RLock()
 	defer b.opMu.RUnlock()
 	ids := make([]int64, 0, len(b.operators))

@@ -13,8 +13,9 @@ import (
 // API is the small part of the Telegram Bot API the operator bot uses. Base is
 // https://api.telegram.org/bot<token>; tests point it at a fake server.
 type API struct {
-	Base string
-	HTTP *http.Client
+	Base   string
+	HTTP   *http.Client
+	Header map[string]string // extra headers: the shop's address and key when Telegram is the hub
 }
 
 func NewAPI(token string) *API {
@@ -75,6 +76,9 @@ func (a *API) call(ctx context.Context, method string, payload, out any) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	for k, v := range a.Header {
+		req.Header.Set(k, v)
+	}
 	resp, err := a.HTTP.Do(req)
 	if err != nil {
 		return err

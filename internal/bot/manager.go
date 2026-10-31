@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/antifraud"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
@@ -36,6 +37,14 @@ type Manager struct {
 	stop   context.CancelFunc
 	name   string // the bot's @username
 	parent context.Context
+
+	// the shared bot (relay.go)
+	hub             string
+	shared          bool
+	nonce           string
+	nonceAt, infoAt time.Time
+	infoOn          bool
+	link            sharedLink
 }
 
 const (
@@ -57,6 +66,12 @@ func (m *Manager) Start(ctx context.Context) error {
 	m.mu.Lock()
 	m.parent = ctx
 	m.mu.Unlock()
+	if mode, _ := m.st.Meta(ctx, keyMode); mode == modeShare && m.hub != "" {
+		if secret, _ := m.st.Meta(ctx, keyRelay); secret != "" {
+			m.runShared(secret)
+			return nil
+		}
+	}
 	token, err := m.st.Meta(ctx, keyToken)
 	if err != nil || token == "" {
 		return err
@@ -125,6 +140,9 @@ func (m *Manager) Connect(ctx context.Context, token string) error {
 	if _, err := m.newLink(ctx); err != nil {
 		return err
 	}
+	if err := m.DisconnectShared(ctx); err != nil { // a bot of its own replaces the shared one
+		return err
+	}
 	return m.run(ctx, token, me.Username)
 }
 
@@ -168,6 +186,7 @@ type Status struct {
 	Name      string
 	Operators int
 	Link      string
+	Shared    bool // the hub's shared bot, not one of the shop's own
 }
 
 // BotStatus is Status for the cabinet (the web package does not import this one).
@@ -178,8 +197,11 @@ func (m *Manager) BotStatus(ctx context.Context) (name string, operators int, li
 
 func (m *Manager) Status(ctx context.Context) Status {
 	m.mu.Lock()
-	name, running := m.name, m.bot != nil
+	name, running, shared := m.name, m.bot != nil, m.shared
 	m.mu.Unlock()
+	if shared {
+		return m.sharedStatus(ctx)
+	}
 	if !running {
 		return Status{}
 	}
@@ -192,12 +214,22 @@ func (m *Manager) Status(ctx context.Context) Status {
 }
 
 func (m *Manager) newLink(ctx context.Context) (string, error) {
-	b := make([]byte, 12)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	code := hex.EncodeToString(b)
+	code := randomCode()
 	return code, m.st.SetMeta(ctx, keyLink, code)
+}
+
+func randomCode() string {
+	b := make([]byte, 12)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+// BotShared is for the back office: can this shop use the shared bot, and does it now.
+func (m *Manager) BotShared(ctx context.Context) (available, on bool) {
+	m.mu.Lock()
+	on = m.shared
+	m.mu.Unlock()
+	return on || m.SharedAvailable(ctx), on
 }
 
 // join: someone opened the cabinet's link and pressed Start. The code works once.

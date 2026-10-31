@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"html/template"
+	"io"
 	"net/http"
 	"net/url"
 	"slices"
@@ -40,6 +41,12 @@ type BotPanel interface {
 	BotStatus(ctx context.Context) (name string, operators int, link string)
 	Connect(ctx context.Context, token string) error
 	Disconnect(ctx context.Context) error
+	// the shared bot of the hosting tariff
+	BotShared(ctx context.Context) (available, on bool)
+	ConnectShared(ctx context.Context) error
+	DisconnectShared(ctx context.Context) error
+	VerifyNonce(nonce string) bool
+	RelayUpdate(ctx context.Context, body []byte, sign string) error
 }
 
 // SetupInput is the "become a performer" form.
@@ -102,6 +109,10 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /owner/pause", s.ownerOnly(s.ownerPause))
 	mux.HandleFunc("POST /owner/prepay", s.ownerOnly(s.ownerPrepay))
 	mux.HandleFunc("POST /owner/bot", s.ownerOnly(s.ownerBot))
+	mux.HandleFunc("POST /owner/bot/shared", s.ownerOnly(s.ownerBotShared))
+	// the hub of the shared bot: its call-back while registering, and what the seller pressed
+	mux.HandleFunc("GET /bot/relay/verify", s.relayVerify)
+	mux.HandleFunc("POST /bot/relay/update", s.relayUpdate)
 	mux.HandleFunc("POST /owner/requisites", s.ownerOnly(s.ownerRequisites))
 	mux.HandleFunc("POST /owner/o/{id}/{action}", s.ownerOnly(s.ownerAction))
 	s.backofficeRoutes(mux)
@@ -133,37 +144,39 @@ func (s *Server) ownerEnter(w http.ResponseWriter, r *http.Request) {
 
 type ownerView struct {
 	base
-	Configured bool
-	SiteURL    string
-	Temporary  bool
-	MarketURL  string
-	Shown      bool
-	DataDir    string
-	Orders     []ownerOrder
-	Letters    []mail.Message
-	NoMail     bool
-	BotPanel   bool   // the bot can be connected here
-	BotName    string // @username of the running bot
-	BotOps     int
-	BotLink    string
-	BotError   string
-	Req        *order.Requisites // the requisites in use
-	ReqFixed   bool              // they come from the server's file
-	ReqRows    []order.RequisiteRow
-	ReqError   string
-	CashOff    bool
-	Transfer   bool // the profile takes transfers at all
-	Cash       bool
-	Form       SetupInput
-	FormError  string
-	Kinds      any
-	Countries  any
-	Currency   string
-	Portal     []hub.Card
-	SiteQR     template.HTML
-	Waiting    bool          // the public address is not there yet
-	PhoneQR    template.HTML // the master link: the owner scans it to open the cabinet on a phone
-	Prepay     int           // the prepayment of new orders, percent
+	Configured  bool
+	SiteURL     string
+	Temporary   bool
+	MarketURL   string
+	Shown       bool
+	DataDir     string
+	Orders      []ownerOrder
+	Letters     []mail.Message
+	NoMail      bool
+	BotPanel    bool   // the bot can be connected here
+	BotName     string // @username of the running bot
+	BotOps      int
+	BotLink     string
+	BotError    string
+	BotCanShare bool              // the shared bot of the hosting is there for this shop
+	BotShared   bool              // and it is the one in use
+	Req         *order.Requisites // the requisites in use
+	ReqFixed    bool              // they come from the server's file
+	ReqRows     []order.RequisiteRow
+	ReqError    string
+	CashOff     bool
+	Transfer    bool // the profile takes transfers at all
+	Cash        bool
+	Form        SetupInput
+	FormError   string
+	Kinds       any
+	Countries   any
+	Currency    string
+	Portal      []hub.Card
+	SiteQR      template.HTML
+	Waiting     bool          // the public address is not there yet
+	PhoneQR     template.HTML // the master link: the owner scans it to open the cabinet on a phone
+	Prepay      int           // the prepayment of new orders, percent
 }
 
 type ownerOrder struct {
@@ -192,6 +205,7 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	if s.cfg.Bot != nil {
 		v.BotPanel = true
 		v.BotName, v.BotOps, v.BotLink = s.cfg.Bot.BotStatus(r.Context())
+		v.BotCanShare, v.BotShared = s.cfg.Bot.BotShared(r.Context())
 		v.BotError = r.URL.Query().Get("bot")
 	}
 	v.Req, v.ReqFixed, v.CashOff = s.svc.Req(), s.cfg.ReqFixed, s.svc.CashOff()
@@ -408,6 +422,49 @@ func clip(s string, n int) string {
 		return string(r[:n])
 	}
 	return s
+}
+
+// ownerBotShared switches the shop to the hosting's shared bot, or off it.
+func (s *Server) ownerBotShared(w http.ResponseWriter, r *http.Request) {
+	if !s.ownerForm(w, r) || s.cfg.Bot == nil {
+		return
+	}
+	var err error
+	if r.PostFormValue("off") == "1" {
+		err = s.cfg.Bot.DisconnectShared(r.Context())
+	} else {
+		err = s.cfg.Bot.ConnectShared(r.Context())
+	}
+	if err != nil {
+		s.redirect(w, r, "/owner?bot="+url.QueryEscape(err.Error())+"#bot", http.StatusSeeOther)
+		return
+	}
+	s.redirect(w, r, "/owner#bot", http.StatusSeeOther)
+}
+
+func (s *Server) relayVerify(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Bot == nil || !s.cfg.Bot.VerifyNonce(r.URL.Query().Get("nonce")) {
+		http.NotFound(w, r)
+		return
+	}
+	_, _ = w.Write([]byte("ok"))
+}
+
+func (s *Server) relayUpdate(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Bot == nil {
+		http.NotFound(w, r)
+		return
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 64<<10))
+	if err != nil {
+		http.Error(w, "too big", http.StatusRequestEntityTooLarge)
+		return
+	}
+	if err := s.cfg.Bot.RelayUpdate(r.Context(), body, r.Header.Get("X-Relay-Sign")); err != nil {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ownerBot connects the operator bot with a token, or turns it off.

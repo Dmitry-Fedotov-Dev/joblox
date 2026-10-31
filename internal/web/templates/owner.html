@@ -118,6 +118,17 @@
   {{if .BotPanel}}
   <div class="card" id="bot">
     <p class="eyebrow">Telegram-бот</p>
+    {{if .BotShared}}
+      <p>Подключён общий <b>бот Joblox</b>{{if .BotName}} (@{{.BotName}}){{end}}. Заказы получают: {{if .BotOps}}<b>{{.BotOps}}</b> {{plural .BotOps "чат" "чата" "чатов"}}{{else}}пока никто{{end}}.</p>
+      {{if .BotLink}}<a class="cta button" href="{{.BotLink}}" target="_blank" rel="noopener">{{if .BotOps}}Добавить ещё один телефон{{else}}Получать заказы в Telegram{{end}}</a>{{end}}
+      <p class="muted small">Откройте ссылку на телефоне и нажмите «Start»: бот пришлёт туда новые заказы с кнопками. Ссылка одноразовая. Уведомления идут через Openline, так устроен тариф «Хостинг»; если нужно, чтобы их не видел никто, подключите свой бот.</p>
+      <form method="post" action="{{p}}/owner/bot/shared" class="actions"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="off" value="1"><button class="link">Отключить бот Joblox</button></form>
+    {{else}}
+    {{if and .BotCanShare (not .BotName)}}
+      <p><b>Бот Joblox</b> — для сайтов на нашем хостинге: одна кнопка, ничего создавать не нужно.</p>
+      <form method="post" action="{{p}}/owner/bot/shared" class="actions"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Подключить бот Joblox</button></form>
+      <details><summary class="small">Или свой бот, чтобы заказы не шли через Openline</summary>
+    {{end}}
     {{if .BotName}}
       <p>Бот <b>@{{.BotName}}</b> работает. Заказы получают: {{if .BotOps}}<b>{{.BotOps}}</b> {{plural .BotOps "человек" "человека" "человек"}}{{else}}пока никто{{end}}.</p>
       <a class="cta button" href="{{.BotLink}}" target="_blank" rel="noopener">{{if .BotOps}}Добавить ещё один телефон{{else}}Получать заказы в Telegram{{end}}</a>
@@ -134,6 +145,8 @@
         <input name="token" autocomplete="off" spellcheck="false" placeholder="123456789:AAH…" required aria-label="Токен бота">
         <button>Запустить бота</button>
       </form>
+    {{end}}
+    {{if and .BotCanShare (not .BotName)}}</details>{{end}}
     {{end}}
     {{if .BotError}}<p class="field-error">{{.BotError}}</p>{{end}}
   </div>
