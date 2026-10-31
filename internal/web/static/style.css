@@ -452,3 +452,10 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .pager button[aria-current] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .pager button:disabled:not([aria-current]) { opacity: .35; cursor: default; }
 @media (max-width: 720px) { body:has(.hero-cover) .top .contact { display: none; } } /* the phone is in the hero on a phone */
+/* on a phone the header is one line: the name shrinks and ends in «…», the cart stays a small button on the right */
+@media (max-width: 720px) {
+  .top .wrap { flex-wrap: nowrap; min-height: 56px; gap: 10px; }
+  .top .brand { flex: 1 1 auto; min-width: 0; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .top .brand .brand-mark { display: inline-block; margin-right: 10px; vertical-align: 1px; }
+  .top .cart-link { flex: none; padding: 7px 14px; font-size: 14px; }
+}
