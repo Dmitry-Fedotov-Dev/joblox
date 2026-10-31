@@ -246,12 +246,13 @@ func TestPrune(t *testing.T) {
 	}
 }
 
-// The start page opens with the tariffs; the paid ones lead to the sales chat with the request typed in.
+// The start page opens with the tariffs; the paid ones lead to the order site, a question to the sales chat.
 func TestStartTariffs(t *testing.T) {
 	_, srv, _ := newHub(t)
 	page := get(t, srv.URL+"/start?for=master").body
 	for _, want := range []string{"Сделать себе такую же страничку мастера", "Бесплатно", "7 $", "от 100 $",
-		`href="https://t.me/how_many_roads?text=`, strings.ReplaceAll(url.QueryEscape("такую же страничку мастера на хостинге"), "+", "%20"), `id="self"`} {
+		`href="/order/">Хочу на хостинг`, `href="https://t.me/how_many_roads?text=`,
+		strings.ReplaceAll(url.QueryEscape("такую же страничку мастера на openline.one"), "+", "%20"), `id="self"`} {
 		if !strings.Contains(page, want) {
 			t.Errorf("start page has no %q", want)
 		}

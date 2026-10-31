@@ -383,6 +383,7 @@ func runHub(log *slog.Logger) error {
 	defer h.Close()
 	h.AdminToken, h.Contact = os.Getenv("JOBLOX_HUB_ADMIN_TOKEN"), env("JOBLOX_HUB_CONTACT", "")
 	h.Sales = env("JOBLOX_HUB_SALES", hub.DefaultSales)
+	h.Order = env("JOBLOX_HUB_ORDER", hub.DefaultOrder)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	addr := env("JOBLOX_HUB_ADDR", "127.0.0.1:8099")

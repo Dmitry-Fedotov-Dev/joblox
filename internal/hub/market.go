@@ -40,7 +40,7 @@ type Card struct {
 // the same grid as everyone else's cards.
 var Featured = []Card{
 	{Kind: "shop", Title: "Мамина мастерская", About: "Одежда ручной работы, лимитированные коллекции. Доставка по России.",
-		URL: "https://mama-couture.openline.one/", Badge: "Магазин", Wide: true},
+		URL: "https://mama-couture.openline.one/", Wide: true, Trusted: true}, // checked: the first shop
 	{Kind: "master", Title: "Мастер на выезд", About: "Шаблон сайта для мастера: сборка мебели, мелкий ремонт, ручная работа. Клиент оставляет заявку, мастер называет цену.",
 		URL: "/t/master", Badge: "Шаблон"},
 	{Kind: "shop", Title: "Магазин с фото", About: "Шаблон магазина: товары с фото и размерами, остатки, корзина. Товары добавляются с телефона.",

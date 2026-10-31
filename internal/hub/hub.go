@@ -94,6 +94,8 @@ type Hub struct {
 	Contact string
 	// Sales is the Telegram chat for hosting and turnkey requests (JOBLOX_HUB_SALES); empty: DefaultSales.
 	Sales string
+	// Order is the tariff order site (JOBLOX_HUB_ORDER), where the paid tariffs are paid up front.
+	Order string
 
 	db   *sql.DB
 	log  *slog.Logger
