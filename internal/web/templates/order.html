@@ -49,6 +49,7 @@
     {{else}}<dt>Сумма</dt><dd class="copy">{{$.O.Total.Plain}}</dd>{{end}}
     <dt>Назначение платежа</dt><dd class="copy">{{$.Purpose}}</dd>
   </dl>
+  {{if $.QR}}<div class="pay-qr"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="220"><p class="small">Отсканируйте QR в приложении банка и введите сумму <b>{{$.O.Due.Plain}}</b>.</p></div>{{end}}
   <p class="muted small">Укажите сумму и назначение платежа точно как здесь: по ним оператор находит оплату. Реквизиты действуют только для этого заказа.</p>
   {{if .Note}}<p class="muted small">{{.Note}}</p>{{end}}
   {{if $.P.Texts.Rules}}<p class="muted small">{{$.P.Texts.Rules}}</p>{{end}}

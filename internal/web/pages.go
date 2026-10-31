@@ -250,6 +250,7 @@ type orderView struct {
 	CodeError   string
 	CodeNote    string
 	Requisites  *order.Requisites
+	QR          bool // the bank's payment QR is there to scan
 	Purpose     string
 	Actions     []profile.Transition
 	Waiting     string
@@ -286,6 +287,7 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 	if s.svc.RequisitesVisible(o) {
 		v.Requisites = s.svc.Req()
 		v.Purpose = s.svc.Req().PurposeFor(v.Ref, o.Due().Plain())
+		v.QR = s.svc.PaymentQR(r.Context()) != nil
 	}
 	v.Actions = s.svc.Flow.Open(o.State, profile.ActorCustomer, o.Flags())
 	v.Steps = track(p, o)

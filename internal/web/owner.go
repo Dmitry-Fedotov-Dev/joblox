@@ -115,6 +115,7 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /bot/relay/verify", s.relayVerify)
 	mux.HandleFunc("POST /bot/relay/update", s.relayUpdate)
 	mux.HandleFunc("POST /owner/requisites", s.ownerOnly(s.ownerRequisites))
+	mux.HandleFunc("GET /pay-qr", s.payQR)
 	mux.HandleFunc("POST /owner/o/{id}/{action}", s.ownerOnly(s.ownerAction))
 	s.backofficeRoutes(mux)
 	mux.HandleFunc("GET /admin/live.json", s.ownerOnly(s.adminLive))
@@ -159,6 +160,7 @@ type ownerView struct {
 	BotOps      int
 	BotLink     string
 	BotError    string
+	HasQR       bool              // the bank's payment QR is uploaded
 	BotCanShare bool              // the shared bot of the hosting is there for this shop
 	BotShared   bool              // and it is the one in use
 	Req         *order.Requisites // the requisites in use
@@ -213,6 +215,7 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	v.Transfer = slices.Contains(s.svc.P.Payment.Methods, profile.MethodTransfer)
 	v.Cash = slices.Contains(s.svc.P.Payment.Methods, profile.MethodCash)
 	v.ReqError = r.URL.Query().Get("req")
+	v.HasQR = s.svc.PaymentQR(r.Context()) != nil
 	if v.Req != nil {
 		v.ReqRows = append(v.ReqRows, v.Req.Lines...)
 	}
@@ -405,6 +408,28 @@ func (s *Server) ownerRequisites(w http.ResponseWriter, r *http.Request) {
 	if !s.ownerForm(w, r) {
 		return
 	}
+	if r.PostFormValue("qr_off") == "1" {
+		_ = s.svc.SetPaymentQR(r.Context(), nil)
+		s.redirect(w, r, "/owner#pay", http.StatusSeeOther)
+		return
+	}
+	if f, _, err := r.FormFile("qr"); err == nil { // the bank's QR picture comes with the form
+		img, rerr := io.ReadAll(io.LimitReader(f, 1<<20+1))
+		_ = f.Close()
+		ct := http.DetectContentType(img)
+		if rerr != nil || !(ct == "image/png" || ct == "image/jpeg" || ct == "image/webp") {
+			s.redirect(w, r, "/owner?req="+url.QueryEscape("QR должен быть картинкой PNG, JPG или WebP")+"#pay", http.StatusSeeOther)
+			return
+		}
+		if err := s.svc.SetPaymentQR(r.Context(), img); err != nil {
+			s.redirect(w, r, "/owner?req="+url.QueryEscape(err.Error())+"#pay", http.StatusSeeOther)
+			return
+		}
+		if r.PostFormValue("recipient") == "" { // only the picture was sent
+			s.redirect(w, r, "/owner#pay", http.StatusSeeOther)
+			return
+		}
+	}
 	if s.cfg.ReqFixed {
 		http.Error(w, "the requisites come from the server", http.StatusConflict)
 		return
@@ -437,6 +462,18 @@ func clip(s string, n int) string {
 		return string(r[:n])
 	}
 	return s
+}
+
+// payQR serves the bank's payment QR the owner uploaded: it is on every order page with the requisites.
+func (s *Server) payQR(w http.ResponseWriter, r *http.Request) {
+	img := s.svc.PaymentQR(r.Context())
+	if img == nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", http.DetectContentType(img))
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write(img)
 }
 
 // ownerBotShared switches the shop to the hosting's shared bot, or off it.

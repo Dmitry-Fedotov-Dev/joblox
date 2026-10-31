@@ -222,3 +222,20 @@ func TestRequisitesFromTheCabinet(t *testing.T) {
 		t.Fatal("after the requisites the checkout must offer the transfer only")
 	}
 }
+
+// The owner uploads the bank's QR; the order page with the requisites shows it, /pay-qr serves it.
+func TestPaymentQR(t *testing.T) {
+	s, f := ownerSite(t)
+	f.setups = []SetupInput{{Kind: "bakery"}}
+	s.get(t, "/owner/enter?k=masterkey0123456789")
+	png := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89")
+	if err := s.svc.SetPaymentQR(context.Background(), png); err != nil {
+		t.Fatal(err)
+	}
+	if code, body := s.get(t, "/pay-qr"); code != http.StatusOK || !strings.HasPrefix(body, "\x89PNG") {
+		t.Fatalf("pay-qr: %d", code)
+	}
+	if _, settings := s.get(t, "/owner"); !strings.Contains(settings, "Заменить QR") {
+		t.Fatal("the settings do not show the QR")
+	}
+}

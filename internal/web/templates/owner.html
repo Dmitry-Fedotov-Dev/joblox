@@ -111,6 +111,15 @@
       </form>
       {{if .Req}}<form method="post" action="{{p}}/owner/requisites"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="off" value="1"><input type="hidden" name="cash" value="1"><button class="link">Убрать реквизиты</button></form>{{end}}
     {{end}}
+    <h3 style="margin-top:18px">QR для оплаты</h3>
+    {{if .HasQR}}<div class="qr-box"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="160" style="border-radius:12px"><p class="muted small">Покупатель увидит этот QR на странице заказа рядом с реквизитами и сможет отсканировать его в приложении банка.</p></div>
+    <form method="post" action="{{p}}/owner/requisites"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="qr_off" value="1"><button class="link">Убрать QR</button></form>
+    {{else}}<p class="muted small">Загрузите QR из приложения банка (MBank, ELQR, СБП): покупатель отсканирует его со страницы заказа.</p>{{end}}
+    <form method="post" action="{{p}}/owner/requisites" enctype="multipart/form-data" class="inline">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="file" name="qr" accept="image/png,image/jpeg,image/webp" required aria-label="Картинка QR">
+      <button>{{if .HasQR}}Заменить QR{{else}}Загрузить QR{{end}}</button>
+    </form>
     {{if .ReqError}}<p class="field-error">{{.ReqError}}</p>{{end}}
   </div>
   {{end}}

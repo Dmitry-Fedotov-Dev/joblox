@@ -500,6 +500,35 @@ func (s *Service) SaveRequisites(ctx context.Context, r *Requisites, cashOff boo
 	return nil
 }
 
+// PaymentQR is the bank's payment QR picture the owner uploaded (ELQR, СБП …); nil: none.
+func (s *Service) PaymentQR(ctx context.Context) []byte {
+	ms, ok := s.Store.(metaStore)
+	if !ok {
+		return nil
+	}
+	v, err := ms.Meta(ctx, "requisites_qr")
+	if err != nil || v == "" {
+		return nil
+	}
+	b, err := base64.StdEncoding.DecodeString(v)
+	if err != nil {
+		return nil
+	}
+	return b
+}
+
+// SetPaymentQR keeps the QR picture (PNG, JPEG or WebP, up to 1 MB); nil removes it.
+func (s *Service) SetPaymentQR(ctx context.Context, img []byte) error {
+	ms, ok := s.Store.(metaStore)
+	if !ok {
+		return ErrForbidden
+	}
+	if len(img) > 1<<20 {
+		return errors.New("картинка QR больше 1 МБ")
+	}
+	return ms.SetMeta(ctx, "requisites_qr", base64.StdEncoding.EncodeToString(img))
+}
+
 // LoadSettings picks up what the owner set in the cabinet earlier: the requisites (unless the server's file
 // gives them) and the cash switch.
 func (s *Service) LoadSettings(ctx context.Context) error {

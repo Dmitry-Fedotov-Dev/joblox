@@ -437,3 +437,6 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .timeline small, .timeline time { color: var(--muted); }
 .req-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; margin-bottom: 8px; }
 @media (max-width: 560px) { .req-row { grid-template-columns: 1fr; } }
+.pay-qr { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 8px 0 12px; }
+.pay-qr img { width: 220px; max-width: 100%; height: auto; border-radius: 16px; background: #fff; }
+.pay-qr p { flex: 1 1 180px; margin: 0; }
