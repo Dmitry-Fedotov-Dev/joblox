@@ -27,6 +27,7 @@
       {{else if .Business.Contact}}<span class="contact">{{.Business.Contact}}</span>{{end}}
     </div>
   </header>
+  {{if .Nav}}{{template "anav" .}}{{end}}
   <main class="wrap">
     {{if .Paused}}<p class="banner warn" role="status">Приём новых заказов временно приостановлен.</p>{{end}}
     {{block "content" .}}{{end}}

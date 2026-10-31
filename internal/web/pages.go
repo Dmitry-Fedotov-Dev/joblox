@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,9 @@ type base struct {
 	URL, Preview, Summary string
 	// Clone is the «make yourself the same» button of the public pages: what to call it and where it leads.
 	CloneText, CloneURL string
+	// Nav is the back office section the page belongs to (home, orders, products, settings, load); empty on
+	// public pages. It shows the back office menu.
+	Nav string
 }
 
 func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base {
@@ -116,11 +120,11 @@ func (s *Server) shopView(w http.ResponseWriter, r *http.Request, form map[strin
 	if method == "" {
 		method = p.Payment.Methods[0]
 	}
-	for _, m := range p.Payment.Methods {
-		if m == profile.MethodTransfer && s.svc.Req == nil {
-			continue
-		}
+	for _, m := range s.svc.Methods() {
 		v.Methods = append(v.Methods, methodView{ID: m, Title: methodTitle(m), Checked: m == method})
+	}
+	if len(v.Methods) > 0 && !slices.ContainsFunc(v.Methods, func(m methodView) bool { return m.Checked }) {
+		v.Methods[0].Checked = true
 	}
 	if msg := byField["method"]; msg != "" && formErr == "" {
 		v.FormError = msg
@@ -271,8 +275,8 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 	}
 	v.NeedCode = p.Payment.RequireEmailCode && o.VerifiedAt == nil && !st.Final
 	if s.svc.RequisitesVisible(o) {
-		v.Requisites = s.svc.Req
-		v.Purpose = s.svc.Req.PurposeFor(v.Ref, o.Due().Plain())
+		v.Requisites = s.svc.Req()
+		v.Purpose = s.svc.Req().PurposeFor(v.Ref, o.Due().Plain())
 	}
 	v.Actions = s.svc.Flow.Open(o.State, profile.ActorCustomer, o.Flags())
 	v.Steps = track(p, o)
@@ -392,6 +396,8 @@ type adminView struct {
 	Currency              string
 	Finger                string
 	Owner                 bool // opened from the owner's area through the public site, not over SSH
+	Nav                   string
+	Catalog, Services     bool
 }
 
 type adminOrder struct {
@@ -432,11 +438,12 @@ func (s *Server) adminPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	finger := "оплата переводом выключена"
-	if s.svc.Req != nil {
-		finger = s.svc.Req.Fingerprint()
+	if s.svc.Req() != nil {
+		finger = s.svc.Req().Fingerprint()
 	}
 	s.render(w, "admin", http.StatusOK, adminView{Title: "Дашборд", Paused: s.svc.Paused(), Business: s.svc.P.Business, Version: s.cfg.Version,
-		Orders: list, Stats: st, Currency: currencySign(s.svc.P.Business.Currency), Finger: finger, Owner: s.isOwner(r)})
+		Orders: list, Stats: st, Currency: currencySign(s.svc.P.Business.Currency), Finger: finger, Owner: s.isOwner(r),
+		Nav: map[bool]string{true: "load"}[s.isOwner(r)], Catalog: s.hasCatalog(), Services: s.isServices()})
 }
 
 func (s *Server) adminLive(w http.ResponseWriter, r *http.Request) {

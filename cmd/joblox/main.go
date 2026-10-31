@@ -282,6 +282,9 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if err != nil {
 		return fmt.Errorf("JOBLOX_TRUSTED_PROXIES: %w", err)
 	}
+	if err := svc.LoadSettings(ctx); err != nil {
+		log.Warn("the cabinet's payment settings did not load", "err", err)
+	}
 	// the bot: from the server's environment, or the one the owner connects in the cabinet
 	var botMgr *bot.Manager
 	if cfg.BotToken == "" {
@@ -292,7 +295,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if botMgr != nil {
 		botPanel = botMgr
 	}
-	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, Trusted: trusted, Dev: cfg.Env == "dev",
+	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, ReqFixed: cfg.Requisites != "" || cfg.Demo, Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
 		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: fileNextTo(cfg.Profile, p.Business.Cover), OGImage: fileNextTo(cfg.Profile, p.Business.OGImage),
 		MarketURL: marketURL()}, log)

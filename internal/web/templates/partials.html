@@ -50,3 +50,26 @@
   <span class="cost">{{if .Price}}от {{price .Price}} {{sign}}{{else}}по договорённости{{end}}</span>
 </a>
 {{end}}
+
+{{define "anav"}}
+<nav class="a-nav" aria-label="Админка">
+  <div class="wrap">
+    <a href="{{p}}/admin" class="{{if eq .Nav "home"}}on{{end}}">Главная</a>
+    <a href="{{p}}/admin/orders" class="{{if eq .Nav "orders"}}on{{end}}">Заказы</a>
+    {{if .Catalog}}<a href="{{p}}/owner/catalog" class="{{if eq .Nav "products"}}on{{end}}">{{if .Services}}Услуги{{else}}Товары{{end}}</a>{{end}}
+    <a href="{{p}}/owner" class="{{if eq .Nav "settings"}}on{{end}}">Настройки</a>
+    <a href="{{p}}/admin/load" class="{{if eq .Nav "load"}}on{{end}}">Нагрузка</a>
+    <a href="{{p}}/" target="_blank" rel="noopener">Сайт ↗</a>
+  </div>
+</nav>
+{{end}}
+
+{{define "orow"}}
+<tr class="click" data-href="{{p}}/admin/orders/{{.ID}}">
+  <td><a href="{{p}}/admin/orders/{{.ID}}">№{{.ID}}</a></td>
+  <td class="c-hide">{{.When}}</td>
+  <td class="c-hide">{{.Customer}}{{if .Phone}}<div class="muted small">{{.Phone}}</div>{{end}}</td>
+  <td>{{.Total}}</td>
+  <td><span class="status {{.Tone}}">{{.State}}</span></td>
+</tr>
+{{end}}

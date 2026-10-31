@@ -74,7 +74,7 @@ func TestCallLinkAndQR(t *testing.T) {
 		t.Fatal("no call button for the customer")
 	}
 	_, owner := s.get(t, "/owner")
-	if match(t, callRe, owner) != room || !strings.Contains(owner, "Позвонить клиенту") {
+	if _, card := s.get(t, "/admin/orders/1"); match(t, callRe, card) != room || !strings.Contains(card, "Позвонить клиенту") {
 		t.Fatal("the performer's call room differs from the customer's")
 	}
 	if !strings.Contains(owner, `<svg class="qr"`) || !strings.Contains(owner, "Перейти в ваше приложение") {
@@ -136,11 +136,20 @@ func TestOwnerSetupAndOrders(t *testing.T) {
 	if resp, _ := s.post(t, "/order", s.bakeryForm(t)); resp.StatusCode != http.StatusSeeOther {
 		t.Fatalf("order: %d", resp.StatusCode)
 	}
-	_, page = s.get(t, "/owner")
-	for _, want := range []string{"№1", "Анна", "Оплата получена", "Письма клиентам"} {
+	_, page = s.get(t, "/admin/orders/1")
+	for _, want := range []string{"№1", "Анна", "Оплата получена"} {
 		if !strings.Contains(page, want) {
-			t.Errorf("owner page lacks %q", want)
+			t.Errorf("the order page lacks %q", want)
 		}
+	}
+	if _, list := s.get(t, "/admin/orders"); !strings.Contains(list, `href="/admin/orders/1"`) {
+		t.Error("the order is not in the list")
+	}
+	if _, home := s.get(t, "/admin"); !strings.Contains(home, "Заказы в работе") || !strings.Contains(home, "№1") {
+		t.Error("the back office home lacks the order")
+	}
+	if _, settings := s.get(t, "/owner"); !strings.Contains(settings, "Письма клиентам") {
+		t.Error("the settings lack the letters")
 	}
 	if resp, _ := s.post(t, "/owner/o/1/paid", url.Values{"csrf": {"forged"}}); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("owner action with a forged csrf: %d", resp.StatusCode)
@@ -187,5 +196,29 @@ func TestCabinetWaitsForThePublicAddress(t *testing.T) {
 	}
 	if _, page := s.get(t, "/owner"); strings.Contains(page, `id="site-status"`) {
 		t.Fatal("waiting banner after the address came")
+	}
+}
+
+// A site without requisites takes only «при получении»; the owner types the requisites in the settings and the
+// transfer appears at once, and «при получении» can be turned off.
+func TestRequisitesFromTheCabinet(t *testing.T) {
+	s, f := ownerSite(t)
+	f.setups = []SetupInput{{Kind: "bakery"}}
+	s.svc.SetReq(nil)
+	s.get(t, "/owner/enter?k=masterkey0123456789")
+	if _, page := s.get(t, "/"); strings.Contains(page, `value="transfer"`) || !strings.Contains(page, `value="cash"`) {
+		t.Fatal("without requisites the checkout must offer only cash")
+	}
+	_, settings := s.get(t, "/owner")
+	if !strings.Contains(settings, "Реквизитов нет") {
+		t.Fatal("the settings do not ask for the requisites")
+	}
+	resp, _ := s.post(t, "/owner/requisites", url.Values{"csrf": {match(t, csrfRe, settings)}, "recipient": {"Валентина И."},
+		"label1": {"MBank по номеру"}, "value1": {"+996 700 000 001"}})
+	if resp.StatusCode != http.StatusSeeOther || s.svc.Req() == nil || !s.svc.CashOff() {
+		t.Fatalf("save: %d", resp.StatusCode)
+	}
+	if _, page := s.get(t, "/"); !strings.Contains(page, `value="transfer"`) || strings.Contains(page, `value="cash"`) {
+		t.Fatal("after the requisites the checkout must offer the transfer only")
 	}
 }

@@ -87,6 +87,34 @@
     </form>
   </div>
 
+  {{if .Transfer}}
+  <div class="card" id="pay">
+    <p class="eyebrow">Реквизиты для оплаты</p>
+    {{if .ReqFixed}}
+      {{with .Req}}<p>Получатель: <b>{{.Recipient}}</b>. {{range .Lines}}{{.Label}}: {{.Value}}. {{end}}</p>{{end}}
+      <p class="muted small">Реквизиты заданы на сервере, поменять их здесь нельзя.</p>
+    {{else}}
+      {{if .Req}}<p>Покупатели видят эти реквизиты на странице заказа и переводят вам напрямую.</p>
+      {{else}}<p><b>Реквизитов нет, поэтому оплатить заказ переводом нельзя{{if .Cash}}: остаётся только «при получении»{{end}}.</b> Укажите, куда переводить, и на сайте сразу появится оплата переводом с кнопкой «Я оплатил».</p>{{end}}
+      <form method="post" action="{{p}}/owner/requisites" class="stack">
+        <input type="hidden" name="csrf" value="{{.CSRF}}">
+        <label class="field"><span>Получатель</span><input name="recipient" value="{{with .Req}}{{.Recipient}}{{end}}" placeholder="Валентина И." maxlength="120"></label>
+        {{range $i, $r := .ReqRows}}
+        <div class="req-row">
+          <input name="label{{inc $i}}" value="{{$r.Label}}" placeholder="{{if eq $i 0}}MBank по номеру{{else if eq $i 1}}Карта{{else}}Другое{{end}}" maxlength="60" aria-label="Как переводить">
+          <input name="value{{inc $i}}" value="{{$r.Value}}" placeholder="{{if eq $i 0}}+996 700 000 000{{else if eq $i 1}}4000 0000 0000 0000{{end}}" maxlength="120" aria-label="Номер или реквизиты">
+        </div>
+        {{end}}
+        <label class="field"><span>Подсказка покупателю (необязательно)</span><input name="note" value="{{with .Req}}{{.Note}}{{end}}" placeholder="Например: в комментарии к переводу укажите номер заказа" maxlength="300"></label>
+        {{if .Cash}}<label class="check"><input type="checkbox" name="cash" value="1" {{if not .CashOff}}checked{{end}}> Принимать и оплату при получении</label>{{end}}
+        <button>Сохранить реквизиты</button>
+      </form>
+      {{if .Req}}<form method="post" action="{{p}}/owner/requisites"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="off" value="1"><input type="hidden" name="cash" value="1"><button class="link">Убрать реквизиты</button></form>{{end}}
+    {{end}}
+    {{if .ReqError}}<p class="field-error">{{.ReqError}}</p>{{end}}
+  </div>
+  {{end}}
+
   {{if .BotPanel}}
   <div class="card" id="bot">
     <p class="eyebrow">Telegram-бот</p>
@@ -111,33 +139,7 @@
   </div>
   {{end}}
 
-  <h2>Заказы <a class="small" href="{{p}}/owner">обновить</a></h2>
-  {{if not .Orders}}<p class="muted">Открытых заказов нет. Новые появятся здесь сами.</p>{{end}}
-  {{$csrf := .CSRF}}
-  {{range .Orders}}
-  <article class="card" id="o{{.O.ID}}">
-    <h2>№{{.O.ID}} · {{.State}}</h2>
-    <dl class="facts">
-      {{range .O.Lines}}<dt>{{.Title}} × {{.Qty}}</dt><dd>{{money .Sum}}</dd>{{end}}
-      <dt>Сумма</dt><dd><b>{{.Total}}</b></dd>
-      {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}
-      <dt>Оплата</dt><dd>{{.Method}}, {{if .O.Paid}}оплачен{{else if .O.AdvanceAt}}аванс {{.O.Prepay}}% получен, остаток {{money .O.Due}}{{else if .O.Split}}ждём аванс {{.O.Prepay}}%: {{money .O.Advance}}{{else}}не оплачен{{end}}</dd>
-      {{if .Risk}}<dt>Проверка</dt><dd>{{.Risk}}</dd>{{end}}
-    </dl>
-    {{if .Review}}<p class="banner warn">Заказ ждёт вашей проверки.</p>{{end}}
-    {{if and .O.ReportedAt (not .O.Paid)}}<p class="banner ok">💸 Клиент сообщил, что оплатил. Проверьте поступление и нажмите «{{if .CanAdv}}Аванс получен{{else}}Оплата получена{{end}}».</p>{{end}}
-    <div class="actions">
-      {{if .Review}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/approve"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Одобрить</button></form>{{end}}
-      {{if .Quote}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/price" class="inline"><input type="hidden" name="csrf" value="{{$csrf}}"><input name="total" inputmode="decimal" placeholder="Цена" required aria-label="Цена"><button>Назвать цену</button></form>{{end}}
-      {{if .CanAdv}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/advance"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Аванс получен</button></form>{{end}}
-      {{if .CanPay}}<form method="post" action="{{p}}/owner/o/{{.O.ID}}/paid"><input type="hidden" name="csrf" value="{{$csrf}}"><button>Оплата получена</button></form>{{end}}
-      {{$id := .O.ID}}
-      {{range .Actions}}<form method="post" action="{{p}}/owner/o/{{$id}}/t-{{.ID}}"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="secondary">{{.Title}}</button></form>{{end}}
-      {{if .Call}}<a class="button secondary" href="{{.Call}}" target="_blank" rel="noopener">Позвонить клиенту</a>{{end}}
-      <form method="post" action="{{p}}/owner/o/{{.O.ID}}/block"><input type="hidden" name="csrf" value="{{$csrf}}"><button class="link">В чёрный список</button></form>
-    </div>
-  </article>
-  {{end}}
+  <p class="muted">Заказы теперь в разделе <a href="{{p}}/admin/orders">«Заказы»</a>, у каждого своя страница.</p>
 
   {{if .NoMail}}
   <h2>Письма клиентам</h2>

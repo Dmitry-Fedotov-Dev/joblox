@@ -15,19 +15,30 @@ import (
 // profile can sit in a public repository and the requisites never do. They are shown only on the page of a
 // verified, approved order, with that order's reference in the payment purpose.
 type Requisites struct {
-	Title     string         `yaml:"title"`
-	Recipient string         `yaml:"recipient"`
-	Lines     []RequisiteRow `yaml:"lines"`
-	Purpose   string         `yaml:"purpose"` // template; {ref} becomes the order reference, {total} the sum
-	Note      string         `yaml:"note"`
+	Title     string         `yaml:"title" json:"title,omitempty"`
+	Recipient string         `yaml:"recipient" json:"recipient"`
+	Lines     []RequisiteRow `yaml:"lines" json:"lines"`
+	Purpose   string         `yaml:"purpose" json:"purpose"` // template; {ref} becomes the order reference, {total} the sum
+	Note      string         `yaml:"note" json:"note,omitempty"`
 }
 
 type RequisiteRow struct {
-	Label string `yaml:"label"`
-	Value string `yaml:"value"`
+	Label string `yaml:"label" json:"label"`
+	Value string `yaml:"value" json:"value"`
 }
 
 // LoadRequisites reads the requisites file; an empty path means the shop takes no transfers.
+// Check says what is missing in requisites typed by hand.
+func (r *Requisites) Check() error {
+	if r.Recipient == "" || len(r.Lines) == 0 {
+		return errors.New("укажите получателя и хотя бы одну строку: куда переводить")
+	}
+	if !strings.Contains(r.Purpose, "{ref}") {
+		return errors.New("назначение платежа должно содержать {ref}: по нему вы найдёте оплату")
+	}
+	return nil
+}
+
 func LoadRequisites(path string) (*Requisites, error) {
 	if path == "" {
 		return nil, nil

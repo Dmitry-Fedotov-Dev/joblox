@@ -58,6 +58,8 @@ type Config struct {
 	MarketURL string
 	// Bot connects the operator bot from the cabinet; nil when the server's environment sets the bot.
 	Bot BotPanel
+	// ReqFixed: the requisites come from the server's file (or the demo); the cabinet only shows them.
+	ReqFixed bool
 }
 
 type Server struct {
@@ -134,7 +136,8 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		},
 	}
 	s.tpl = map[string]*template.Template{}
-	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms", "store", "product", "cart", "catalog", "item"} {
+	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms", "store", "product", "cart", "catalog", "item",
+		"home", "orders", "aorder"} {
 		t, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, "templates/layout.html", "templates/partials.html", "templates/"+page+".html")
 		if err != nil {
 			return nil, err

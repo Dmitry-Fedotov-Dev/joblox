@@ -366,3 +366,56 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .track li.now { color: var(--fg); font-weight: 800; }
 .track li.now::before { background: var(--accent); color: var(--accent-fg); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent); }
 .keep { margin: 4px 0 0; }
+
+/* ------------------------------------------------------------------ the back office (/admin), after Mama's */
+.a-nav { position: sticky; top: 0; z-index: 30; background: var(--panel); border-bottom: 1px dashed var(--line); }
+.a-nav .wrap { display: flex; gap: 4px; padding-top: 8px; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; }
+.a-nav a { padding: 8px 14px; border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 600; color: var(--fg); white-space: nowrap; }
+.a-nav a:hover { background: var(--soft); }
+.a-nav a.on { background: var(--fg); color: var(--bg); }
+.a-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin: 8px 0 22px; }
+.a-title h1 { font-size: clamp(30px, 5vw, 40px); margin: 0; }
+.a-card { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 22px; margin-bottom: 18px; }
+@media (max-width: 560px) { .a-card { padding: 16px; border-radius: 18px; } }
+.a-card h2 { font-size: 22px; margin: 0 0 14px; }
+.a-card h3 { font-size: 15px; margin: 12px 0 8px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+@media (max-width: 760px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 18px; text-decoration: none; color: var(--fg); display: block; }
+.stat b { display: block; font-size: 32px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 13px; }
+.stat.hl { background: var(--soft); }
+.edit-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .edit-grid { grid-template-columns: 1fr; } }
+.a-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.a-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 0 10px 10px; }
+.a-table td { padding: 12px 10px; border-top: 1px dashed var(--line); vertical-align: middle; }
+.a-table tr.click { cursor: pointer; }
+.a-table tr.click:hover td { background: var(--soft); }
+.a-table a { text-decoration: none; font-weight: 700; }
+@media (max-width: 700px) {
+  .a-table.resp thead { display: none; }
+  .a-table.resp tr { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 0; border-top: 1px dashed var(--line); }
+  .a-table.resp td { border: 0; padding: 0; }
+  .a-table.resp td.c-hide { display: none; }
+}
+.status { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.status.wait { background: #fdeceb; color: #a8433d; }
+.status.check { background: #fff2dc; color: #8a5f16; }
+.status.work { background: #e6f1e3; color: #3f5d3a; }
+.status.done { background: #efe8f4; color: #6b4f80; }
+.status.off { background: var(--soft); color: var(--muted); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.tabs a { padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; text-decoration: none; color: var(--fg); border: 1.5px solid var(--line); background: var(--panel); }
+.tabs a.on { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+.tabs a small { opacity: .7; margin-left: 4px; }
+.sum-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.sum-row.total { font-weight: 800; font-size: 18px; border-bottom: 0; }
+.status-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.status-actions form { margin: 0; }
+.status-actions button.danger { background: transparent; color: var(--err); border: 1.5px solid var(--err); }
+.timeline { list-style: none; padding: 0; margin: 0; font-size: 14px; }
+.timeline li { padding: 7px 0; border-bottom: 1px dashed var(--line); display: flex; justify-content: space-between; gap: 10px; }
+.timeline small, .timeline time { color: var(--muted); }
+.req-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; margin-bottom: 8px; }
+@media (max-width: 560px) { .req-row { grid-template-columns: 1fr; } }

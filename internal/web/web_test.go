@@ -240,7 +240,7 @@ func TestAdminListener(t *testing.T) {
 	resp, _ = http.Get(s.admin.URL + "/admin")
 	body, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
-	if !strings.Contains(string(body), "Дашборд") || !strings.Contains(string(body), s.svc.Req.Fingerprint()) {
+	if !strings.Contains(string(body), "Дашборд") || !strings.Contains(string(body), s.svc.Req().Fingerprint()) {
 		t.Fatal("admin page")
 	}
 	if code, _ := s.get(t, "/admin"); code != http.StatusNotFound {

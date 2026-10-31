@@ -41,8 +41,9 @@ func (s *Server) catalogPage(w http.ResponseWriter, r *http.Request) {
 		s.message(w, r, http.StatusInternalServerError, "Ошибка", "Товары не загрузились, обновите страницу.")
 		return
 	}
-	s.render(w, "catalog", http.StatusOK, catalogView{base: s.base(w, r, "Товары"), Products: cards(list),
-		Currency: currencySign(s.svc.P.Business.Currency)})
+	v := catalogView{base: s.base(w, r, "Товары"), Products: cards(list), Currency: currencySign(s.svc.P.Business.Currency)}
+	v.Nav = "products"
+	s.render(w, "catalog", http.StatusOK, v)
 }
 
 type variantRow struct {
@@ -95,6 +96,7 @@ func (v *productForm) withBlankRows() {
 func (s *Server) itemNew(w http.ResponseWriter, r *http.Request) {
 	v := s.productFormView(w, r, nil)
 	v.withBlankRows()
+	v.Nav = "products"
 	s.render(w, "item", http.StatusOK, v)
 }
 
@@ -115,6 +117,7 @@ func (s *Server) itemEdit(w http.ResponseWriter, r *http.Request) {
 		v.Problems = append(v.Problems, msg)
 	}
 	v.withBlankRows()
+	v.Nav = "products"
 	s.render(w, "item", http.StatusOK, v)
 }
 
@@ -194,6 +197,7 @@ func (s *Server) itemSave(w http.ResponseWriter, r *http.Request) {
 			r.PostFormValue("old_price"), in.Hidden, in.Preorder
 		v.Rows, v.Problems = rows, problems
 		v.withBlankRows()
+		v.Nav = "products"
 		s.render(w, "item", http.StatusUnprocessableEntity, v)
 		return
 	}

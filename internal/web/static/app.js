@@ -47,3 +47,9 @@
   };
   setInterval(beat, 30000);
 })();
+
+// the back office: a whole table row opens its order, as the number in it does
+document.addEventListener("click", function (e) {
+  var row = e.target.closest && e.target.closest("tr.click[data-href]");
+  if (row && !e.target.closest("a, button, form")) location.href = row.getAttribute("data-href");
+});

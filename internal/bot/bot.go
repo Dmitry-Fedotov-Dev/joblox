@@ -76,8 +76,8 @@ func (b *Bot) broadcast(ctx context.Context, text string, kb *Keyboard) {
 // If the fingerprint changes without a reason, someone has edited the payment details on the server.
 func (b *Bot) Started(ctx context.Context, version string) {
 	req := "оплата переводом выключена"
-	if b.svc.Req != nil {
-		req = fmt.Sprintf("получатель %s, отпечаток <code>%s</code>", html.EscapeString(b.svc.Req.Recipient), b.svc.Req.Fingerprint())
+	if b.svc.Req() != nil {
+		req = fmt.Sprintf("получатель %s, отпечаток <code>%s</code>", html.EscapeString(b.svc.Req().Recipient), b.svc.Req().Fingerprint())
 	}
 	b.broadcast(ctx, fmt.Sprintf("🟢 <b>%s</b> запущен (%s).\nРеквизиты: %s.\nЕсли отпечаток изменился, а вы реквизиты не меняли, "+
 		"остановите приём командой /pause и проверьте сервер.", html.EscapeString(b.svc.P.Business.Name), html.EscapeString(version), req), nil)

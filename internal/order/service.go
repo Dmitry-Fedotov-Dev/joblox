@@ -8,6 +8,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -92,7 +93,8 @@ type Service struct {
 	Mail    Mailer
 	Notify  Notifier
 	Observe Observer
-	Req     *Requisites
+	req     atomic.Pointer[Requisites] // the owner may set or change them in the cabinet while running
+	cashOff atomic.Bool                // the owner turned off «при получении» for new orders
 	Stock   Stock
 	Now     func() time.Time
 	Log     *slog.Logger
@@ -106,10 +108,11 @@ type Service struct {
 func New(p *profile.Profile, st Store, mailer Mailer, req *Requisites, secret []byte, baseURL string) *Service {
 	s := &Service{
 		P: p, Flow: flow.New(p.Workflow), Store: st, Mail: mailer, Notify: NopNotifier{}, Observe: NopObserver{},
-		Req: req, Now: func() time.Time { return time.Now().UTC() },
+		Now: func() time.Time { return time.Now().UTC() },
 		Log: slog.Default(), secret: secret,
 	}
 	s.SetBaseURL(baseURL)
+	s.req.Store(req)
 	for _, st := range p.Workflow.States {
 		if st.Final {
 			s.finals = append(s.finals, st.ID)
@@ -179,13 +182,14 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*Order, antifraud
 	fields, errs := ValidateFields(s.P, in.Fields)
 	method := in.Method
 	if method == "" {
-		method = s.P.Payment.Methods[0]
+		if m := s.Methods(); len(m) > 0 {
+			method = m[0]
+		}
 	}
 	if !slices.Contains(s.P.Payment.Methods, method) {
 		errs = append(errs, &FieldError{Field: "method", Msg: "выберите способ оплаты"})
-	}
-	if method == profile.MethodTransfer && s.Req == nil {
-		errs = append(errs, &FieldError{Field: "method", Msg: "оплата переводом сейчас недоступна"})
+	} else if !s.Offers(method) {
+		errs = append(errs, &FieldError{Field: "method", Msg: "этот способ оплаты сейчас недоступен"})
 	}
 	if len(errs) > 0 {
 		return nil, antifraud.Decision{}, errs
@@ -353,7 +357,7 @@ func (s *Service) VerifyCode(ctx context.Context, o *Order, code string) error {
 // the anti-fraud satisfied or the operator approved, the email confirmed when the profile asks, not paid yet,
 // and the order still open.
 func (s *Service) RequisitesVisible(o *Order) bool {
-	return s.Req != nil && o.Method == profile.MethodTransfer && o.Priced && o.Approved && !o.Paid &&
+	return s.Req() != nil && o.Method == profile.MethodTransfer && o.Priced && o.Approved && !o.Paid &&
 		!s.IsFinal(o.State) && (o.VerifiedAt != nil || !s.P.Payment.RequireEmailCode)
 }
 
@@ -455,6 +459,94 @@ func noteSuffix(note string) string {
 		return ""
 	}
 	return " (" + note + ")"
+}
+
+// Req is the owner's payment requisites; nil: no transfers.
+func (s *Service) Req() *Requisites { return s.req.Load() }
+
+// SetReq changes the requisites while running (the cabinet); nil turns transfers off.
+func (s *Service) SetReq(r *Requisites) { s.req.Store(r) }
+
+// CashOff says whether «при получении» is turned off; SetCashOff switches it.
+func (s *Service) CashOff() bool       { return s.cashOff.Load() }
+func (s *Service) SetCashOff(off bool) { s.cashOff.Store(off) }
+
+// SaveRequisites keeps requisites typed in the cabinet in the site's database and uses them at once; nil
+// removes them. cashOff turns «при получении» off for new orders.
+func (s *Service) SaveRequisites(ctx context.Context, r *Requisites, cashOff bool) error {
+	ms, ok := s.Store.(metaStore)
+	if !ok {
+		return ErrForbidden
+	}
+	raw := ""
+	if r != nil {
+		if err := r.Check(); err != nil {
+			return err
+		}
+		b, err := json.Marshal(r)
+		if err != nil {
+			return err
+		}
+		raw = string(b)
+	}
+	if err := ms.SetMeta(ctx, "requisites", raw); err != nil {
+		return err
+	}
+	if err := ms.SetMeta(ctx, "cash_off", map[bool]string{true: "1", false: ""}[cashOff]); err != nil {
+		return err
+	}
+	s.SetReq(r)
+	s.SetCashOff(cashOff)
+	return nil
+}
+
+// LoadSettings picks up what the owner set in the cabinet earlier: the requisites (unless the server's file
+// gives them) and the cash switch.
+func (s *Service) LoadSettings(ctx context.Context) error {
+	ms, ok := s.Store.(metaStore)
+	if !ok {
+		return nil
+	}
+	if off, err := ms.Meta(ctx, "cash_off"); err == nil {
+		s.SetCashOff(off == "1")
+	}
+	if s.Req() != nil {
+		return nil
+	}
+	raw, err := ms.Meta(ctx, "requisites")
+	if err != nil || raw == "" {
+		return err
+	}
+	var r Requisites
+	if err := json.Unmarshal([]byte(raw), &r); err != nil {
+		return err
+	}
+	s.SetReq(&r)
+	return nil
+}
+
+// Offers says whether a customer can choose the payment method now.
+func (s *Service) Offers(m string) bool {
+	switch {
+	case !slices.Contains(s.P.Payment.Methods, m):
+		return false
+	case m == profile.MethodTransfer:
+		return s.Req() != nil
+	case m == profile.MethodCash:
+		return !s.CashOff() || s.Req() == nil // with no requisites, «при получении» stays the only way
+	}
+	return true
+}
+
+// Methods are the payment methods a customer can choose now, in the profile's order.
+func (s *Service) Methods() []string {
+	var out []string
+	for _, m := range s.P.Payment.Methods {
+		if s.Offers(m) {
+			out = append(out, m)
+		}
+	}
+	return out
 }
 
 // metaStore is a store that also keeps the installation's settings (the SQLite one does).

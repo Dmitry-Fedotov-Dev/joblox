@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -101,8 +102,9 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /owner/pause", s.ownerOnly(s.ownerPause))
 	mux.HandleFunc("POST /owner/prepay", s.ownerOnly(s.ownerPrepay))
 	mux.HandleFunc("POST /owner/bot", s.ownerOnly(s.ownerBot))
+	mux.HandleFunc("POST /owner/requisites", s.ownerOnly(s.ownerRequisites))
 	mux.HandleFunc("POST /owner/o/{id}/{action}", s.ownerOnly(s.ownerAction))
-	mux.HandleFunc("GET /admin", s.ownerOnly(s.adminPage))
+	s.backofficeRoutes(mux)
 	mux.HandleFunc("GET /admin/live.json", s.ownerOnly(s.adminLive))
 	if s.hasCatalog() {
 		s.catalogRoutes(mux)
@@ -120,7 +122,11 @@ func (s *Server) ownerEnter(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{Name: ownerCookie, Value: s.ownerToken(), Path: s.cookiePath(), MaxAge: 30 * 24 * 3600,
 		HttpOnly: true, Secure: s.secure(r), SameSite: http.SameSiteLaxMode})
-	s.redirect(w, r, "/owner", http.StatusSeeOther) // the key leaves the address bar at once
+	to := "/admin" // the key leaves the address bar at once; a new installation starts with the setup
+	if o := s.cfg.Owner; o != nil && o.Configured != nil && !o.Configured() {
+		to = "/owner"
+	}
+	s.redirect(w, r, to, http.StatusSeeOther)
 }
 
 // ---------------------------------------------------------------- views
@@ -141,6 +147,13 @@ type ownerView struct {
 	BotOps     int
 	BotLink    string
 	BotError   string
+	Req        *order.Requisites // the requisites in use
+	ReqFixed   bool              // they come from the server's file
+	ReqRows    []order.RequisiteRow
+	ReqError   string
+	CashOff    bool
+	Transfer   bool // the profile takes transfers at all
+	Cash       bool
 	Form       SetupInput
 	FormError  string
 	Kinds      any
@@ -181,6 +194,17 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 		v.BotName, v.BotOps, v.BotLink = s.cfg.Bot.BotStatus(r.Context())
 		v.BotError = r.URL.Query().Get("bot")
 	}
+	v.Req, v.ReqFixed, v.CashOff = s.svc.Req(), s.cfg.ReqFixed, s.svc.CashOff()
+	v.Transfer = slices.Contains(s.svc.P.Payment.Methods, profile.MethodTransfer)
+	v.Cash = slices.Contains(s.svc.P.Payment.Methods, profile.MethodCash)
+	v.ReqError = r.URL.Query().Get("req")
+	if v.Req != nil {
+		v.ReqRows = append(v.ReqRows, v.Req.Lines...)
+	}
+	for len(v.ReqRows) < 3 {
+		v.ReqRows = append(v.ReqRows, order.RequisiteRow{})
+	}
+	v.Nav = "settings"
 	v.Prepay = s.svc.PrepayPercent(r.Context())
 	if ow.Portal != nil {
 		v.Portal = ow.Portal(r.Context())
@@ -203,27 +227,34 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	}
 	p := s.svc.P
 	for _, o := range list {
-		st, _ := p.State(o.State)
-		oo := ownerOrder{O: o, State: st.Title, Method: methodTitle(o.Method), Review: o.Review && !o.Approved, Final: st.Final,
-			Quote: !o.Priced, CanPay: !o.Paid && o.Priced && !st.Final,
-			CanAdv: o.Split() && o.AdvanceAt == nil && !o.Paid && o.Priced && !st.Final}
-		oo.Total = "цена по запросу"
-		if o.Priced {
-			oo.Total = o.Total.String() + " " + v.Currency
-		}
-		if len(o.RiskReasons) > 0 {
-			oo.Risk = strings.Join(o.RiskReasons, "; ")
-		}
-		for _, f := range p.Checkout.Fields {
-			if val := o.Fields[f.ID]; val != "" {
-				oo.Fields = append(oo.Fields, fieldView{Field: f, Value: f.Display(val)})
-			}
-		}
-		oo.Actions = s.svc.Flow.Open(o.State, profile.ActorOperator, o.Flags())
-		oo.Call = s.callLink(o)
-		v.Orders = append(v.Orders, oo)
+		v.Orders = append(v.Orders, s.ownerCard(o))
 	}
+	_ = p
 	return v, nil
+}
+
+// ownerCard is an order as the owner works with it: its state, sums, the customer's answers and the buttons.
+func (s *Server) ownerCard(o *order.Order) ownerOrder {
+	p := s.svc.P
+	st, _ := p.State(o.State)
+	oo := ownerOrder{O: o, State: st.Title, Method: methodTitle(o.Method), Review: o.Review && !o.Approved, Final: st.Final,
+		Quote: !o.Priced, CanPay: !o.Paid && o.Priced && !st.Final,
+		CanAdv: o.Split() && o.AdvanceAt == nil && !o.Paid && o.Priced && !st.Final}
+	oo.Total = "цена по запросу"
+	if o.Priced {
+		oo.Total = o.Total.String() + " " + currencySign(p.Business.Currency)
+	}
+	if len(o.RiskReasons) > 0 {
+		oo.Risk = strings.Join(o.RiskReasons, "; ")
+	}
+	for _, f := range p.Checkout.Fields {
+		if val := o.Fields[f.ID]; val != "" {
+			oo.Fields = append(oo.Fields, fieldView{Field: f, Value: f.Display(val)})
+		}
+	}
+	oo.Actions = s.svc.Flow.Open(o.State, profile.ActorOperator, o.Flags())
+	oo.Call = s.callLink(o)
+	return oo
 }
 
 func (s *Server) ownerPage(w http.ResponseWriter, r *http.Request) {
@@ -340,6 +371,45 @@ func (s *Server) ownerPause(w http.ResponseWriter, r *http.Request) {
 	s.redirect(w, r, "/owner", http.StatusSeeOther)
 }
 
+// ownerRequisites saves the payment requisites typed in the cabinet, or removes them.
+func (s *Server) ownerRequisites(w http.ResponseWriter, r *http.Request) {
+	if !s.ownerForm(w, r) {
+		return
+	}
+	if s.cfg.ReqFixed {
+		http.Error(w, "the requisites come from the server", http.StatusConflict)
+		return
+	}
+	var req *order.Requisites
+	if r.PostFormValue("off") != "1" {
+		req = &order.Requisites{Recipient: strings.TrimSpace(r.PostFormValue("recipient")), Purpose: "Заказ {ref}",
+			Note: strings.TrimSpace(r.PostFormValue("note"))}
+		for i := 1; i <= 3; i++ {
+			n := strconv.Itoa(i)
+			label, value := strings.TrimSpace(r.PostFormValue("label"+n)), strings.TrimSpace(r.PostFormValue("value"+n))
+			if value != "" {
+				if label == "" {
+					label = "Перевод"
+				}
+				req.Lines = append(req.Lines, order.RequisiteRow{Label: clip(label, 60), Value: clip(value, 120)})
+			}
+		}
+		req.Recipient, req.Note = clip(req.Recipient, 120), clip(req.Note, 300)
+	}
+	if err := s.svc.SaveRequisites(r.Context(), req, r.PostFormValue("cash") != "1"); err != nil {
+		s.redirect(w, r, "/owner?req="+url.QueryEscape(err.Error())+"#pay", http.StatusSeeOther)
+		return
+	}
+	s.redirect(w, r, "/owner#pay", http.StatusSeeOther)
+}
+
+func clip(s string, n int) string {
+	if r := []rune(s); len(r) > n {
+		return string(r[:n])
+	}
+	return s
+}
+
 // ownerBot connects the operator bot with a token, or turns it off.
 func (s *Server) ownerBot(w http.ResponseWriter, r *http.Request) {
 	if !s.ownerForm(w, r) || s.cfg.Bot == nil {
@@ -418,6 +488,10 @@ func (s *Server) ownerAction(w http.ResponseWriter, r *http.Request) {
 			msg = "Заказ уже изменился. Обновите кабинет."
 		}
 		s.message(w, r, http.StatusConflict, "Заказ №"+strconv.FormatInt(id, 10), msg)
+		return
+	}
+	if next := r.PostFormValue("next"); strings.HasPrefix(next, "/admin/orders/") { // the order's own page
+		s.redirect(w, r, next, http.StatusSeeOther)
 		return
 	}
 	s.redirect(w, r, "/owner#o"+strconv.FormatInt(id, 10), http.StatusSeeOther)

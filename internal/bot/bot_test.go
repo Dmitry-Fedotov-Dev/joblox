@@ -210,7 +210,7 @@ func TestPauseAndStats(t *testing.T) {
 func TestStartedReportsFingerprint(t *testing.T) {
 	b, svc, fake := setup(t, "bakery")
 	b.Started(context.Background(), "test")
-	if texts := fake.texts("sendMessage"); !strings.Contains(texts[0], svc.Req.Fingerprint()) {
+	if texts := fake.texts("sendMessage"); !strings.Contains(texts[0], svc.Req().Fingerprint()) {
 		t.Fatalf("tripwire: %v", texts)
 	}
 }
