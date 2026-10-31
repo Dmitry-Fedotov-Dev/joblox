@@ -232,7 +232,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	defer st.Close()
 
 	if opt.Owner == nil && cfg.OwnerKey != "" {
-		opt.Owner = serverOwner(cfg.OwnerKey) // the owner works with the orders in the browser
+		opt.Owner = serverOwner(cfg.OwnerKey, st) // the owner works with the orders in the browser
 	}
 	var mailer order.Mailer
 	var outbox *mail.Outbox
@@ -335,7 +335,12 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 		if listing == nil && env("JOBLOX_LISTING", "") == "1" {
 			card := &hub.Listing{Title: p.Business.Name, Place: env("JOBLOX_PLACE", ""), About: p.Business.Description,
 				Contact: p.Business.Contact, URL: cfg.BaseURL}
-			listing = func() *hub.Listing { return card }
+			listing = func() *hub.Listing {
+				if opt.Owner != nil && opt.Owner.Shown != nil && !opt.Owner.Shown() {
+					return nil // the owner took the tile off the home page
+				}
+				return card
+			}
 		}
 		rep := &hub.Reporter{URL: url, ID: id, Kind: p.Business.Kind, Version: version, Online: rec.Online, Log: log,
 			Listing: listing, Wake: opt.Wake,
@@ -504,10 +509,21 @@ func check(args []string) error {
 }
 
 // serverOwner is the owner's area of a shop run by `joblox serve` on a server: no setup and no tunnel, only the
-// orders, the catalog and the dashboard behind the master link.
-func serverOwner(key string) *web.Owner {
-	return &web.Owner{Key: key, Configured: func() bool { return true }, Shown: func() bool { return false },
-		SetShown: func(bool) error { return errors.New("the market card is set in the profile on a server") }}
+// orders, the catalog and the settings behind the master link. Whether its tile is on the Joblox home page is
+// the owner's switch, kept in the site's database (JOBLOX_LISTING turns the tile on for the hosted sites).
+func serverOwner(key string, st *store.SQLite) *web.Owner {
+	hidden := func() bool {
+		v, _ := st.Meta(context.Background(), "market_hidden")
+		return v == "1"
+	}
+	return &web.Owner{Key: key, Configured: func() bool { return true }, MarketURL: marketURL(),
+		Shown: func() bool { return env("JOBLOX_LISTING", "") == "1" && !hidden() },
+		SetShown: func(show bool) error {
+			if env("JOBLOX_LISTING", "") != "1" {
+				return errors.New("this site is not listed on the Joblox home page")
+			}
+			return st.SetMeta(context.Background(), "market_hidden", map[bool]string{true: "", false: "1"}[show])
+		}}
 }
 
 // pathOf is the path part of the base address: a site at https://example.com/demo-shop lives under /demo-shop.

@@ -57,7 +57,7 @@
   <div class="card">
     <p class="eyebrow">Ваш сайт</p>
     <p class="big copy">{{.SiteURL}}</p>
-    <p class="actions"><a class="button secondary" href="{{.SiteURL}}" target="_blank" rel="noopener">Открыть сайт ↗</a>{{if .MarketURL}}<a class="button secondary" href="{{.MarketURL}}" target="_blank" rel="noopener">Биржа ↗</a>{{end}}</p>
+    <p class="actions"><a class="button secondary" href="{{.SiteURL}}" target="_blank" rel="noopener">Открыть сайт ↗</a></p>
     {{if .SiteQR}}<div class="qr-box">{{.SiteQR}}<p class="muted small">Покажите QR-код клиенту: камера телефона откроет ваш сайт. Или перешлите ссылку в WhatsApp и Telegram.</p></div>{{end}}
     {{if .PhoneQR}}<details><summary>Открыть эту админку на телефоне</summary><div class="qr-box">{{.PhoneQR}}<p class="muted small">Наведите камеру телефона: откроется админка. Этот код никому не показывайте, он даёт полный доступ к заказам.</p></div></details>{{end}}
     {{if .Temporary}}<p class="muted small">Ссылка временная: после перезапуска программы она станет другой. Карточка на бирже обновится сама, а тем, кому вы отправляли ссылку, отправьте новую. Постоянный адрес: ниже, «Свой домен».</p>{{end}}
@@ -69,11 +69,14 @@
       <input type="hidden" name="csrf" value="{{.CSRF}}">
       {{if .Paused}}<span>Приём остановлен.</span><button>Возобновить приём заказов</button>{{else}}<span>Заказы принимаются.</span><button class="secondary">Остановить приём</button>{{end}}
     </form>
+    {{if .MarketURL}}
     <form method="post" action="{{p}}/owner/market" class="actions">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
-      {{if .Shown}}<span>Карточка на бирже показана.</span><button class="secondary" name="show" value="0">Скрыть с биржи</button>
-      {{else}}<span>Карточка на бирже скрыта.</span><button class="secondary" name="show" value="1">Показать на бирже</button>{{end}}
+      {{if .Shown}}<span>Ваша плитка есть на <a href="{{.MarketURL}}" target="_blank" rel="noopener">главной Joblox</a>.</span><button class="secondary" name="show" value="0">Убрать с главной</button>
+      {{else}}<span>Вашей плитки нет на <a href="{{.MarketURL}}" target="_blank" rel="noopener">главной Joblox</a>.</span><button class="secondary" name="show" value="1">Показать на главной</button>{{end}}
     </form>
+    <p class="muted small">Главная Joblox — каталог сайтов-исполнителей: там покупатели находят вас поиском «Что нужно?».</p>
+    {{end}}
   </div>
 
   {{if .Catalog}}

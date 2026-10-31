@@ -289,10 +289,10 @@ body.admin { background: #fbf7f4; }
 button.status { border: 0; cursor: pointer; }
 .muted { color: var(--muted); } .small { font-size: 14px; }
 .a-nav form { margin: 0; }
-.a-card .eyebrow { font-family: var(--serif); font-style: italic; font-size: 26px; color: var(--plum); margin: 0 0 14px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.a-card .eyebrow, .a-main .card .eyebrow { font-family: var(--serif); font-style: italic; font-size: 26px; color: var(--plum); margin: 0 0 14px; text-transform: none; letter-spacing: 0; font-weight: 500; }
 .a-card > p:last-child { margin-bottom: 0; }
 /* plain buttons of the older owner pages take Mama's look */
-.a-main button:not(.link):not(.link-btn):not(.icon-btn):not(.status):not(.btn):not(.copy-item button) {
+.a-main :where(button:not(.link, .link-btn, .icon-btn, .status, .btn)) {
   display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 18px; border-radius: 999px;
   border: 1.5px solid var(--plum); background: var(--plum); color: #fff; font-weight: 600; font-size: 14px; }
 .a-main button.secondary, .a-main a.button.secondary { background: transparent; color: var(--plum); }
@@ -329,3 +329,4 @@ pre { background: var(--paper-2); padding: 12px; border-radius: 12px; overflow-x
 .a-head .a-nav button { padding: 8px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--ink); background: none; border: 0; min-height: 0; }
 .a-head .a-nav button:hover { background: var(--blush); color: var(--plum); }
 .dropzone { position: relative; }
+.copy-item button { min-height: 0; }
