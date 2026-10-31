@@ -288,7 +288,7 @@ body:has(.hero-cover) .top .contact { padding: 5px 12px; border: 1px solid var(-
 @media (max-width: 720px) {
   /* on a phone the figure stands whole above the text, not under it: the text stays crisp in both themes */
   .hero.with-cover { min-height: 0; }
-  .hero-cover { position: static; z-index: auto; display: block; width: 100%; height: 56svh; margin: 0 0 10px;
+  .hero-cover { position: static; z-index: auto; display: block; width: 100%; height: 56svh; object-fit: contain; margin: 0 0 10px;
     object-position: center bottom; }
 }
 /* «make yourself the same»: every performer's site is also an invitation */
@@ -451,3 +451,4 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
   background: var(--panel); color: var(--fg); font-weight: 700; cursor: pointer; }
 .pager button[aria-current] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .pager button:disabled:not([aria-current]) { opacity: .35; cursor: default; }
+@media (max-width: 720px) { body:has(.hero-cover) .top .contact { display: none; } } /* the phone is in the hero on a phone */
