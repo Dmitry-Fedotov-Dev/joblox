@@ -333,6 +333,8 @@ body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { align-s
 @media (max-width: 720px) { .yarn .needles { width: 63px; top: 4px; right: 4px; } .yarn .loop { top: 20px; right: 66px; left: -4px; bottom: -4px; }
   .yarn .ball { width: 36px; height: 27px; top: calc(100% - 19.5px); } }
 @media (prefers-reduced-motion: reduce) { .yarn .thread, .yarn .ball { transition: none; animation: none; } }
+/* in a row of cards only the penultimate one has the thread and the ball: one toy for the kitten */
+.grid > .pcard:not(:nth-last-child(2)) .yarn .loop { display: none; }
 /* with yarn.js the thread is a rope with weight (an SVG path) and the ball rolls on its own */
 .yarn.live .loop { display: none; }
 .yarn .rope { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
@@ -341,6 +343,8 @@ body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { align-s
 .yarn .rope-ball.wiggle { animation: rope-wiggle .9s ease-in-out; }
 .yarn .rope-ball.pop { animation: rope-pop .5s cubic-bezier(.3, 1.6, .5, 1); }
 @keyframes rope-wiggle { 25% { rotate: -18deg; } 60% { rotate: 12deg; } }
+.yarn .rope-ball.hop { animation: rope-hop .7s cubic-bezier(.3, .7, .4, 1); }
+@keyframes rope-hop { 30% { translate: 6px -16px; rotate: 50deg; } 60% { translate: 2px 0; rotate: 20deg; } 80% { translate: 1px -4px; } }
 @keyframes rope-pop { from { scale: .2; } to { scale: 1; } }
 /* the order's progress line */
 .track { display: flex; gap: 6px; list-style: none; margin: 14px 0 6px; padding: 0; counter-reset: step; flex-wrap: wrap; }

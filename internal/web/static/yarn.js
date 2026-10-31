@@ -236,12 +236,13 @@
     return true;
   };
 
-  // nudge: a paw taps the ball; the thread twitches
+  // nudge: a paw bats the ball; it hops and the thread jerks
   R.nudge = function () {
     if (this.state !== "rest" || !this.pts) return;
     var pts = this.pts;
-    for (var i = Math.max(1, pts.length - 14); i < pts.length - 1; i++) if (pts[i].w) pts[i].py += 2.5;
-    this.ball.classList.remove("wiggle"); void this.ball.offsetWidth; this.ball.classList.add("wiggle");
+    for (var i = Math.max(1, pts.length - 22); i < pts.length - 1; i++) if (pts[i].w) { pts[i].py += 5; pts[i].px += (Math.random() - 0.5) * 6; }
+    var cls = Math.random() < 0.6 ? "hop" : "wiggle";
+    this.ball.classList.remove("hop", "wiggle"); void this.ball.offsetWidth; this.ball.classList.add(cls);
     this.calm = 0; wake();
   };
 
@@ -279,7 +280,11 @@
 
   function init() {
     var els = document.querySelectorAll(".yarn");
-    for (var i = 0; i < els.length; i++) if (!find(els[i]) && els[i].querySelector(".needles")) ropes.push(new Rope(els[i]));
+    for (var i = 0; i < els.length; i++) {
+      var card = els[i].closest(".grid > .pcard");      // in a row of cards only the penultimate keeps its ball
+      if (card && card.nextElementSibling !== card.parentNode.lastElementChild) { els[i].classList.add("bare"); continue; }
+      if (!find(els[i]) && els[i].querySelector(".needles")) ropes.push(new Rope(els[i]));
+    }
     if ("IntersectionObserver" in window) {
       var io = new IntersectionObserver(function (es) {
         es.forEach(function (e) { var r = find(e.target); if (r) { r.visible = e.isIntersecting; if (e.isIntersecting) wake(); } });

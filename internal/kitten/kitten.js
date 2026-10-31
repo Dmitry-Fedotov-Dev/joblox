@@ -45,8 +45,7 @@
 
   // knitting shops frame their cards with yarn: now and then he walks up to a ball and knocks it off; the thread
   // snaps and winds back to the needles, then wraps the card again and the ball comes back
-  var yarnNext = performance.now() + 9000, yarnGoal = null, wiggled = new WeakMap();
-  var Y = function () { return window.JobloxYarn; };  // yarn.js: the thread with weight, when it is loaded
+    var Y = function () { return window.JobloxYarn; };  // yarn.js: the thread with weight, when it is loaded
   function ballAt(el) {
     var b = (Y() && Y().ball(el)) || el.querySelector(".ball"), r = b.getBoundingClientRect();
     return [r.left + r.width / 2, r.top + r.height / 2, r];
@@ -64,35 +63,46 @@
     el.classList.remove("wiggle"); void el.offsetWidth; el.classList.add("wiggle");
     setTimeout(function () { el.classList.remove("wiggle"); }, 1000);
   }
+  var play = null;                                  // the round of play with the ball on screen
+  // to play he comes out in front of the page (his canvas never takes a press), then hides behind it again
+  function front(on) { if (kitten.canvas) kitten.canvas.style.zIndex = on ? "5" : "-1"; }
   function yarnStep(now, c, pos) {
-    var all = document.querySelectorAll(".yarn:not(.snapped):not(.noball)");
-    if (!all.length) return false;
+    var all = document.querySelectorAll(".yarn:not(.bare):not(.snapped):not(.noball)");
     if (Y()) Y().touch(pos[0], pos[1] - 20);        // walking along a thread, he brushes it
-    for (var i = 0; i < all.length; i++) {         // passing by a ball, he gives it a little push
-      var b = ballAt(all[i]);
-      if (Math.hypot(b[0] - pos[0], b[1] - pos[1]) < 120 && now > (wiggled.get(all[i]) || 0)) { wiggled.set(all[i], now + 7000); wiggle(all[i]); }
+    var el = null, b = null;
+    for (var i = 0; i < all.length && !el; i++) {
+      var bi = ballAt(all[i]), r = bi[2];
+      if (r.width && r.bottom > 50 && r.top < innerHeight - 10 && r.right > 0 && r.left < innerWidth) { el = all[i]; b = bi; }
     }
-    if (yarnGoal) {
-      var g = ballAt(yarnGoal.el), d = Math.hypot(g[0] - pos[0], g[1] - pos[1]);
-      var there = Math.hypot(yarnGoal.spot[0] - pos[0], yarnGoal.spot[1] - pos[1]) < 24;
-      if (!document.contains(yarnGoal.el) || yarnGoal.el.classList.contains("snapped") || now > yarnGoal.until) yarnGoal = null;
-      else if (d < 110 || (there && d < 230)) {
-        snap(yarnGoal.el); c.setEmote(EMO_JOY, 1.6); yarnGoal = null;
-        yarnNext = now + 25000 + Math.random() * 20000; cool = now + 2500;
+    if (!el) { if (play) front(false); play = null; return false; }
+    if (!play || play.el !== el) play = { el: el, bats: 0, next: now, rest: now + 1200, spot: null, went: 0 };
+    if (now < play.rest) { front(false); return false; } // between rounds he wanders and hides again
+    front(true);
+    var side = pos[0] < b[0] ? -1 : 1, sc = kitten.scale;
+    var spot = [b[0] + side * 15 * sc, b[1] + 4 * sc];  // right beside the ball, paws on its level
+    var d = Math.hypot(spot[0] - pos[0], spot[1] - pos[1]);
+    if (d > 6 * sc) {                                // on the way to the ball
+      if (!play.spot || now - play.went > 2500 || Math.hypot(spot[0] - play.spot[0], spot[1] - play.spot[1]) > 20) {
+        goTo(c, spot); play.spot = spot; play.went = now;
       }
-      return true;
+      if (now - play.went < 6000) return true;
     }
-    if (now < yarnNext) return false;
-    yarnNext = now + 8000;
-    var seen = [];
-    for (var j = 0; j < all.length; j++) { var r = ballAt(all[j])[2]; if (r.top > 60 && r.bottom < innerHeight - 10 && r.left > 0 && r.right < innerWidth) seen.push(all[j]); }
-    if (!seen.length) return false;
-    var el = seen[Math.floor(Math.random() * seen.length)], bb = ballAt(el);
-    var spot = nearestFree(bb[0], bb[1] + 30);
-    if (!spot) return false;
-    goTo(c, spot); yarnGoal = { el: el, spot: spot, until: now + 9000 }; cool = now + 1500;
+    if (now < play.next) return true;                // at the ball: bat it, pounce, sometimes knock it off
+    c.facing = b[0] < pos[0] ? -1 : 1;
+    play.bats++;
+    if (play.bats >= 4 && Math.random() < 0.35) {
+      snap(el); c.setEmote(EMO_JOY, 1.6);
+      play = { el: el, bats: 0, next: now, rest: now + 12000, spot: null, went: 0 }; // the thread wraps again meanwhile
+      setTimeout(function () { front(false); }, 1500);
+    } else {
+      wiggle(el);
+      if (Math.random() < 0.45) c.setEmote(EMO_JOY, 0.8);
+      play.next = now + 650 + Math.random() * 900;
+      if (play.bats >= 9) { play.bats = 0; play.spot = null; play.rest = now + 5000 + Math.random() * 6000; }
+    }
     return true;
   }
+
 
   var target = null, targetAt = 0, cool = 0, checkAt = 0, scrollT = 0;
   function aim(x, y) { target = [x, y]; targetAt = performance.now(); }
@@ -108,7 +118,7 @@
       if (!busy && !c.down && !c.isAsleep() && now - scrollT > 300 && now >= cool) {
         var pos = [c.x * kitten.scale, c.y * kitten.scale];
         var chasing = target && now - targetAt < 4000;
-        if (!chasing && now - targetAt > 6000 && yarnStep(now, c, pos)) { /* busy with the yarn */ }
+        if (!chasing && now - targetAt > 2500 && yarnStep(now, c, pos)) { /* busy with the yarn */ }
         else if (chasing) {
           var spot = nearestFree(target[0], target[1] + 20);
           if (spot && Math.hypot(spot[0] - pos[0], spot[1] - pos[1]) > 30) {
