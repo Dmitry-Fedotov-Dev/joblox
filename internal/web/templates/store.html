@@ -1,6 +1,6 @@
 {{define "content"}}
 <section class="hero{{if .Cover}} with-cover{{end}}">
-  {{if .Cover}}<img class="hero-cover" src="{{.Cover}}" alt="" decoding="async">{{end}}
+  {{if .Cover}}<img class="hero-cover" src="{{.Cover}}" alt="" decoding="async"><img class="hero-cover crown" src="{{.Cover}}" alt="" aria-hidden="true" decoding="async">{{end}}
   <p class="eyebrow">{{if .Business.Kind}}Магазин{{end}}</p>
   <h1>{{whole .Business.Name}}</h1>
   {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}

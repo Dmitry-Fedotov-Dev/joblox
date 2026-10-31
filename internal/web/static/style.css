@@ -29,7 +29,8 @@ main.wrap { padding-top: 12px; padding-bottom: 40px; min-height: 60vh; }
 
 /* header */
 .top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid transparent; }
+  backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid color-mix(in srgb, var(--fg) 7%, transparent); } /* a barely visible edge */
 .top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 64px; flex-wrap: wrap; }
 .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; letter-spacing: -.02em; text-decoration: none; }
 .brand-mark { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
@@ -265,8 +266,15 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 /* a cover picture: a cut-out figure on the right, as tall as the whole page behind the content */
 body:has(.hero-cover) { position: relative; overflow-x: hidden; }
 .hero.with-cover { min-height: 460px; }
-.hero-cover { position: absolute; z-index: -1; top: 88px; right: 0; width: min(46vw, 700px); height: calc(100% - 88px); max-width: none;
+.hero-cover { position: absolute; z-index: -1; top: 25px; right: 0; width: min(46vw, 700px); height: calc(100% - 25px); max-width: none;
   object-fit: contain; object-position: right top; pointer-events: none; } /* never wider than half the screen: whole, head included */
+/* the head comes out over the header's lower edge: the figure starts 40px above that edge, and a copy of its top
+   band lies over the header (the figure itself stays under the page's text); the demo bar moves the header down */
+.hero-cover.crown { display: none; }
+@media (min-width: 721px) {
+  .hero-cover.crown { display: block; z-index: 25; clip-path: inset(0 0 calc(100% - 42px) 0); }
+  body:has(.demo-bar) .hero-cover { top: 61px; height: calc(100% - 61px); }
+}
 @media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: calc(100% - min(46vw, 700px) + 40px); } }
 @media (max-width: 720px) {
   /* on a phone the figure stands whole above the text, not under it: the text stays crisp in both themes */
