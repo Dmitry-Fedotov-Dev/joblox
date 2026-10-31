@@ -76,6 +76,19 @@
     </form>
   </div>
 
+  {{if .Catalog}}
+  <div class="card" id="rows">
+    <p class="eyebrow">Витрина</p>
+    <form method="post" action="{{p}}/owner/rows" class="actions">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <span>Рядов {{if .Services}}услуг{{else}}товаров{{end}} на странице:</span>
+      {{range $n := (list 1 2 3)}}<button name="rows" value="{{$n}}" class="{{if ne $.Rows $n}}secondary{{end}}" {{if eq $.Rows $n}}aria-pressed="true"{{end}}>{{$n}}</button>{{end}}
+      <button name="rows" value="0" class="{{if ne .Rows 0}}secondary{{end}}" {{if eq .Rows 0}}aria-pressed="true"{{end}}>Все сразу</button>
+    </form>
+    <p class="muted small">Сколько карточек в ряду, решает ширина экрана: на компьютере 4, на телефоне 2. Остальные — на следующих страницах, кнопками внизу.</p>
+  </div>
+  {{end}}
+
   <div class="card">
     <p class="eyebrow">Предоплата</p>
     <form method="post" action="{{p}}/owner/prepay" class="actions prepay">

@@ -399,3 +399,17 @@ func TestReportPaid(t *testing.T) {
 		t.Fatalf("report: paid=%v reported=%v", o.Paid, o.ReportedAt)
 	}
 }
+
+// The storefront pages its cards by rows: services one by default, the owner's choice otherwise, 0 for all.
+func TestRowsPerPage(t *testing.T) {
+	s, _ := catalogSite(t, "master")
+	if _, page := s.get(t, "/"); !strings.Contains(page, `data-paginate="1"`) {
+		t.Fatal("services are not paged by one row")
+	}
+	if err := s.svc.SetSetting(context.Background(), "rows_per_page", "0"); err != nil {
+		t.Fatal(err)
+	}
+	if _, page := s.get(t, "/"); strings.Contains(page, "data-paginate") {
+		t.Fatal("«all at once» still pages")
+	}
+}

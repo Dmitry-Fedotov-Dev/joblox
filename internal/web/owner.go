@@ -109,6 +109,7 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /owner/pause", s.ownerOnly(s.ownerPause))
 	mux.HandleFunc("POST /owner/prepay", s.ownerOnly(s.ownerPrepay))
 	mux.HandleFunc("POST /owner/logout", s.ownerOnly(s.ownerLogout))
+	mux.HandleFunc("POST /owner/rows", s.ownerOnly(s.ownerRows))
 	mux.HandleFunc("POST /owner/bot", s.ownerOnly(s.ownerBot))
 	mux.HandleFunc("POST /owner/bot/shared", s.ownerOnly(s.ownerBotShared))
 	// the hub of the shared bot: its call-back while registering, and what the seller pressed
@@ -287,6 +288,23 @@ func (s *Server) ownerPage(w http.ResponseWriter, r *http.Request) {
 		page = "ownersetup"
 	}
 	s.render(w, page, http.StatusOK, v)
+}
+
+// ownerRows sets how many rows of cards the storefront shows a page.
+func (s *Server) ownerRows(w http.ResponseWriter, r *http.Request) {
+	if !s.ownerForm(w, r) {
+		return
+	}
+	n, err := strconv.Atoi(r.PostFormValue("rows"))
+	if err != nil || n < 0 || n > 6 {
+		http.Error(w, "bad rows", http.StatusBadRequest)
+		return
+	}
+	if err := s.svc.SetSetting(r.Context(), "rows_per_page", strconv.Itoa(n)); err != nil {
+		s.message(w, r, http.StatusInternalServerError, "Не сохранилось", "Попробуйте ещё раз.")
+		return
+	}
+	s.redirect(w, r, "/owner#rows", http.StatusSeeOther)
 }
 
 // ownerLogout forgets the owner on this browser; the master link signs in again.

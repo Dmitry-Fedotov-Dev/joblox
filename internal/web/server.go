@@ -88,6 +88,7 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		"cur":   currencySign,
 		"join":  strings.Join,
 		"inc":   func(i int) int { return i + 1 },
+		"list":  func(a ...int) []int { return a },
 		"sign":  func() string { return currencySign(svc.P.Business.Currency) },
 		"mascot": func(id int64) template.HTML {
 			pic := mascot(id)

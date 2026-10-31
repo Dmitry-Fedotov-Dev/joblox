@@ -29,6 +29,8 @@ type base struct {
 	URL, Preview, Summary string
 	// Clone is the «make yourself the same» button of the public pages: what to call it and where it leads.
 	CloneText, CloneURL string
+	// Rows is how many rows of cards the storefront shows a page (0: all at once); the owner sets it.
+	Rows int
 	// Nav is the back office section the page belongs to (home, orders, products, settings, load); empty on
 	// public pages. It shows the back office menu.
 	Nav string
@@ -38,7 +40,7 @@ func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base
 	v := s.visitor(w, r)
 	s.rec.Seen(v)
 	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Demo: s.cfg.Demo, Cover: s.coverURL(),
-		Services: s.isServices(), Catalog: s.hasCatalog()}
+		Services: s.isServices(), Catalog: s.hasCatalog(), Rows: s.rowsPerPage(r)}
 	if b.Shop {
 		b.Cart = s.readCart(r).count()
 	}
@@ -502,4 +504,18 @@ func (s *Server) reportPaid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
+}
+
+// rowsPerPage is the owner's choice for the storefront: rows of cards a page, 0 for all; by default a page of
+// services shows one row and a shop two.
+func (s *Server) rowsPerPage(r *http.Request) int {
+	if v := s.svc.Setting(r.Context(), "rows_per_page"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 && n <= 6 {
+			return n
+		}
+	}
+	if s.isServices() {
+		return 1
+	}
+	return 2
 }

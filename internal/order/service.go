@@ -584,6 +584,25 @@ type metaStore interface {
 	SetMeta(ctx context.Context, key, value string) error
 }
 
+// Setting reads one of the owner's settings kept in the site's database; "" when unset.
+func (s *Service) Setting(ctx context.Context, key string) string {
+	if ms, ok := s.Store.(metaStore); ok {
+		if v, err := ms.Meta(ctx, key); err == nil {
+			return v
+		}
+	}
+	return ""
+}
+
+// SetSetting keeps one of the owner's settings.
+func (s *Service) SetSetting(ctx context.Context, key, value string) error {
+	ms, ok := s.Store.(metaStore)
+	if !ok {
+		return ErrForbidden
+	}
+	return ms.SetMeta(ctx, key, value)
+}
+
 // PrepayPercent is the prepayment new orders get: the owner's choice in the cabinet, else the profile's.
 func (s *Service) PrepayPercent(ctx context.Context) int {
 	if ms, ok := s.Store.(metaStore); ok {
