@@ -123,6 +123,18 @@ li { margin: 4px 0; }
   .k-start { --tint-fg: #160b06; }
 }
 @keyframes float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+/* a phone has no hover: the tiles pop in one by one, sway and bob more, a touch straightens and lifts one,
+   and the phone's tilt leans them (cubes.js sets --tilt and --slide) */
+@media (hover: none) {
+  .cube { animation: pop .55s cubic-bezier(.2, .8, .2, 1.4) calc(var(--i) * 70ms) backwards, floatm 4.6s ease-in-out calc(var(--i) * -.8s) infinite;
+    rotate: calc((mod(var(--i) * 3, 7) - 3) * .7deg + var(--tilt, 0deg)); }
+  .cube.wide, .cube.k-start { rotate: calc((mod(var(--i) * 3, 7) - 3) * .25deg + var(--tilt, 0deg) * .5); }
+  .cube .emoji { translate: var(--slide, 0px) 0; transition: translate .2s ease-out, rotate .4s cubic-bezier(.2, .8, .2, 1.4), scale .4s ease; }
+  .cube.press { rotate: 0deg; scale: 1.05; z-index: 2; box-shadow: 0 24px 50px -24px rgba(20, 19, 18, .55); }
+  .cube.press .emoji { rotate: 6deg; scale: 1.15; }
+}
+@keyframes floatm { 0%, 100% { translate: 0 0; transform: rotate(-.9deg); } 50% { translate: 0 -9px; transform: rotate(.9deg); } }
+@keyframes pop { from { opacity: 0; scale: .82; } }
 @media (prefers-reduced-motion: reduce) { .cube { animation: none; rotate: 0deg; } }
 
 /* template pages: a phone with the site inside */
@@ -199,6 +211,7 @@ footer { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(
   {{if .Contact}}<span>Пожаловаться на карточку: {{.Contact}}</span>{{end}}
 </footer>
 </main>
+<script src="/cubes.js" defer></script>
 <script src="/kitten/dymok.js" defer></script>
 <script src="/kitten/kitten.js" defer></script>
 </body>

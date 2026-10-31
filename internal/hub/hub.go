@@ -29,6 +29,9 @@ import (
 //go:embed *.html
 var pageFS embed.FS
 
+//go:embed cubes.js
+var cubesJS []byte
+
 const (
 	// ActiveWindow: an installation counts while its last heartbeat is this fresh.
 	ActiveWindow = 15 * time.Minute
@@ -250,6 +253,11 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("GET /about", h.static("about.html"))
 	mux.HandleFunc("GET /t/{id}", h.showcase)
 	h.relayRoutes(mux)
+	mux.HandleFunc("GET /cubes.js", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		_, _ = w.Write(cubesJS)
+	})
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.Handle("GET /kitten/", http.StripPrefix("/kitten", kitten.Handler()))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
