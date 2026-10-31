@@ -518,7 +518,7 @@ func (r *relay) handle(ctx context.Context, u tgUpdate) {
 			"«Настройки» → «Telegram-бот» → «Подключить бот Joblox».", nil)
 		return
 	}
-	r.forward(ctx, site, map[string]any{"update_id": u.UpdateID, "message": json.RawMessage(u.Message)})
+	r.forward(ctx, site, map[string]any{"update_id": u.UpdateID, "message": u.Message})
 }
 
 // shops lets a seller with several shops pick the one the menu works with.
