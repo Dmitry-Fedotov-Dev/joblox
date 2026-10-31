@@ -356,7 +356,7 @@ func (s *Server) middleware(mux *http.ServeMux) http.Handler {
 			limit = uploadLimit // photos from a phone, a dozen at once
 		}
 		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/owner/requisites") {
-			limit = 2 << 20 // the bank's QR picture
+			limit = 16 << 20 // the bank's QR picture, maybe a full-size photo from a phone
 		}
 		r.Body = http.MaxBytesReader(sw, r.Body, limit)
 		inner.ServeHTTP(sw, r)

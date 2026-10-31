@@ -12,7 +12,7 @@ import (
 	"image/draw"
 	_ "image/gif" // decoders for uploads
 	"image/jpeg"
-	_ "image/png"
+	"image/png"
 	"io"
 	"os"
 	"path/filepath"
@@ -281,4 +281,25 @@ func orient(src image.Image, o int) image.Image {
 		}
 	}
 	return dst
+}
+
+// SmallPNG turns an uploaded picture (a bank's QR from a phone, say) into a PNG no bigger than side: turned
+// upright, scaled down, light enough to keep in the site's settings.
+func SmallPNG(raw []byte, side int) ([]byte, error) {
+	src, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return nil, ErrNotImage
+	}
+	img := orient(fit(src, side), exifOrientation(raw))
+	var out bytes.Buffer
+	if err := png.Encode(&out, img); err != nil {
+		return nil, err
+	}
+	if out.Len() > 900<<10 { // a photo rather than a clean QR: a JPEG keeps it light
+		out.Reset()
+		if err := jpeg.Encode(&out, img, &jpeg.Options{Quality: 88}); err != nil {
+			return nil, err
+		}
+	}
+	return out.Bytes(), nil
 }

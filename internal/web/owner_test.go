@@ -1,7 +1,12 @@
 package web
 
 import (
+	"bytes"
 	"context"
+	crand "crypto/rand"
+	"image"
+	"image/png"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -237,5 +242,40 @@ func TestPaymentQR(t *testing.T) {
 	}
 	if _, settings := s.get(t, "/owner"); !strings.Contains(settings, "Заменить QR") {
 		t.Fatal("the settings do not show the QR")
+	}
+}
+
+// A QR straight from a phone can weigh megabytes: the upload goes through and a light PNG is kept.
+func TestPaymentQRUpload(t *testing.T) {
+	s, f := ownerSite(t)
+	f.setups = []SetupInput{{Kind: "bakery"}}
+	s.get(t, "/owner/enter?k=masterkey0123456789")
+	_, page := s.get(t, "/owner")
+	img := image.NewRGBA(image.Rect(0, 0, 1600, 1600))
+	_, _ = crand.Read(img.Pix) // noise does not compress: a picture of several megabytes
+	var pic bytes.Buffer
+	if err := png.Encode(&pic, img); err != nil {
+		t.Fatal(err)
+	}
+	if pic.Len() < 3<<20 {
+		t.Fatalf("the test picture is only %d bytes", pic.Len())
+	}
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	_ = mw.WriteField("csrf", match(t, csrfRe, page))
+	fw, _ := mw.CreateFormFile("qr", "qr.png")
+	_, _ = fw.Write(pic.Bytes())
+	_ = mw.Close()
+	resp, err := s.client.Post(s.http.URL+"/owner/requisites", mw.FormDataContentType(), &body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/owner#pay" {
+		t.Fatalf("upload: %d %s", resp.StatusCode, resp.Header.Get("Location"))
+	}
+	kept := s.svc.PaymentQR(context.Background())
+	if len(kept) == 0 || len(kept) > 1<<20 { // a light PNG, or a JPEG for a photo like this noise
+		t.Fatalf("kept %d bytes", len(kept))
 	}
 }

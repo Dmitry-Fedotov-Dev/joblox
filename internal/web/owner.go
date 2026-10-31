@@ -19,6 +19,7 @@ import (
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/shop"
 )
 
 // Owner is the owner's area on the public site, for installations started with `joblox up`: there is no
@@ -320,7 +321,12 @@ func (s *Server) ownerLogout(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------- actions
 
 func (s *Server) ownerForm(w http.ResponseWriter, r *http.Request) bool {
-	if err := r.ParseForm(); err != nil || !s.csrfOK(r) {
+	parse := r.ParseForm
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		// a form with a file (the bank's QR): ParseForm would leave its fields unread, the csrf among them
+		parse = func() error { return r.ParseMultipartForm(1 << 20) }
+	}
+	if err := parse(); err != nil || !s.csrfOK(r) {
 		s.message(w, r, http.StatusForbidden, "Страница устарела", "Обновите страницу и повторите действие.")
 		return false
 	}
@@ -432,12 +438,11 @@ func (s *Server) ownerRequisites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if f, _, err := r.FormFile("qr"); err == nil { // the bank's QR picture comes with the form
-		img, rerr := io.ReadAll(io.LimitReader(f, 1<<20+1))
+		raw, rerr := io.ReadAll(io.LimitReader(f, 15<<20))
 		_ = f.Close()
-		ct := http.DetectContentType(img)
-		picture := ct == "image/png" || ct == "image/jpeg" || ct == "image/webp"
-		if rerr != nil || !picture {
-			s.redirect(w, r, "/owner?req="+url.QueryEscape("QR должен быть картинкой PNG, JPG или WebP")+"#pay", http.StatusSeeOther)
+		img, perr := shop.SmallPNG(raw, 900) // a phone's picture of any size becomes a light, sharp PNG
+		if rerr != nil || perr != nil {
+			s.redirect(w, r, "/owner?req="+url.QueryEscape("QR должен быть картинкой: фото или скриншот PNG, JPG, WebP")+"#pay", http.StatusSeeOther)
 			return
 		}
 		if err := s.svc.SetPaymentQR(r.Context(), img); err != nil {
