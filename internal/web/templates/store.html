@@ -14,7 +14,7 @@
 
 <section id="catalog">
   {{if .Products}}
-  <div class="grid">
+  <div class="grid" data-paginate>
     {{range .Products}}{{template "pcard" .}}{{end}}
   </div>
   {{else}}

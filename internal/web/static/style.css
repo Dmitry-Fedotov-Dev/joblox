@@ -266,8 +266,10 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 /* a cover picture: a cut-out figure on the right, as tall as the whole page behind the content */
 body:has(.hero-cover) { position: relative; overflow-x: hidden; }
 .hero.with-cover { min-height: 460px; }
-.hero-cover { position: absolute; z-index: -1; top: 25px; right: 0; width: min(46vw, 700px); height: calc(100% - 25px); max-width: none;
-  object-fit: contain; object-position: right top; pointer-events: none; } /* never wider than half the screen: whole, head included */
+/* the figure is as tall as the site: from just over the header's lower edge down to the footer, standing on it */
+main.wrap:has(.hero-cover) { position: relative; }
+.hero-cover { position: absolute; z-index: -1; top: -40px; right: 0; height: calc(100% + 40px); width: auto; max-width: none;
+  pointer-events: none; } /* its own proportions, against the right edge: the face stays right of the text */
 /* the head comes out over the header's lower edge: the figure starts 40px above that edge, and a copy of its top
    band lies over the header (the figure itself stays under the page's text); the demo bar moves the header down */
 /* with the figure in the top right the phone moves next to the name, where the head never covers it */
@@ -276,9 +278,13 @@ body:has(.hero-cover) .top .contact { padding: 5px 12px; border: 1px solid var(-
 .hero-cover.crown { display: none; }
 @media (min-width: 721px) {
   .hero-cover.crown { display: block; z-index: 25; clip-path: inset(0 0 calc(100% - 42px) 0); }
-  body:has(.demo-bar) .hero-cover { top: 61px; height: calc(100% - 61px); }
 }
-@media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: calc(100% - min(46vw, 700px) + 40px); } }
+/* the text lies over the figure: soft backings keep it readable */
+@media (min-width: 721px) {
+  .hero.with-cover > :not(.hero-cover) { max-width: 58%; }
+  .hero.with-cover .lead { width: fit-content; padding: 4px 14px; border-radius: 18px;
+    background: color-mix(in srgb, var(--bg) 80%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+}
 @media (max-width: 720px) {
   /* on a phone the figure stands whole above the text, not under it: the text stays crisp in both themes */
   .hero.with-cover { min-height: 0; }
@@ -440,3 +446,8 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .pay-qr { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 8px 0 12px; }
 .pay-qr img { width: 220px; max-width: 100%; height: auto; border-radius: 16px; background: #fff; }
 .pay-qr p { flex: 1 1 180px; margin: 0; }
+.pager { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 22px 0 6px; }
+.pager button { min-width: 42px; height: 42px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--fg); font-weight: 700; cursor: pointer; }
+.pager button[aria-current] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.pager button:disabled:not([aria-current]) { opacity: .35; cursor: default; }

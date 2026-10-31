@@ -53,3 +53,45 @@ document.addEventListener("click", function (e) {
   var row = e.target.closest && e.target.closest("tr.click[data-href]");
   if (row && !e.target.closest("a, button, form")) location.href = row.getAttribute("data-href");
 });
+
+// the storefront shows two rows of cards a page, however many fit in a row; without scripts, all of them
+(function () {
+  var grids = document.querySelectorAll("[data-paginate]");
+  Array.prototype.forEach.call(grids, function (grid) {
+    var items = Array.prototype.slice.call(grid.children), page = 0, pager = document.createElement("nav");
+    pager.className = "pager";
+    pager.setAttribute("aria-label", "Страницы");
+    grid.parentNode.insertBefore(pager, grid.nextSibling);
+    function perPage() {
+      var cols = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length || 1;
+      return cols * 2;
+    }
+    function show(n, scroll) {
+      var per = perPage(), pages = Math.max(1, Math.ceil(items.length / per));
+      page = Math.min(Math.max(0, n), pages - 1);
+      items.forEach(function (el, i) { el.hidden = Math.floor(i / per) !== page; });
+      pager.innerHTML = "";
+      if (pages > 1) {
+        var add = function (label, to, on, aria) {
+          var b = document.createElement("button");
+          b.type = "button"; b.textContent = label; b.disabled = to < 0 || to >= pages || on;
+          if (on) b.setAttribute("aria-current", "page");
+          if (aria) b.setAttribute("aria-label", aria);
+          b.addEventListener("click", function () { show(to, true); });
+          pager.appendChild(b);
+        };
+        add("←", page - 1, false, "Назад");
+        for (var i = 0; i < pages; i++) add(String(i + 1), i, i === page);
+        add("→", page + 1, false, "Дальше");
+      }
+      if (scroll) grid.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.dispatchEvent(new Event("resize")); // the yarn and the figure follow the new height
+    }
+    var t = 0;
+    window.addEventListener("resize", function (e) {
+      if (!e.isTrusted) return;
+      clearTimeout(t); t = setTimeout(function () { show(page); }, 150);
+    });
+    show(0);
+  });
+})();
