@@ -270,7 +270,7 @@ func (b *Bot) card(o *order.Order) (string, *Keyboard) {
 	}
 	if !o.Paid && !final && o.Priced {
 		title := "✅ Оплата пришла"
-		if reported && !(o.Split() && o.AdvanceAt == nil) {
+		if waitAdvance := o.Split() && o.AdvanceAt == nil; reported && !waitAdvance {
 			title = "✅ Подтвердить оплату"
 		}
 		add(Button{Text: title, Data: fmt.Sprintf("p:%d", o.ID)})
