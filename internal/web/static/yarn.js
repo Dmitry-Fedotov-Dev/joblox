@@ -51,10 +51,11 @@
     var el = this.el, box = el.getBoundingClientRect(), nd = el.querySelector(".needles").getBoundingClientRect();
     var w = box.width, h = box.height, r = rng(this.seed);
     if (w < 40 || h < 40 || nd.width === 0) { this.pts = null; return; }
-    var m = w < 260 ? 4 : 6, ex = nd.left - box.left + 1, ey = nd.top - box.top + nd.height * 7.5 / 30;
-    this.thick = w < 260 ? 2.5 : 3;
-    this.br = w < 260 ? 13 : 17;                         // the ball's radius
-    var bx = w - (w < 260 ? 26 : 34), by = h + m;
+    var page = el.classList.contains("page-yarn");
+    var m = page ? 10 : w < 260 ? 4 : 6, ex = nd.left - box.left + 1, ey = nd.top - box.top + nd.height * 7.5 / 30;
+    this.thick = page ? 3.5 : w < 260 ? 2.5 : 3;
+    this.br = page ? 22 : w < 260 ? 13 : 17;             // the ball's radius
+    var bx = w - (page ? 60 : w < 260 ? 26 : 34), by = h + m;
     var route = [[ex, ey], [-m, ey], [-m, by], [bx - this.br, by]];
     // the pins: the needles, around each corner, then every 55–95 px along the way
     var pins = [], len = 0, i;
@@ -92,7 +93,7 @@
         var horiz = Math.abs(dx) > Math.abs(dy);
         var top = horiz && p.y < h / 2;                 // along the top: loose, now and then a loop hangs down
         var slack = top ? 0.03 + r() * 0.06 : horiz ? 0.01 + r() * 0.025 : 0.004; // the bottom lies nearly straight
-        if (top && d0 > 40 && drapes < 2 && r() < 0.45) { slack = 0.16 + r() * 0.28; drapes++; }
+        if (top && d0 > 40 && drapes < (page ? 3 : 2) && r() < 0.45) { slack = page ? 0.06 + r() * 0.1 : 0.16 + r() * 0.28; drapes++; }
         var L = d0 * (1 + slack), n = Math.max(1, Math.round(L / SEG)), sag = d0 * Math.sqrt(3 * slack / 8);
         for (var k = 1; k <= n; k++) {
           var t = k / n, x = q.x + dx * t, y = q.y + dy * t;
@@ -281,8 +282,11 @@
   function init() {
     var els = document.querySelectorAll(".yarn");
     for (var i = 0; i < els.length; i++) {
-      var card = els[i].closest(".grid > .pcard");      // in a row of cards only the penultimate keeps its ball
-      if (card && card.nextElementSibling !== card.parentNode.lastElementChild) { els[i].classList.add("bare"); continue; }
+      var card = els[i].closest(".grid > .pcard");
+      // a page with its own thread keeps the only ball; else in a row of cards only the penultimate has one
+      if (card && (document.querySelector(".page-yarn") || card.nextElementSibling !== card.parentNode.lastElementChild)) {
+        els[i].classList.add("bare"); continue;
+      }
       if (!find(els[i]) && els[i].querySelector(".needles")) ropes.push(new Rope(els[i]));
     }
     if ("IntersectionObserver" in window) {

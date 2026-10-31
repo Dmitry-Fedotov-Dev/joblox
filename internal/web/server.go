@@ -98,6 +98,16 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 			}
 			return template.HTML(strings.ReplaceAll(string(yarn(id)), `src="/`, `src="`+s.cfg.Prefix+`/`))
 		},
+		// yarnPage frames the whole storefront of a knitting shop: the needles in its top right corner, the thread
+		// round the page to one ball of yarn for the kitten; the cards then only knit
+		"yarnPage": func() template.HTML {
+			if s.svc.P.Business.Placeholder != "knit" {
+				return ""
+			}
+			h := strings.Replace(string(yarn(7)), `class="yarn `, `class="yarn page-yarn `, 1)
+			h = strings.Replace(h, `width="84" height="90"`, `width="112" height="120"`, 1)
+			return template.HTML(strings.ReplaceAll(h, `src="/`, `src="`+s.cfg.Prefix+`/`))
+		},
 		"spin": func(id int64) template.HTML {
 			return template.HTML(strings.ReplaceAll(string(spin(id)), `src="/`, `src="`+s.cfg.Prefix+`/`))
 		},

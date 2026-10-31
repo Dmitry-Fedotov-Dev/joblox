@@ -335,6 +335,13 @@ body:has(.hero-cover) .pcard .name, body:has(.hero-cover) .pcard .cost { align-s
 @media (prefers-reduced-motion: reduce) { .yarn .thread, .yarn .ball { transition: none; animation: none; } }
 /* in a row of cards only the penultimate one has the thread and the ball: one toy for the kitten */
 .grid > .pcard:not(:nth-last-child(2)) .yarn .loop { display: none; }
+/* the storefront of a knitting shop: one thread round the whole page, the cards only knit */
+main.wrap:has(> .page-yarn) { position: relative; padding-top: 28px; }
+main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
+.page-yarn { z-index: 0; }
+.page-yarn .needles { width: 112px; top: 4px; right: 4px; }
+.page-yarn .loop { top: 34px; right: 115px; left: -10px; bottom: -10px; }
+@media (max-width: 720px) { .page-yarn .needles { width: 84px; } .page-yarn .loop { top: 27px; right: 87px; left: -6px; bottom: -6px; } }
 /* with yarn.js the thread is a rope with weight (an SVG path) and the ball rolls on its own */
 .yarn.live .loop { display: none; }
 .yarn .rope { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
