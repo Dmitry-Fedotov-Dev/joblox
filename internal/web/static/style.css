@@ -376,6 +376,13 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .track li.done::after { background: var(--ink); }
 .track li.now { color: var(--fg); font-weight: 800; }
 .track li.now::before { background: var(--accent); color: var(--accent-fg); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent); }
+/* on a phone the steps go down the screen: a line of five would break in two */
+@media (max-width: 560px) {
+  .track { flex-direction: column; flex-wrap: nowrap; gap: 0; }
+  .track li { flex: none; min-width: 0; padding: 3px 0 13px 36px; text-align: left; font-size: 14px; }
+  .track li::before { top: 0; left: 0; translate: none; }
+  .track li::after { top: 27px; bottom: 1px; left: 11px; right: auto; width: 2px; height: auto; }
+}
 .keep { margin: 4px 0 0; }
 
 /* ------------------------------------------------------------------ the back office (/admin), after Mama's */

@@ -52,39 +52,39 @@
 </section>
 {{else}}
 <section class="dash">
-  <div class="dash-head">
-    <h1>Кабинет</h1>
-    <span class="actions">
-      <a href="{{p}}/">Мой сайт</a>
-      {{if .Catalog}}<a href="{{p}}/owner/catalog">{{if .Services}}Услуги{{else}}Товары{{end}}</a>{{end}}
-      {{if .MarketURL}}<a href="{{.MarketURL}}" target="_blank" rel="noopener">Биржа</a>{{end}}
-      <a href="{{p}}/admin">Нагрузка</a>
-    </span>
+  <div class="a-title"><h1>Настройки</h1></div>
+
+  <div class="card">
+    <p class="eyebrow">Ваш сайт</p>
+    <p class="big copy">{{.SiteURL}}</p>
+    <p class="actions"><a class="button secondary" href="{{.SiteURL}}" target="_blank" rel="noopener">Открыть сайт ↗</a>{{if .MarketURL}}<a class="button secondary" href="{{.MarketURL}}" target="_blank" rel="noopener">Биржа ↗</a>{{end}}</p>
+    {{if .SiteQR}}<div class="qr-box">{{.SiteQR}}<p class="muted small">Покажите QR-код клиенту: камера телефона откроет ваш сайт. Или перешлите ссылку в WhatsApp и Telegram.</p></div>{{end}}
+    {{if .PhoneQR}}<details><summary>Открыть эту админку на телефоне</summary><div class="qr-box">{{.PhoneQR}}<p class="muted small">Наведите камеру телефона: откроется админка. Этот код никому не показывайте, он даёт полный доступ к заказам.</p></div></details>{{end}}
+    {{if .Temporary}}<p class="muted small">Ссылка временная: после перезапуска программы она станет другой. Карточка на бирже обновится сама, а тем, кому вы отправляли ссылку, отправьте новую. Постоянный адрес: ниже, «Свой домен».</p>{{end}}
   </div>
 
   <div class="card">
-    <p class="eyebrow">Ваш сайт работает</p>
-    <a class="cta button" href="{{.SiteURL}}" target="_blank" rel="noopener">Перейти в ваше приложение</a>
-    <p class="big copy">{{.SiteURL}}</p>
-    {{if .SiteQR}}<div class="qr-box">{{.SiteQR}}<p class="muted small">Покажите QR-код клиенту: камера телефона откроет ваш сайт. Или перешлите ссылку в WhatsApp и Telegram.</p></div>{{end}}
-    {{if .PhoneQR}}<details><summary>Открыть этот кабинет на телефоне</summary><div class="qr-box">{{.PhoneQR}}<p class="muted small">Наведите камеру телефона: откроется кабинет владельца. Этот код никому не показывайте, он даёт полный доступ к заказам.</p></div></details>{{end}}
-    {{if .Temporary}}<p class="muted small">Ссылка временная: после перезапуска программы она станет другой. Карточка на бирже обновится сама, а тем, кому вы отправляли ссылку, отправьте новую. Постоянный адрес: ниже, «Свой домен».</p>{{end}}
+    <p class="eyebrow">Приём заказов</p>
+    <form method="post" action="{{p}}/owner/pause" class="actions">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      {{if .Paused}}<span>Приём остановлен.</span><button>Возобновить приём заказов</button>{{else}}<span>Заказы принимаются.</span><button class="secondary">Остановить приём</button>{{end}}
+    </form>
     <form method="post" action="{{p}}/owner/market" class="actions">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
       {{if .Shown}}<span>Карточка на бирже показана.</span><button class="secondary" name="show" value="0">Скрыть с биржи</button>
       {{else}}<span>Карточка на бирже скрыта.</span><button class="secondary" name="show" value="1">Показать на бирже</button>{{end}}
     </form>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Предоплата</p>
     <form method="post" action="{{p}}/owner/prepay" class="actions prepay">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
-      <span>Предоплата для новых заказов:</span>
       <button name="pct" value="0" class="{{if ne .Prepay 0}}secondary{{end}}" {{if eq .Prepay 0}}aria-pressed="true"{{end}}>Без предоплаты</button>
       <button name="pct" value="50" class="{{if ne .Prepay 50}}secondary{{end}}" {{if eq .Prepay 50}}aria-pressed="true"{{end}}>Аванс 50%</button>
       <button name="pct" value="100" class="{{if ne .Prepay 100}}secondary{{end}}" {{if eq .Prepay 100}}aria-pressed="true"{{end}}>Полная 100%</button>
     </form>
-    <form method="post" action="{{p}}/owner/pause" class="actions">
-      <input type="hidden" name="csrf" value="{{.CSRF}}">
-      {{if .Paused}}<button>Возобновить приём заказов</button>{{else}}<button class="secondary">Остановить приём заказов</button>{{end}}
-    </form>
+    <p class="muted small">Для новых заказов. Уже оформленные заказы остаются на своих условиях.</p>
   </div>
 
   {{if .Transfer}}

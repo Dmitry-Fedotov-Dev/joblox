@@ -23,7 +23,7 @@
   <header class="top">
     <div class="wrap">
       <a class="brand" href="{{p}}/"><span class="brand-mark" aria-hidden="true"></span>{{.Business.Name}}</a>
-      {{if .Shop}}<a class="cart-link" href="{{p}}/cart">Корзина{{if .Cart}} <span class="count">{{.Cart}}</span>{{end}}</a>
+      {{if and .Shop (not .Nav)}}<a class="cart-link" href="{{p}}/cart">Корзина{{if .Cart}} <span class="count">{{.Cart}}</span>{{end}}</a>
       {{else if .Business.Contact}}<span class="contact">{{.Business.Contact}}</span>{{end}}
     </div>
   </header>

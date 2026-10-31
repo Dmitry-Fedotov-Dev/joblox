@@ -77,7 +77,7 @@ func TestCallLinkAndQR(t *testing.T) {
 	if _, card := s.get(t, "/admin/orders/1"); match(t, callRe, card) != room || !strings.Contains(card, "Позвонить клиенту") {
 		t.Fatal("the performer's call room differs from the customer's")
 	}
-	if !strings.Contains(owner, `<svg class="qr"`) || !strings.Contains(owner, "Перейти в ваше приложение") {
+	if !strings.Contains(owner, `<svg class="qr"`) || !strings.Contains(owner, "Открыть сайт") {
 		t.Fatal("no QR code or big button for the site")
 	}
 	_, order := s.get(t, link)

@@ -214,15 +214,7 @@ func (s *Server) adminOrder(w http.ResponseWriter, r *http.Request) {
 	if evs, err := s.svc.Store.Events(ctx, o.ID); err == nil {
 		for _, e := range evs {
 			who := map[string]string{profile.ActorCustomer: "покупатель", profile.ActorOperator: "вы", profile.ActorSystem: "сайт"}[e.Actor]
-			what := e.Note
-			if e.Kind == "transition" {
-				if st, ok := s.svc.P.State(e.To); ok {
-					what = "→ " + st.Title
-				}
-			}
-			if what == "" {
-				what = e.Kind
-			}
+			what := eventText(s, e)
 			v.Events = append(v.Events, eventRow{When: e.At.In(s.loc()).Format("02.01 15:04"), Who: who, What: what})
 		}
 		for i, j := 0, len(v.Events)-1; i < j; i, j = i+1, j-1 {
@@ -230,4 +222,38 @@ func (s *Server) adminOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.render(w, "aorder", http.StatusOK, v)
+}
+
+// eventText tells a line of the order's journal in words.
+func eventText(s *Server, e order.Event) string {
+	switch e.Kind {
+	case "created":
+		return "Заказ оформлен"
+	case "transition":
+		if st, ok := s.svc.P.State(e.To); ok {
+			return "→ " + st.Title
+		}
+	case "reported":
+		return "Покупатель сообщил, что оплатил"
+	case "not_found":
+		return "Оплата не найдена, покупатель снова видит «Я оплатил»"
+	case "paid":
+		return "Оплата получена"
+	case "advance":
+		return "Аванс получен"
+	case "approved":
+		return "Проверка пройдена"
+	case "priced":
+		return "Цена названа: " + e.Note
+	case "code_sent":
+		return "Покупателю отправлен код на почту"
+	case "verified":
+		return "Покупатель подтвердил почту"
+	case "blocked":
+		return "Покупатель в чёрном списке"
+	}
+	if e.Note != "" {
+		return e.Note
+	}
+	return e.Kind
 }

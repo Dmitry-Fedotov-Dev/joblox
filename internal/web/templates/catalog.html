@@ -1,8 +1,5 @@
 {{define "content"}}
-<div class="dash-head">
-  <h1>{{if .Services}}Услуги{{else}}Товары{{end}}</h1>
-  <span class="actions"><a href="{{p}}/owner">Кабинет</a><a href="{{p}}/" target="_blank" rel="noopener">Витрина</a></span>
-</div>
+<div class="a-title"><h1>{{if .Services}}Услуги{{else}}Товары{{end}}</h1></div>
 <p><a class="button cta" href="{{p}}/owner/catalog/new">{{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a></p>
 {{if not .Products}}
 <p class="empty"><b>{{if .Services}}Услуг пока нет{{else}}Товаров пока нет{{end}}</b>{{if .Services}}Добавьте первую: название, цена «от», описание и фото выполненных работ.{{else}}Добавьте первый: название, цена, фото с телефона и сколько штук каждого размера.{{end}}</p>
