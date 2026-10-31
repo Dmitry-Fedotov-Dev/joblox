@@ -114,7 +114,8 @@ func (b *Bot) Handle(ctx context.Context, u Update) {
 			b.opMu.Lock()
 			b.operators[u.Message.From.ID] = true
 			b.opMu.Unlock()
-			_, _ = b.api.Send(ctx, u.Message.Chat.ID, "✅ Готово: новые заказы будут приходить сюда, с кнопками.\n\n"+html.EscapeString(help), nil)
+			_ = b.api.SendMenu(ctx, u.Message.Chat.ID, "✅ Готово: новые заказы будут приходить сюда, с кнопками.\n\n"+
+				"Меню внизу: активные заказы, оплаты на проверке, статистика, ссылки на сайт и админку.", menuRows)
 			return
 		}
 		if !b.isOperator(u.Message.From.ID) {
@@ -133,49 +134,117 @@ func (b *Bot) Handle(ctx context.Context, u Update) {
 
 // ---------------------------------------------------------------- cards
 
+// The operator's menu under the input field, as in the bot of Mama's workshop.
+const (
+	btnActive = "📋 Активные заказы"
+	btnCheck  = "💸 Проверить оплату"
+	btnStats  = "📊 Статистика"
+	btnLinks  = "🔗 Сайт и админка"
+)
+
+var menuRows = [][]string{{btnActive, btnCheck}, {btnStats, btnLinks}}
+
+// tone is what the order waits for, as an icon: the price or the money, a payment to check, work, the end.
+func (b *Bot) tone(o *order.Order) string {
+	st, _ := b.svc.P.State(o.State)
+	switch {
+	case st.Final && o.Paid:
+		return "✅"
+	case st.Final:
+		return "✖️"
+	case o.ReportedAt != nil && !o.Paid:
+		return "💸"
+	case o.Review && !o.Approved:
+		return "⚠️"
+	case !o.Priced || o.Method == profile.MethodTransfer && !o.Prepaid():
+		return "⏳"
+	}
+	return "🛠"
+}
+
+// fieldIcon puts a familiar icon before the customer's answers that have one.
+func fieldIcon(f profile.Field) string {
+	switch {
+	case f.Type == profile.FieldPhone:
+		return "📞 "
+	case f.Type == profile.FieldEmail:
+		return "✉️ "
+	case f.ID == "name" || f.ID == "company":
+		return "👤 "
+	case strings.Contains(f.ID, "address") || f.ID == "from" || f.ID == "to":
+		return "📍 "
+	case f.ID == "comment" || f.Type == profile.FieldTextarea:
+		return "📝 "
+	}
+	return ""
+}
+
+// cancelling: a transition that ends the order without the work done asks «are you sure?» first.
+func cancelling(p *profile.Profile, t profile.Transition) bool {
+	to, _ := p.State(t.To)
+	return to.Final && (strings.Contains(t.To, "cancel") || strings.Contains(t.To, "reject") || strings.Contains(t.ID, "cancel"))
+}
+
 func (b *Bot) card(o *order.Order) (string, *Keyboard) {
 	p := b.svc.P
 	st, _ := p.State(o.State)
+	cur := p.Business.Currency
 	var s strings.Builder
-	fmt.Fprintf(&s, "<b>Заказ №%d</b> · %s\n", o.ID, html.EscapeString(st.Title))
+	fmt.Fprintf(&s, "<b>Заказ №%d</b> · %s %s\n<i>%s</i>\n\n", o.ID, b.tone(o), html.EscapeString(st.Title),
+		o.CreatedAt.Format("02.01 15:04 UTC"))
 	for _, l := range o.Lines {
-		fmt.Fprintf(&s, "• %s × %d = %s\n", html.EscapeString(l.Title), l.Qty, l.Sum)
+		qty := ""
+		if l.Qty > 1 {
+			qty = fmt.Sprintf(" × %d", l.Qty)
+		}
+		fmt.Fprintf(&s, "• %s%s · %s\n", html.EscapeString(l.Title), qty, l.Sum)
 	}
 	for _, f := range o.Fees {
-		fmt.Fprintf(&s, "• %s: %s\n", html.EscapeString(f.Title), f.Sum)
+		fmt.Fprintf(&s, "• %s · %s\n", html.EscapeString(f.Title), f.Sum)
 	}
 	if o.Priced {
-		fmt.Fprintf(&s, "<b>Сумма: %s %s</b>\n", o.Total, p.Business.Currency)
+		fmt.Fprintf(&s, "💰 <b>Итого: %s %s</b>\n", o.Total, cur)
 	} else {
-		fmt.Fprintf(&s, "<b>Цена по запросу:</b> /price %d сумма\n", o.ID)
+		fmt.Fprintf(&s, "💰 <b>Цена не названа:</b> /price %d сумма\n", o.ID)
 	}
+	if o.Split() {
+		got := "ждём"
+		if o.AdvanceAt != nil {
+			got = "✓ получен"
+		}
+		fmt.Fprintf(&s, "💵 Аванс %d%%: %s %s, %s\n", o.Prepay, o.Advance(), cur, got)
+	}
+	pay := "перевод"
+	if o.Method == profile.MethodCash {
+		pay = "при получении"
+	}
+	switch {
+	case o.Paid:
+		pay += ", ✅ оплачен"
+		if o.PaidNote != "" {
+			pay += " (" + html.EscapeString(o.PaidNote) + ")"
+		}
+	case o.ReportedAt != nil:
+		pay += ", 💸 покупатель сообщил, что оплатил: проверьте поступление"
+	case o.Method == profile.MethodTransfer && o.Priced:
+		pay += ", ⏳ ждём оплату"
+	}
+	fmt.Fprintf(&s, "💳 %s · назначение <code>%s</code>\n\n", pay, html.EscapeString(b.svc.Reference(o)))
 	for _, f := range p.Checkout.Fields {
 		if v := o.Fields[f.ID]; v != "" {
-			fmt.Fprintf(&s, "%s: %s%s\n", html.EscapeString(f.Label), html.EscapeString(f.Display(v)), unit(f.Unit))
+			icon := fieldIcon(f)
+			if icon == "" {
+				fmt.Fprintf(&s, "%s: %s%s\n", html.EscapeString(f.Label), html.EscapeString(f.Display(v)), unit(f.Unit))
+			} else {
+				fmt.Fprintf(&s, "%s%s%s\n", icon, html.EscapeString(f.Display(v)), unit(f.Unit))
+			}
 		}
 	}
-	method := "перевод"
-	if o.Method == profile.MethodCash {
-		method = "при получении"
-	}
-	paid := "не оплачен"
-	if o.Paid {
-		paid = "оплачен"
-		if o.PaidNote != "" {
-			paid += " (" + html.EscapeString(o.PaidNote) + ")"
-		}
-	}
-	fmt.Fprintf(&s, "Оплата: %s, %s · ссылка: %s\n", method, paid, b.svc.Reference(o))
-	verified := "не подтверждён"
-	if o.VerifiedAt != nil {
-		verified = "подтверждён"
-	}
-	fmt.Fprintf(&s, "Email %s\n", verified)
 	switch {
 	case o.Review && !o.Approved:
-		fmt.Fprintf(&s, "⚠️ <b>На проверке</b>, риск %d: %s\n", o.Risk, html.EscapeString(strings.Join(o.RiskReasons, "; ")))
+		fmt.Fprintf(&s, "\n⚠️ <b>На проверке</b>, риск %d: %s\n", o.Risk, html.EscapeString(strings.Join(o.RiskReasons, "; ")))
 	case len(o.RiskReasons) > 0:
-		fmt.Fprintf(&s, "Проверка: риск %d (%s)\n", o.Risk, html.EscapeString(strings.Join(o.RiskReasons, "; ")))
+		fmt.Fprintf(&s, "\nПроверка: риск %d (%s)\n", o.Risk, html.EscapeString(strings.Join(o.RiskReasons, "; ")))
 	}
 	blocked := b.svc.Flow.Blocked(o.State, profile.ActorOperator, o.Flags())
 	for _, t := range p.Workflow.Transitions { // profile order, not map order
@@ -183,20 +252,38 @@ func (b *Bot) card(o *order.Order) (string, *Keyboard) {
 			fmt.Fprintf(&s, "«%s» ждёт: %s\n", html.EscapeString(t.Title), needText(need))
 		}
 	}
+	fmt.Fprintf(&s, "\n<a href=\"%s/admin/orders/%d\">Открыть в админке</a>", html.EscapeString(b.svc.BaseURL()), o.ID)
 
 	kb := &Keyboard{}
 	final := b.svc.IsFinal(o.State)
+	add := func(btns ...Button) { kb.Rows = append(kb.Rows, btns) }
 	if o.Review && !o.Approved && !final {
-		kb.Rows = append(kb.Rows, []Button{{Text: "✅ Одобрить", Data: fmt.Sprintf("a:%d", o.ID)}})
+		add(Button{Text: "✅ Одобрить", Data: fmt.Sprintf("a:%d", o.ID)})
 	}
+	reported := o.ReportedAt != nil && !o.Paid && !final
 	if o.Split() && o.AdvanceAt == nil && !o.Paid && !final && o.Priced {
-		kb.Rows = append(kb.Rows, []Button{{Text: fmt.Sprintf("💵 Аванс %d%% получен", o.Prepay), Data: fmt.Sprintf("v:%d", o.ID)}})
+		title := fmt.Sprintf("💵 Аванс %d%% пришёл", o.Prepay)
+		if reported {
+			title = fmt.Sprintf("✅ Подтвердить аванс %d%%", o.Prepay)
+		}
+		add(Button{Text: title, Data: fmt.Sprintf("v:%d", o.ID)})
 	}
 	if !o.Paid && !final && o.Priced {
-		kb.Rows = append(kb.Rows, []Button{{Text: "💰 Оплата получена", Data: fmt.Sprintf("p:%d", o.ID)}})
+		title := "✅ Оплата пришла"
+		if reported && !(o.Split() && o.AdvanceAt == nil) {
+			title = "✅ Подтвердить оплату"
+		}
+		add(Button{Text: title, Data: fmt.Sprintf("p:%d", o.ID)})
 	}
-	var row []Button
+	if reported {
+		add(Button{Text: "↩️ Оплата не найдена", Data: fmt.Sprintf("n:%d", o.ID)})
+	}
+	var row, cancel []Button
 	for _, t := range b.svc.Flow.Open(o.State, profile.ActorOperator, o.Flags()) {
+		if cancelling(p, t) {
+			cancel = append(cancel, Button{Text: "✖️ " + t.Title, Data: fmt.Sprintf("x:%d:%s", o.ID, t.ID)})
+			continue
+		}
 		row = append(row, Button{Text: "→ " + t.Title, Data: fmt.Sprintf("t:%d:%s", o.ID, t.ID)})
 		if len(row) == 2 {
 			kb.Rows, row = append(kb.Rows, row), nil
@@ -205,13 +292,33 @@ func (b *Bot) card(o *order.Order) (string, *Keyboard) {
 	if len(row) > 0 {
 		kb.Rows = append(kb.Rows, row)
 	}
-	if !final {
-		kb.Rows = append(kb.Rows, []Button{{Text: "⛔ В чёрный список", Data: fmt.Sprintf("b:%d", o.ID)}})
-	}
-	if len(kb.Rows) == 0 {
-		kb = &Keyboard{Rows: [][]Button{}}
-	}
+	add(append(cancel, Button{Text: "🔄 Обновить", Data: fmt.Sprintf("r:%d", o.ID)})...)
 	return s.String(), kb
+}
+
+// list is the orders as buttons: a tap opens the order's card.
+func (b *Bot) list(ctx context.Context, chat int64, head, empty string, orders []*order.Order) {
+	if len(orders) == 0 {
+		_, _ = b.api.Send(ctx, chat, empty, nil)
+		return
+	}
+	kb := &Keyboard{}
+	for i, o := range orders {
+		if i == 40 {
+			break
+		}
+		who := []rune(o.Fields["name"])
+		if len(who) > 18 {
+			who = who[:18]
+		}
+		sum := "цена?"
+		if o.Priced {
+			sum = o.Total.String()
+		}
+		kb.Rows = append(kb.Rows, []Button{{Text: fmt.Sprintf("%s №%d · %s · %s", b.tone(o), o.ID, string(who), sum),
+			Data: fmt.Sprintf("o:%d", o.ID)}})
+	}
+	_, _ = b.api.Send(ctx, chat, head, kb)
 }
 
 func unit(u string) string {
@@ -311,6 +418,28 @@ func (b *Bot) button(ctx context.Context, cq *CallbackQuery) {
 	op := strconv.FormatInt(cq.From.ID, 10)
 	var done string
 	switch parts[0] {
+	case "o": // from a list: the card comes as a new message, the list stays
+		text, kb := b.card(o)
+		_ = b.api.Answer(ctx, cq.ID, "")
+		_, _ = b.api.Send(ctx, cq.Message.Chat.ID, text, kb)
+		return
+	case "r":
+		done = "Обновлено"
+	case "n":
+		err, done = b.svc.RejectReport(ctx, o, op), "Покупатель снова увидит «Я оплатил»"
+	case "x": // a cancel asks first
+		if len(parts) != 3 {
+			err = errors.New("bad button")
+			break
+		}
+		kb := &Keyboard{Rows: [][]Button{{{Text: "Да, " + strings.ToLower(transitionTitle(b.svc.P, parts[2])), Data: fmt.Sprintf("t:%d:%s", o.ID, parts[2])},
+			{Text: "Нет", Data: fmt.Sprintf("r:%d", o.ID)}}}}
+		_ = b.api.Answer(ctx, cq.ID, "Точно?")
+		text, _ := b.card(o)
+		if eerr := b.api.Edit(ctx, cq.Message.Chat.ID, cq.Message.MessageID, text, kb); eerr != nil {
+			b.log.Debug("edit card", "err", eerr)
+		}
+		return
 	case "a":
 		err, done = b.svc.Approve(ctx, o, op), "Одобрено"
 	case "p":
@@ -366,38 +495,56 @@ const help = `Команды:
 /pause [причина]: остановить приём заказов, /resume возобновляет`
 
 func (b *Bot) command(ctx context.Context, m *Message) {
+	switch strings.TrimSpace(m.Text) {
+	case btnActive:
+		m.Text = "/orders"
+	case btnCheck:
+		m.Text = "/check"
+	case btnStats:
+		m.Text = "/stats"
+	case btnLinks:
+		m.Text = "/links"
+	}
 	cmd, args, _ := strings.Cut(strings.TrimSpace(m.Text), " ")
 	cmd = strings.SplitN(cmd, "@", 2)[0]
 	args = strings.TrimSpace(args)
 	op := strconv.FormatInt(m.From.ID, 10)
 	say := func(text string) { _, _ = b.api.Send(ctx, m.Chat.ID, text, nil) }
 	switch cmd {
-	case "/start", "/help":
+	case "/start":
+		_ = b.api.SendMenu(ctx, m.Chat.ID, fmt.Sprintf("Привет! Я присылаю сюда новые заказы «%s».\n\n"+
+			"Кнопками под заказом отмечайте оплату и статус. Меню внизу: заказы, оплаты на проверке, статистика.",
+			html.EscapeString(b.svc.P.Business.Name)), menuRows)
+	case "/help":
 		say(html.EscapeString(help))
-	case "/orders", "/review":
-		list, err := b.svc.Store.List(ctx, order.Filter{Open: true, Review: cmd == "/review", Limit: 15}, b.svc.Finals())
+	case "/links":
+		base := html.EscapeString(b.svc.BaseURL())
+		say(fmt.Sprintf("🛍 <a href=\"%s/\">Сайт</a>\n🔐 <a href=\"%s/admin\">Админка</a>: заказы, товары, настройки "+
+			"(откроется, если вы уже входили по мастер-ссылке)", base, base))
+	case "/check":
+		list, err := b.svc.Store.List(ctx, order.Filter{Open: true, Limit: 200}, b.svc.Finals())
 		if err != nil {
 			say("Ошибка: " + html.EscapeString(err.Error()))
 			return
 		}
-		if len(list) == 0 {
-			say("Нет заказов.")
+		var due []*order.Order
+		for _, o := range list {
+			if o.ReportedAt != nil && !o.Paid {
+				due = append(due, o)
+			}
+		}
+		b.list(ctx, m.Chat.ID, "Покупатели сообщили об оплате, проверьте поступления:", "Нет оплат на проверке.", due)
+	case "/orders", "/review":
+		list, err := b.svc.Store.List(ctx, order.Filter{Open: true, Review: cmd == "/review", Limit: 40}, b.svc.Finals())
+		if err != nil {
+			say("Ошибка: " + html.EscapeString(err.Error()))
 			return
 		}
-		var s strings.Builder
-		for _, o := range list {
-			st, _ := b.svc.P.State(o.State)
-			sum := "по запросу"
-			if o.Priced {
-				sum = o.Total.String()
-			}
-			flag := ""
-			if o.Review && !o.Approved {
-				flag = " ⚠️"
-			}
-			fmt.Fprintf(&s, "/order %d · %s · %s%s\n", o.ID, html.EscapeString(st.Title), sum, flag)
+		head, empty := fmt.Sprintf("Активные заказы: %d", len(list)), "Активных заказов нет."
+		if cmd == "/review" {
+			head, empty = "Ждут вашей проверки:", "Заказов на проверке нет."
 		}
-		say(s.String())
+		b.list(ctx, m.Chat.ID, head, empty, list)
 	case "/order":
 		o, ok := b.find(ctx, args, say)
 		if ok {
@@ -462,13 +609,18 @@ func (b *Bot) command(ctx context.Context, m *Message) {
 		}
 		say("Готово: " + html.EscapeString(v))
 	case "/stats":
-		st, err := b.svc.Store.Stats(ctx, b.svc.Now().Add(-24*time.Hour), b.svc.Finals())
+		now := b.svc.Now()
+		day, err := b.svc.Store.Stats(ctx, now.Add(-24*time.Hour), b.svc.Finals())
 		if err != nil {
 			say("Ошибка: " + html.EscapeString(err.Error()))
 			return
 		}
-		say(fmt.Sprintf("За сутки: заказов %d, оплачено %d на %s %s.\nОткрыто: %d, на проверке: %d.", st.Today, st.PaidToday,
-			st.RevenueDay, b.svc.P.Business.Currency, st.Open, st.Review))
+		month, _ := b.svc.Store.Stats(ctx, time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC), b.svc.Finals())
+		cur := b.svc.P.Business.Currency
+		say(fmt.Sprintf("<b>📊 Статистика</b>\n\nВ работе: <b>%d</b>, на проверке: %d\n\nЗа сутки: %d %s, оплачено %d на %s %s\n"+
+			"За этот месяц: %d %s, оплачено на <b>%s %s</b>", day.Open, day.Review,
+			day.Today, plural(day.Today, "заказ", "заказа", "заказов"), day.PaidToday, day.RevenueDay, cur,
+			month.Today, plural(month.Today, "заказ", "заказа", "заказов"), month.RevenueDay, cur))
 	case "/pause":
 		b.svc.Pause()
 		reason := args
@@ -496,4 +648,15 @@ func (b *Bot) find(ctx context.Context, num string, say func(string)) (*order.Or
 		return nil, false
 	}
 	return o, true
+}
+
+func plural(n int, one, few, many string) string {
+	n %= 100
+	switch {
+	case n%10 == 1 && n != 11:
+		return one
+	case n%10 >= 2 && n%10 <= 4 && (n < 12 || n > 14):
+		return few
+	}
+	return many
 }

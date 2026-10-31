@@ -636,6 +636,17 @@ func (s *Service) Sweep(ctx context.Context) (int, error) {
 	return n, nil
 }
 
+// RejectReport: the operator did not find the money the customer reported; the customer sees «Я оплатил»
+// again and can send it once more.
+func (s *Service) RejectReport(ctx context.Context, o *Order, operatorID string) error {
+	if o.ReportedAt == nil || o.Paid {
+		return nil
+	}
+	now := s.Now()
+	o.ReportedAt, o.UpdatedAt = nil, now
+	return s.save(ctx, o, Event{At: now, Actor: profile.ActorOperator, ActorID: operatorID, Kind: "not_found", Note: "оплата не найдена"})
+}
+
 // ReportPaid records the customer's «Я оплатил» and tells the operators. It confirms nothing: only an
 // operator marks an order paid. Reporting twice changes nothing.
 func (s *Service) ReportPaid(ctx context.Context, o *Order) error {

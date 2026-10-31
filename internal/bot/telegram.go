@@ -121,6 +121,21 @@ func (a *API) Send(ctx context.Context, chat int64, text string, kb *Keyboard) (
 	return m.MessageID, err
 }
 
+// SendMenu sends text with the reply keyboard that stays under the input field: the operator's menu.
+func (a *API) SendMenu(ctx context.Context, chat int64, text string, rows [][]string) error {
+	kb := make([][]map[string]string, 0, len(rows))
+	for _, r := range rows {
+		row := make([]map[string]string, 0, len(r))
+		for _, t := range r {
+			row = append(row, map[string]string{"text": t})
+		}
+		kb = append(kb, row)
+	}
+	payload := map[string]any{"chat_id": chat, "text": text, "parse_mode": "HTML", "disable_web_page_preview": true,
+		"reply_markup": map[string]any{"keyboard": kb, "resize_keyboard": true, "is_persistent": true}}
+	return a.call(ctx, "sendMessage", payload, nil)
+}
+
 func (a *API) Edit(ctx context.Context, chat, message int64, text string, kb *Keyboard) error {
 	payload := map[string]any{"chat_id": chat, "message_id": message, "text": text, "parse_mode": "HTML",
 		"disable_web_page_preview": true}

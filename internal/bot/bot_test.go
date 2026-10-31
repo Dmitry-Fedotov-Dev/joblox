@@ -130,8 +130,12 @@ func TestNewOrderCardAndButtons(t *testing.T) {
 		t.Fatalf("card: %v", texts)
 	}
 	kb := fake.lastKeyboard(t)
-	if strings.Join(kb, " ") != "p:1 t:1:accept t:1:cancel b:1" {
+	if strings.Join(kb, " ") != "p:1 t:1:accept x:1:cancel r:1" {
 		t.Fatalf("buttons: %v", kb)
+	}
+	press(b, "x:1:cancel") // a cancel asks first
+	if kb := fake.lastKeyboard(t); strings.Join(kb, " ") != "t:1:cancel r:1" {
+		t.Fatalf("cancel confirmation: %v", kb)
 	}
 	press(b, "t:1:accept")
 	press(b, "t:1:ready")
@@ -202,7 +206,7 @@ func TestPauseAndStats(t *testing.T) {
 	create(t, svc)
 	say(b, operator, "/stats")
 	texts := fake.texts("sendMessage")
-	if !strings.Contains(texts[len(texts)-1], "заказов 1") {
+	if !strings.Contains(texts[len(texts)-1], "За сутки: 1 заказ") {
 		t.Fatalf("stats: %s", texts[len(texts)-1])
 	}
 }
@@ -212,5 +216,22 @@ func TestStartedReportsFingerprint(t *testing.T) {
 	b.Started(context.Background(), "test")
 	if texts := fake.texts("sendMessage"); !strings.Contains(texts[0], svc.Req().Fingerprint()) {
 		t.Fatalf("tripwire: %v", texts)
+	}
+}
+
+// The customer reported a payment the operator cannot find: «Оплата не найдена» gives «Я оплатил» back.
+func TestPaymentNotFound(t *testing.T) {
+	b, svc, fake := setup(t, "bakery")
+	o := create(t, svc)
+	if err := svc.ReportPaid(context.Background(), o); err != nil {
+		t.Fatal(err)
+	}
+	press(b, "r:1")
+	if kb := strings.Join(fake.lastKeyboard(t), " "); !strings.Contains(kb, "n:1") {
+		t.Fatalf("no «not found» button: %s", kb)
+	}
+	press(b, "n:1")
+	if got, _ := svc.Store.Get(context.Background(), o.ID); got.ReportedAt != nil {
+		t.Fatal("the report stayed")
 	}
 }
