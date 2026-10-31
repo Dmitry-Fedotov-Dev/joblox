@@ -265,9 +265,9 @@ a.cta.button { display: flex; width: 100%; font-size: 18px; background: var(--ac
 /* a cover picture: a cut-out figure on the right, as tall as the whole page behind the content */
 body:has(.hero-cover) { position: relative; overflow-x: hidden; }
 .hero.with-cover { min-height: 460px; }
-.hero-cover { position: absolute; z-index: -1; top: 76px; right: 0; height: calc(100% - 76px); width: auto; max-width: none;
-  object-fit: contain; object-position: right top; pointer-events: none; }
-@media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: 56%; } }
+.hero-cover { position: absolute; z-index: -1; top: 88px; right: 0; width: min(46vw, 700px); height: calc(100% - 88px); max-width: none;
+  object-fit: contain; object-position: right top; pointer-events: none; } /* never wider than half the screen: whole, head included */
+@media (min-width: 721px) { .hero.with-cover > :not(.hero-cover) { max-width: calc(100% - min(46vw, 700px) + 40px); } }
 @media (max-width: 720px) {
   /* on a phone the figure stands whole above the text, not under it: the text stays crisp in both themes */
   .hero.with-cover { min-height: 0; }
