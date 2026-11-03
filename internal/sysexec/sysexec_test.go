@@ -17,16 +17,17 @@ func TestFixArgs(t *testing.T) {
 		out    []string
 		loader string
 	}{
-		// what the phone showed: the loader first, the program's path as the «command»
+		// what the phone showed: the name it was called by first, then the full path, the loader nowhere
+		{"android", []string{"./joblox", "/data/joblox/joblox", "up"}, yes, []string{"/data/joblox/joblox", "up"}, "/system/bin/linker64"},
+		{"android", []string{"/data/joblox/joblox", "/data/joblox/joblox", "version"}, yes, []string{"/data/joblox/joblox", "version"}, "/system/bin/linker64"},
 		{"android", []string{"/system/bin/linker64", "/data/joblox/joblox", "up"}, no, []string{"/data/joblox/joblox", "up"}, "/system/bin/linker64"},
-		{"android", []string{"/system/bin/linker64", "/data/joblox/joblox"}, no, []string{"/data/joblox/joblox"}, "/system/bin/linker64"},
-		{"android", []string{"/apex/x/ld", "/data/joblox/joblox", "version"}, yes, []string{"/data/joblox/joblox", "version"}, "/apex/x/ld"},
+		// started directly: nothing to fix
 		{"android", []string{"/data/joblox/joblox", "up"}, no, []string{"/data/joblox/joblox", "up"}, ""},
-		{"android", []string{"/data/joblox/joblox"}, yes, []string{"/data/joblox/joblox"}, ""},
-		{"linux", []string{"/usr/bin/linker64", "/opt/joblox", "up"}, yes, []string{"/usr/bin/linker64", "/opt/joblox", "up"}, ""},
+		{"android", []string{"./joblox"}, yes, []string{"./joblox"}, ""},
+		{"linux", []string{"./joblox", "/opt/joblox", "up"}, yes, []string{"./joblox", "/opt/joblox", "up"}, ""},
 	}
 	for _, c := range cases {
-		out, loader := fixArgs(c.goos, c.in, c.exe)
+		out, loader := fixArgs(c.goos, "arm64", c.in, c.exe)
 		if !slices.Equal(out, c.out) || loader != c.loader {
 			t.Errorf("%v: %v %q", c.in, out, loader)
 		}

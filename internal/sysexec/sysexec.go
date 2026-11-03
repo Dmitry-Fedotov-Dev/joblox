@@ -25,16 +25,26 @@ func Self() (string, error) {
 }
 
 // FixArgs drops the loader from os.Args and remembers it. Call it first thing in main.
-func FixArgs() { os.Args, Loader = fixArgs(runtime.GOOS, os.Args, isExecutable) }
+func FixArgs() { os.Args, Loader = fixArgs(runtime.GOOS, runtime.GOARCH, os.Args, isExecutable) }
 
-func fixArgs(goos string, args []string, executable func(string) bool) ([]string, string) {
+func fixArgs(goos, goarch string, args []string, executable func(string) bool) ([]string, string) {
 	if goos != "android" || len(args) < 2 {
 		return args, ""
 	}
+	// Termux keeps the name the program was called by in argv[0] (./joblox, joblox) and puts the full path
+	// second; the loader itself is not in the list. It is the system's one, at a fixed place.
 	if strings.HasPrefix(filepath.Base(args[0]), "linker") || (strings.HasPrefix(args[1], "/") && executable(args[1])) {
-		return args[1:], args[0]
+		return args[1:], systemLoader(goarch)
 	}
 	return args, ""
+}
+
+// systemLoader is Android's own loader for programs of this processor.
+func systemLoader(goarch string) string {
+	if strings.HasSuffix(goarch, "64") {
+		return "/system/bin/linker64"
+	}
+	return "/system/bin/linker"
 }
 
 func isExecutable(path string) bool {
