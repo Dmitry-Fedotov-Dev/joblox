@@ -50,12 +50,16 @@ func main() {
 	implicit := len(os.Args) == 1 && os.Getenv("JOBLOX_PROFILE") == ""
 	// JOBLOX_COMMAND: a deploy that cannot pass arguments (cd starts every image with «serve») picks the
 	// command in the environment, e.g. JOBLOX_COMMAND=hub for the Joblox Network site
-	cmd := env("JOBLOX_COMMAND", "serve")
+	cmd := "serve"
 	if implicit {
 		cmd = "up"
 	}
 	if len(os.Args) > 1 {
 		cmd = os.Args[1]
+	}
+	// the image's own «serve» gives way to JOBLOX_COMMAND: cd starts every image with its default command
+	if c := os.Getenv("JOBLOX_COMMAND"); c != "" && cmd == "serve" {
+		cmd = c
 	}
 	var err error
 	switch cmd {
