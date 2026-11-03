@@ -26,6 +26,7 @@ import (
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/metrics"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/money"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/shop"
 )
 
@@ -173,6 +174,32 @@ func currencySign(code string) string {
 }
 
 // Handler is the public site.
+// notOpenYet: until the owner has gone through the setup, the storefront is the template's (its sample name,
+// address and texts) and looks like somebody else's shop. Visitors see «opening soon», the owner the setup.
+func (s *Server) notOpenYet(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		o := s.cfg.Owner
+		p := r.URL.Path
+		if o == nil || o.Configured == nil || o.Configured() || strings.HasPrefix(p, "/owner") || strings.HasPrefix(p, "/admin") ||
+			strings.HasPrefix(p, "/static/") || strings.HasPrefix(p, "/kitten/") || p == "/healthz" || p == "/favicon.ico" || p == "/terms" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if s.isOwner(r) {
+			s.redirect(w, r, "/owner", http.StatusSeeOther)
+			return
+		}
+		w.Header().Set("Retry-After", "600")
+		v := s.base(w, r, "Магазин скоро откроется")
+		v.Business = profile.Business{Name: "Joblox"} // not the template's sample name and contact
+		v.Shop, v.CloneURL = false, ""
+		s.render(w, "message", http.StatusServiceUnavailable, struct {
+			base
+			Heading, Text string
+		}{v, "Магазин скоро откроется", "Владелец ещё настраивает магазин. Загляните чуть позже по этой же ссылке."})
+	})
+}
+
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	static, _ := fs.Sub(staticFS, "static")
@@ -325,7 +352,7 @@ func (w *statusWriter) WriteHeader(code int) {
 }
 
 func (s *Server) middleware(mux *http.ServeMux) http.Handler {
-	inner := securityHeaders(mux, s.cfg.SecureCookies)
+	inner := securityHeaders(s.notOpenYet(mux), s.cfg.SecureCookies)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, code: http.StatusOK}

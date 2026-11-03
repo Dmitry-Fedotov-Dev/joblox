@@ -284,3 +284,23 @@ func TestPaymentQRUpload(t *testing.T) {
 		t.Fatalf("kept %d bytes", len(kept))
 	}
 }
+
+// Before the setup the storefront is the template's sample shop: a visitor must not take it for someone else's.
+func TestNotOpenBeforeTheSetup(t *testing.T) {
+	s, f := ownerSite(t)
+	if code, page := s.get(t, "/"); code != http.StatusServiceUnavailable || !strings.Contains(page, "Магазин скоро откроется") ||
+		strings.Contains(page, s.svc.P.Business.Name) || strings.Contains(page, s.svc.P.Business.Contact) {
+		t.Fatalf("before the setup: %d", code)
+	}
+	if code, _ := s.get(t, "/healthz"); code != http.StatusOK {
+		t.Fatal("healthz must answer before the setup")
+	}
+	s.get(t, "/owner/enter?k=masterkey0123456789")
+	if resp, _ := s.client.Get(s.http.URL + "/"); resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/owner" {
+		t.Fatalf("the owner goes to the setup: %d", resp.StatusCode)
+	}
+	f.setups = []SetupInput{{Kind: "bakery"}}
+	if code, _ := s.get(t, "/"); code != http.StatusOK {
+		t.Fatalf("after the setup the storefront opens: %d", code)
+	}
+}
