@@ -1,24 +1,35 @@
 {{define "content"}}
-{{if .Waiting}}<p class="banner" id="site-status" role="status">Ссылка в интернете готовится: программа один раз скачивает cloudflared и подключается к Cloudflare. Можно пока заполнить карточку, ссылка появится здесь сама.</p>{{end}}
+{{if .Waiting}}<p class="alert warn" id="site-status" role="status">Ссылка в интернете готовится: программа один раз скачивает cloudflared и подключается к Cloudflare. Можно пока заполнить карточку, ссылка появится здесь сама.</p>{{end}}
 {{if not .Configured}}
-{{template "portal" .}}
-<section>
-  <p class="eyebrow">Стать исполнителем</p>
-  <h1>Кем вы будете?</h1>
-  <p class="lead">Выберите роль и заполните карточку. Через минуту у вас будет свой сайт для заказов.</p>
-  {{if .FormError}}<p class="banner error" role="alert">{{.FormError}}</p>{{end}}
+<section class="setup">
+  <div class="a-title"><h1>Ваш маркетплейс</h1></div>
+  <p class="muted">Выберите, чем занимаетесь, и заполните карточку. Через минуту у вас будет свой магазин с витриной и админкой
+    прямо на этом устройстве: товары, корзина, заказы, оплата по вашим реквизитам.</p>
+  {{if .FormError}}<div class="alert" role="alert">{{.FormError}}</div>{{end}}
   <form method="post" action="{{p}}/owner/setup" class="card">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <fieldset class="field">
-      <legend>Роль</legend>
+      <legend>Маркетплейс с витриной</legend>
       {{$kind := .Form.Kind}}
-      {{range .Kinds}}
-      <label class="radio"><input type="radio" name="kind" value="{{.ID}}"{{if eq .ID $kind}} checked{{end}}> <span><b>{{.Title}}</b> <span class="muted small">{{.Hint}}</span></span></label>
-      {{end}}
+      <div class="kinds">
+      {{range .Kinds}}{{if not .Soon}}
+      <label class="switch kind"><input type="radio" name="kind" value="{{.ID}}"{{if eq .ID $kind}} checked{{end}} required>
+        <span><b>{{.Title}}</b><small>{{.Hint}}</small></span></label>
+      {{end}}{{end}}
+      </div>
+    </fieldset>
+    <fieldset class="field">
+      <legend>Навигатор: поездки и доставка <span class="soon-tag">скоро будет</span></legend>
+      <div class="kinds">
+      {{range .Kinds}}{{if .Soon}}
+      <label class="switch kind soon" aria-disabled="true"><input type="radio" name="kind" value="{{.ID}}" disabled>
+        <span><b>{{.Title}}</b><small>{{.Hint}}</small><em>Скоро будет</em></span></label>
+      {{end}}{{end}}
+      </div>
     </fieldset>
     <div class="field">
       <label for="name">Название <span class="req">*</span></label>
-      <input id="name" name="name" value="{{.Form.Name}}" maxlength="60" required placeholder="Такси Азамат">
+      <input id="name" name="name" value="{{.Form.Name}}" maxlength="60" required placeholder="Лавка «Тёплый хлеб»">
     </div>
     <div class="field">
       <label for="contact">Телефон или мессенджер <span class="req">*</span></label>
@@ -26,28 +37,34 @@
     </div>
     <div class="field">
       <label for="place">Где работаете</label>
-      <input id="place" name="place" value="{{.Form.Place}}" maxlength="40" placeholder="Чолпон-Ата и побережье">
+      <input id="place" name="place" value="{{.Form.Place}}" maxlength="40" placeholder="Бишкек, самовывоз и доставка">
     </div>
     <div class="field">
       <label for="about">Коротко о себе</label>
-      <textarea id="about" name="about" maxlength="160" rows="2" placeholder="Toyota Camry, 4 места, аэропорт и межгород">{{.Form.About}}</textarea>
+      <textarea id="about" name="about" maxlength="160" rows="2" placeholder="Домашняя выпечка на заказ, печём к вашему времени">{{.Form.About}}</textarea>
     </div>
     <fieldset class="field">
       <legend>Страна</legend>
       {{$c := .Form.Country}}
+      <div class="kinds">
       {{range .Countries}}
-      <label class="radio"><input type="radio" name="country" value="{{.ID}}"{{if eq .ID $c}} checked{{end}}> {{.Title}} ({{.Currency}})</label>
+      <label class="switch"><input type="radio" name="country" value="{{.ID}}"{{if eq .ID $c}} checked{{end}}> <span><b>{{.Title}}</b><small>цены в {{.Currency}}</small></span></label>
       {{end}}
+      </div>
     </fieldset>
     <div class="field">
-      <label for="pay">Куда клиенту переводить деньги</label>
+      <label for="pay">Куда покупателю переводить деньги</label>
       <input id="pay" name="pay" value="{{.Form.Pay}}" maxlength="200" placeholder="Mbank +996 700 000 000, Азамат Т.">
-      <p class="hint">Клиент увидит это только на странице своего заказа, после вашей проверки, с номером заказа для назначения платежа. Пусто: только оплата при получении.</p>
+      <p class="hint">Покупатель увидит это на странице своего заказа, с номером заказа для назначения платежа. QR банка
+        и несколько строк реквизитов добавите потом в «Настройках». Пусто: только оплата при получении.</p>
     </div>
-    <label class="radio"><input type="checkbox" name="show" value="1"{{if .Form.Show}} checked{{end}}> Показать на бирже{{if .MarketURL}} <a href="{{.MarketURL}}" target="_blank" rel="noopener">{{.MarketURL}}</a>{{end}}</label>
-    <p class="hint">Там будут видны название, место, описание, контакт и ссылка на ваш сайт, пока программа включена.</p>
-    <label class="radio"><input type="checkbox" name="terms" value="1" required> Я принимаю <a href="{{if .MarketURL}}{{.MarketURL}}/terms{{else}}/terms{{end}}" target="_blank" rel="noopener">пользовательское соглашение</a> и сам отвечаю за свои услуги</label>
-    <button class="cta" type="submit">Запустить</button>
+    {{if .MarketURL}}
+    <label class="switch"><input type="checkbox" name="show" value="1"{{if .Form.Show}} checked{{end}}>
+      <span><b>Показать на главной Joblox</b><small>Будут видны название, место, описание, контакт и ссылка на ваш сайт, пока программа включена.</small></span></label>
+    {{end}}
+    <label class="switch"><input type="checkbox" name="terms" value="1" required>
+      <span><b>Я принимаю <a href="{{if .MarketURL}}{{.MarketURL}}/terms{{else}}{{p}}/terms{{end}}" target="_blank" rel="noopener">пользовательское соглашение</a></b><small>и сам отвечаю за свои товары и услуги</small></span></label>
+    <button class="cta" type="submit">Запустить магазин</button>
   </form>
 </section>
 {{else}}

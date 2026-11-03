@@ -304,3 +304,28 @@ func TestSeedDemo(t *testing.T) {
 		t.Fatalf("demo products: %d, first %q", len(list), list[0].Title)
 	}
 }
+
+func TestSeedExamples(t *testing.T) {
+	ctx := context.Background()
+	for _, food := range []bool{false, true} {
+		c := open(t)
+		if err := SeedExamples(ctx, c, food); err != nil {
+			t.Fatal(err)
+		}
+		list, err := c.List(ctx, true)
+		if err != nil || len(list) != 6 {
+			t.Fatalf("food=%v: %d examples, %v", food, len(list), err)
+		}
+		for _, p := range list {
+			if len(p.Description) < len(examplePrefix) || p.Description[:len(examplePrefix)] != examplePrefix || p.Preorder != food {
+				t.Fatalf("example: %+v", p)
+			}
+		}
+		if err := SeedExamples(ctx, c, food); err != nil { // a catalog with products is left alone
+			t.Fatal(err)
+		}
+		if list, _ := c.List(ctx, true); len(list) != 6 {
+			t.Fatal("seeded twice")
+		}
+	}
+}

@@ -23,6 +23,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -39,8 +40,9 @@ import (
 	"github.com/Dmitry-Fedotov-Dev/joblox/profiles"
 )
 
-// DefaultNetwork is the market a new installation reports to; JOBLOX_NETWORK_URL=off turns it off.
-const DefaultNetwork = "https://joblox.openline.one"
+// DefaultNetwork is the market a new installation reports to. For now a free installation stays to itself:
+// no tile on the Joblox home page and no heartbeat; JOBLOX_NETWORK_URL=https://joblox.openline.one turns it on.
+const DefaultNetwork = "off"
 
 // DefaultCall is Контакт: an open order gets a voice call by link; JOBLOX_CALL_URL=off turns it off.
 const DefaultCall = "https://openline.one/"
@@ -179,8 +181,12 @@ func up(log *slog.Logger) error {
 			return err
 		}
 		cfg.BaseURL = *l.base.Load()
+		examples := ""
+		if set := l.current(); set != nil {
+			examples = set.Kind
+		}
 		err = run(ctx, log, cfg, runOptions{Listener: ln, Owner: owner, SecureCookies: true, Listing: l.listing,
-			Wake: l.wake, Restart: l.restart, Started: func(svc *order.Service) {
+			Examples: examples, Wake: l.wake, Restart: l.restart, Started: func(svc *order.Service) {
 				svc.SetBaseURL(*l.base.Load())
 				l.svc.Store(svc)
 				if l.opened.CompareAndSwap(false, true) { // the first start: the portal opens right away
@@ -393,6 +399,18 @@ func (l *launcher) setup(in web.SetupInput) error {
 	}
 	setScalar(biz, "currency", country.Currency)
 	setScalar(biz, "timezone", country.Timezone)
+	// no mail server: a code sent to the customer's email would never arrive, so the email is optional
+	// and no code is asked
+	if os.Getenv("SMTP_HOST") == "" && !strings.Contains(string(raw), profile.FlagVerified) {
+		setBool(mapValue(root, "payment"), "require_email_code", false)
+		if fields := mapValue(mapValue(root, "checkout"), "fields"); fields != nil {
+			for _, f := range fields.Content {
+				if v := mapValue(f, "id"); v != nil && v.Value == "email" {
+					setBool(f, "required", false)
+				}
+			}
+		}
+	}
 	if methods := mapValue(mapValue(root, "payment"), "methods"); methods != nil && in.Pay == "" {
 		hasCash := false
 		for _, m := range methods.Content {
@@ -470,6 +488,19 @@ func setScalar(m *yaml.Node, key, value string) {
 	}
 	m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key},
 		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: yaml.DoubleQuotedStyle})
+}
+
+// setBool sets a yes/no value of a mapping, adding the key when it is missing.
+func setBool(m *yaml.Node, key string, value bool) {
+	if m == nil {
+		return
+	}
+	v := strconv.FormatBool(value)
+	if n := mapValue(m, key); n != nil {
+		n.Kind, n.Tag, n.Value, n.Style = yaml.ScalarNode, "!!bool", v, 0
+		return
+	}
+	m.Content = append(m.Content, &yaml.Node{Kind: yaml.ScalarNode, Value: key}, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: v})
 }
 
 // ---------------------------------------------------------------- files

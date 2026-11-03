@@ -24,6 +24,9 @@ func newLauncher(t *testing.T) *launcher {
 
 func TestSetupWritesAWorkingProfile(t *testing.T) {
 	for _, k := range web.Kinds {
+		if k.Soon {
+			continue
+		}
 		t.Run(k.ID, func(t *testing.T) {
 			l := newLauncher(t)
 			in := web.SetupInput{Kind: k.ID, Name: `Такси "Азамат": 24/7`, Contact: "+996 700 000 000", Place: "Чолпон-Ата",
@@ -37,6 +40,9 @@ func TestSetupWritesAWorkingProfile(t *testing.T) {
 			}
 			if p.Business.Name != in.Name || p.Business.Currency != "KGS" || p.Business.Timezone != "Asia/Bishkek" || p.Business.Description != "Camry" {
 				t.Fatalf("business: %+v", p.Business)
+			}
+			if p.Payment.RequireEmailCode {
+				t.Fatal("no mail server, yet the customer is asked for a code sent by email")
 			}
 			if !slices.Contains(p.Payment.Methods, profile.MethodCash) {
 				t.Fatal("no requisites and no cash: the shop could take no order")

@@ -61,14 +61,32 @@ type SetupError string
 
 func (e SetupError) Error() string { return string(e) }
 
-// Kinds offered in the setup, in this order.
-var Kinds = []struct{ ID, Title, Hint string }{
-	{"taxi", "Водитель такси", "Поездки по заказу: откуда, куда, когда"},
-	{"delivery", "Курьер", "Посылки, продукты, документы"},
-	{"bakery", "Пекарня у дома", "Выпечка с самовывозом к времени"},
-	{"freight", "Перевозчик", "Переезды и грузы, цена по запросу"},
-	{"shop", "Продавец", "Товары с фото, размеры и остатки, корзина"},
-	{"master", "Мастер на выезд", "Ремонт, сборка, ручная работа: цену называете вы"},
+// Kind is a type of business offered in the setup. Two apps stand behind them: the marketplace with a storefront
+// (products, food, services) and the navigator (rides, freight, parcels), which is not there yet: its kinds are
+// shown greyed out with «скоро будет».
+type Kind struct {
+	ID, Title, Hint string
+	Soon            bool // not open for choosing yet
+}
+
+// Kinds offered in the setup, in this order: the marketplace first, then the navigator's.
+var Kinds = []Kind{
+	{ID: "shop", Title: "Продавец", Hint: "Товары с фото, размеры и остатки, корзина"},
+	{ID: "food", Title: "Пекарня или лавка с едой", Hint: "Выпечка и готовая еда на заказ, самовывоз или доставка"},
+	{ID: "master", Title: "Мастер на выезд", Hint: "Витрина услуг: ремонт, сборка, ручная работа"},
+	{ID: "taxi", Title: "Водитель такси", Hint: "Поездки: откуда, куда, когда", Soon: true},
+	{ID: "freight", Title: "Грузоперевозчик", Hint: "Переезды и грузы", Soon: true},
+	{ID: "delivery", Title: "Курьер", Hint: "Посылки, продукты, документы", Soon: true},
+}
+
+// open reports whether the kind can be chosen in the setup now.
+func openKind(id string) bool {
+	for _, k := range Kinds {
+		if k.ID == id {
+			return !k.Soon
+		}
+	}
+	return false
 }
 
 // Countries set the currency and the time zone of a new profile.
@@ -206,7 +224,7 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	v := ownerView{base: s.base(w, r, "Кабинет"), Configured: ow.Configured(), SiteURL: site,
 		Temporary: strings.Contains(site, ".trycloudflare.com"), MarketURL: ow.MarketURL, Shown: ow.Shown(), DataDir: ow.DataDir,
 		NoMail: s.outbox != nil, Kinds: Kinds, Countries: Countries, Currency: currencySign(s.svc.P.Business.Currency)}
-	v.Form = SetupInput{Kind: Kinds[0].ID, Country: Countries[0].ID, Show: true}
+	v.Form = SetupInput{Kind: Kinds[0].ID, Country: Countries[0].ID, Show: ow.MarketURL != ""}
 	if s.cfg.Bot != nil {
 		v.BotPanel = true
 		v.BotName, v.BotOps, v.BotLink = s.cfg.Bot.BotStatus(r.Context())
@@ -286,7 +304,7 @@ func (s *Server) ownerPage(w http.ResponseWriter, r *http.Request) {
 	}
 	page := "owner"
 	if !v.Configured {
-		page = "ownersetup"
+		page, v.Nav = "ownersetup", ""
 	}
 	s.render(w, page, http.StatusOK, v)
 }
@@ -360,12 +378,8 @@ func (s *Server) ownerSetup(w http.ResponseWriter, r *http.Request) {
 	if in.Pay, ok = field(r, "pay", 200); !ok {
 		problems = append(problems, "реквизиты короче 200 знаков")
 	}
-	known := false
-	for _, k := range Kinds {
-		known = known || k.ID == in.Kind
-	}
-	if !known {
-		problems = append(problems, "выберите роль")
+	if !openKind(in.Kind) {
+		problems = append(problems, "выберите, чем занимаетесь")
 	}
 	if r.PostFormValue("terms") != "1" {
 		problems = append(problems, "примите пользовательское соглашение")
@@ -388,7 +402,7 @@ func (s *Server) ownerSetup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.log.Error("owner page", "err", err)
 	}
-	v.Configured, v.Form, v.FormError = false, in, "Проверьте: "+strings.Join(problems, ", ")+"."
+	v.Configured, v.Form, v.FormError, v.Nav = false, in, "Проверьте: "+strings.Join(problems, ", ")+".", ""
 	s.render(w, "owner", http.StatusUnprocessableEntity, v)
 }
 

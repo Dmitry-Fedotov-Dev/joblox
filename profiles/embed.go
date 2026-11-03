@@ -8,4 +8,4 @@ import "embed"
 var FS embed.FS
 
 // Default is the profile a fresh installation starts with.
-const Default = "bakery.yaml"
+const Default = "shop.yaml"

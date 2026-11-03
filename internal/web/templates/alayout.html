@@ -12,14 +12,14 @@
   <header class="a-head">
     <div class="wrap">
       <a class="logo" href="{{p}}/admin"><span class="logo-mark" aria-hidden="true"></span><span class="logo-text">{{.Business.Name}}</span></a>
-      <nav class="a-nav" aria-label="Админка">
+      {{if .Nav}}<nav class="a-nav" aria-label="Админка">
         <a href="{{p}}/admin" class="{{if eq .Nav "home"}}on{{end}}">Главная</a>
         {{if .Catalog}}<a href="{{p}}/owner/catalog" class="{{if eq .Nav "products"}}on{{end}}">{{if .Services}}Услуги{{else}}Товары{{end}}</a>{{end}}
         <a href="{{p}}/admin/orders" class="{{if eq .Nav "orders"}}on{{end}}">Заказы</a>
         <a href="{{p}}/owner" class="{{if eq .Nav "settings"}}on{{end}}">Настройки</a>
         <a href="{{p}}/" target="_blank" rel="noopener">Сайт ↗</a>
         <form method="post" action="{{p}}/owner/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button type="submit">Выйти</button></form>
-      </nav>
+      </nav>{{end}}
     </div>
   </header>
   <main class="a-main">

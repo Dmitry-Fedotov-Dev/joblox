@@ -330,3 +330,14 @@ pre { background: var(--paper-2); padding: 12px; border-radius: 12px; overflow-x
 .a-head .a-nav button:hover { background: var(--blush); color: var(--plum); }
 .dropzone { position: relative; }
 .copy-item button { min-height: 0; }
+
+/* the setup of a new installation: the kinds of business as cards, the navigator's greyed out until it comes */
+.setup { max-width: 760px; }
+.kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.kinds .switch { margin: 0; align-items: flex-start; }
+.kinds .switch span { display: flex; flex-direction: column; gap: 3px; }
+.switch:has(input:checked) { border-color: var(--rose); background: #fff7f6; }
+.switch.soon { opacity: .55; cursor: not-allowed; background: var(--paper-2); filter: grayscale(1); }
+.switch.soon em { font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.soon-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 99px; padding: 2px 8px; margin-left: 6px; }

@@ -202,6 +202,7 @@ type runOptions struct {
 	Wake          <-chan struct{}      // send the heartbeat now: the address or the card changed
 	Started       func(*order.Service) // called once the service is built
 	Restart       <-chan struct{}      // stop and return errRestart: the owner changed the profile
+	Examples      string               // the kind chosen in the setup: an empty shop gets example products once
 }
 
 var errRestart = errors.New("restart")
@@ -271,6 +272,15 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 			svc.Stock = catalog
 			if cfg.Demo {
 				if err := shop.SeedDemo(ctx, catalog); err != nil {
+					return err
+				}
+			}
+			// once per installation: products the owner deleted do not come back after a restart
+			if done, _ := st.Meta(ctx, "examples"); opt.Examples != "" && done == "" {
+				if err := shop.SeedExamples(ctx, catalog, opt.Examples == "food"); err != nil {
+					return err
+				}
+				if err := st.SetMeta(ctx, "examples", opt.Examples); err != nil {
 					return err
 				}
 			}

@@ -112,7 +112,7 @@ func TestOwnerNeedsTheMasterLink(t *testing.T) {
 	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/owner" {
 		t.Fatalf("enter: %d %s", resp.StatusCode, resp.Header.Get("Location"))
 	}
-	if code, page := s.get(t, "/owner"); code != 200 || !strings.Contains(page, "Кем вы будете?") || !strings.Contains(page, "Трубка: Контакт") {
+	if code, page := s.get(t, "/owner"); code != 200 || !strings.Contains(page, "Ваш маркетплейс") || !strings.Contains(page, "Скоро будет") {
 		t.Fatalf("setup page: %d", code)
 	}
 }
@@ -123,8 +123,13 @@ func TestOwnerSetupAndOrders(t *testing.T) {
 	_, page := s.get(t, "/owner")
 	csrf := match(t, csrfRe, page)
 
-	form := url.Values{"csrf": {csrf}, "kind": {"taxi"}, "name": {"Такси Азамат"}, "contact": {"+996 700 000 000"},
+	form := url.Values{"csrf": {csrf}, "kind": {"taxi"}, "name": {"Лавка Азамата"}, "terms": {"1"}, "contact": {"+996 700 000 000"},
 		"place": {"Чолпон-Ата"}, "country": {"kg"}, "pay": {"Mbank +996 700 000 000"}, "show": {"1"}}
+	if resp, body := s.post(t, "/owner/setup", form); resp.StatusCode != http.StatusUnprocessableEntity || !strings.Contains(body, "чем занимаетесь") {
+		t.Fatalf("the navigator's kinds are not open yet: %d", resp.StatusCode)
+	}
+	form.Set("kind", "food")
+	form.Del("terms")
 	if resp, body := s.post(t, "/owner/setup", form); resp.StatusCode != http.StatusUnprocessableEntity || !strings.Contains(body, "соглашение") {
 		t.Fatalf("setup without the terms: %d", resp.StatusCode)
 	}
@@ -133,7 +138,7 @@ func TestOwnerSetupAndOrders(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || len(f.Setups()) != 1 {
 		t.Fatalf("setup: %d, %d calls", resp.StatusCode, len(f.Setups()))
 	}
-	if in := f.Setups()[0]; in.Kind != "taxi" || in.Name != "Такси Азамат" || !in.Show || in.Country != "kg" {
+	if in := f.Setups()[0]; in.Kind != "food" || in.Name != "Лавка Азамата" || !in.Show || in.Country != "kg" {
 		t.Fatalf("setup input: %+v", in)
 	}
 

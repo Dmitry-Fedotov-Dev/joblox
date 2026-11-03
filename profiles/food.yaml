@@ -1,0 +1,56 @@
+# Пекарня или лавка с готовой едой: та же витрина маркетплейса, что у магазина (фото, корзина, админка),
+# только еду готовят на заказ: «Готовится» вместо «Собирается», самовывоз к времени или доставка.
+business:
+  name: Лавка «Тёплый хлеб»
+  kind: bakery
+  description: Свежая выпечка и домашняя еда на заказ. Самовывоз или доставка по городу.
+  currency: RUB
+  timezone: Europe/Moscow
+  contact: "+7 900 000-00-00"
+
+pricing:
+  mode: shop
+  min_total: 200
+
+checkout:
+  fields:
+    - {id: name, label: Имя, type: text, required: true, max_len: 80}
+    - {id: phone, label: Телефон, type: phone, required: true}
+    - {id: email, label: Email, type: email, required: true}
+    - {id: delivery, label: Получение, type: select, required: true, options: [Самовывоз, Доставка]}
+    - {id: when, label: Когда удобно забрать или получить, type: text, max_len: 80, hint: "Например, сегодня к 18:00"}
+    - {id: address, label: Адрес доставки, type: textarea, max_len: 300, hint: Для доставки}
+    - {id: comment, label: Комментарий, type: textarea, max_len: 500}
+
+payment:
+  methods: [transfer]
+  require_email_code: true
+  reference_prefix: ED
+  window_hours: 12
+
+workflow:
+  initial: new
+  states:
+    - {id: new, title: Новый, customer: "Заказ оформлен, ждёт оплаты"}
+    - {id: cooking, title: Готовится, customer: "Оплата получена, заказ готовится"}
+    - {id: ready, title: Готов, customer: "Заказ готов: можно забирать, или он уже едет к вам"}
+    - {id: done, title: Получен, customer: "Заказ получен. Приятного аппетита!", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true, restock: true}
+    - {id: expired, title: Истёк, customer: "Оплата не поступила вовремя, заказ закрыт", final: true, restock: true}
+  transitions:
+    - {id: cook, title: Готовить, from: new, to: cooking, by: operator, requires: [paid, approved], notify: true}
+    - {id: ready, title: Готов, from: cooking, to: ready, by: operator, notify: true}
+    - {id: deliver, title: Получен, from: ready, to: done, by: operator, notify: true}
+    - {id: cancel, title: Отменить, from: new, to: cancelled, by: [customer, operator], notify: true}
+    - {id: cancel_paid, title: Отменить с возвратом, from: cooking, to: cancelled, by: operator, notify: true}
+    - {id: expire, title: Истёк срок оплаты, from: new, to: expired, by: system}
+
+antifraud:
+  max_orders_per_ip_hour: 5
+  new_customer_review_above: 5000
+  review_above: 20000
+
+texts:
+  intro: Выберите блюда и выпечку, укажите, когда удобно забрать. Оплата переводом по реквизитам со страницы заказа.
+  payment_note: Реквизиты действуют только для этого заказа. Назначение платежа укажите без изменений.
+  rules: Еду готовим к вашему заказу. Возврат при отмене выполняется только на счёт, с которого поступила оплата.

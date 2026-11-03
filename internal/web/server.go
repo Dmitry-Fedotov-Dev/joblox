@@ -151,12 +151,7 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		}
 		s.tpl[page] = t
 	}
-	// a new installation's setup («Кем вы будете?») stays in the site's look
-	setup, err := template.New("layout.html").Funcs(funcs).ParseFS(templateFS, "templates/layout.html", "templates/partials.html", "templates/owner.html")
-	if err != nil {
-		return nil, err
-	}
-	s.tpl["ownersetup"] = setup
+	s.tpl["ownersetup"] = s.tpl["owner"] // a new installation's setup: the back office's look, without its menu
 	return s, nil
 }
 

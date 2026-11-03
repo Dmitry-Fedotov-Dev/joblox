@@ -26,6 +26,40 @@ var demoProducts = []Input{
 		Price: 180000, Variants: []VariantInput{{Name: "S–M", Stock: 4}, {Name: "L–XL", Stock: 2}}},
 }
 
+// foodProducts are the examples of a bakery or a food stall: made to order, so nothing runs out.
+var foodProducts = []Input{
+	{Title: "Хлеб на закваске", Description: "Пшенично-ржаной, печём к вашему заказу. 700 г.", Price: 25000, Preorder: true},
+	{Title: "Круассаны, 4 шт.", Description: "Сливочное масло, хрустящие, с утра.", Price: 36000, Preorder: true},
+	{Title: "Пирог с яблоками", Description: "Открытый, на песочном тесте. Целый, 1 кг.", Price: 90000, Preorder: true},
+	{Title: "Плов домашний", Description: "Порция 400 г, в контейнере, горячий к самовывозу.", Price: 45000, Preorder: true},
+	{Title: "Сырники со сметаной", Description: "5 штук и сметана отдельно.", Price: 32000, Preorder: true},
+	{Title: "Морс клюквенный", Description: "1 литр, без лишнего сахара.", Price: 20000, Preorder: true},
+}
+
+// examplePrefix opens the description of every example product: the owner sees what to replace.
+const examplePrefix = "Пример товара: замените на свой или удалите в админке. "
+
+// SeedExamples fills the empty catalog of a new installation with example products, so the owner sees the
+// storefront working from the first minute: the shop's goods, or a food stall's dishes.
+func SeedExamples(ctx context.Context, c *Catalog, food bool) error {
+	list, err := c.List(ctx, true)
+	if err != nil || len(list) > 0 {
+		return err
+	}
+	src := demoProducts
+	if food {
+		src = foodProducts
+	}
+	for i := len(src) - 1; i >= 0; i-- {
+		in := src[i]
+		in.Description = examplePrefix + in.Description
+		if _, err := c.Save(ctx, 0, in); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SeedDemo adds the demo products when the catalog is empty.
 func SeedDemo(ctx context.Context, c *Catalog) error {
 	list, err := c.List(ctx, true)
