@@ -34,6 +34,8 @@ mkdir -p "$DIR"
 cd "$DIR"
 asset=joblox-$os-$arch
 base=https://github.com/$REPO/releases/latest/download
+# Android runs its own build: the Linux one stops with «TLS segment is underaligned»
+if [ $termux = 1 ] && [ $arch = arm64 ]; then asset=joblox-android-arm64; fi
 echo "Скачиваем $asset…"
 curl -fsSL "$base/$asset" -o joblox.new
 curl -fsSL "$base/SHA256SUMS" -o SHA256SUMS
