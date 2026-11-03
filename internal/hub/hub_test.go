@@ -250,8 +250,8 @@ func TestPrune(t *testing.T) {
 func TestStartTariffs(t *testing.T) {
 	_, srv, _ := newHub(t)
 	page := get(t, srv.URL+"/start?for=master").body
-	for _, want := range []string{"Сделать себе такую же страничку мастера", "Бесплатно", "7 $", "от 100 $",
-		`href="/order/?add=hosting#order">Хочу на хостинг`, `href="https://t.me/how_many_roads?text=`,
+	for _, want := range []string{"Сделать себе такую же страничку мастера", "Бесплатно (тест)", "7 $", "от 500 $",
+		`href="/order/?add=hosting#order">Запустить на хостинге`, `href="https://t.me/how_many_roads?text=`,
 		strings.ReplaceAll(url.QueryEscape("такую же страничку мастера на openline.one"), "+", "%20"), `id="self"`} {
 		if !strings.Contains(page, want) {
 			t.Errorf("start page has no %q", want)

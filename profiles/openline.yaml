@@ -11,7 +11,7 @@ business:
 
 catalog:
   - {id: hosting, title: "Хостинг: сайт имя.openline.one", description: "7 $ в месяц: сервер, адрес, личная проверка бизнеса. Количество — месяцы", price: 700, unit: мес, max_qty: 12}
-  - {id: turnkey, title: "Под ключ: настройка на вашем сервере", description: "Предоплата за настройку, итог от 100 $ согласуем до начала работ", price: 10000, unit: шт, max_qty: 1}
+  - {id: turnkey, title: "Под ключ: настройка на вашем сервере", description: "Предоплата за настройку, итог от 500 $ согласуем до начала работ", price: 10000, unit: шт, max_qty: 1}
 
 pricing:
   mode: catalog
