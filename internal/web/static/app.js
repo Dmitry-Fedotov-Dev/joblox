@@ -94,4 +94,20 @@ document.addEventListener("click", function (e) {
     });
     show(0);
   });
+
+  // The order page: «Скопировать» puts a requisite on the clipboard; a cancel asks first.
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-copy]");
+    if (!b) return;
+    var text = b.getAttribute("data-copy"), was = b.textContent;
+    var done = function () { b.textContent = "Скопировано"; b.classList.add("done");
+      setTimeout(function () { b.textContent = was; b.classList.remove("done"); }, 1500); };
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done); return; }
+    var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+    try { document.execCommand("copy"); done(); } catch (_) {} document.body.removeChild(t);
+  });
+  document.addEventListener("submit", function (e) {
+    var msg = e.target.getAttribute && e.target.getAttribute("data-confirm");
+    if (msg && !window.confirm(msg)) e.preventDefault();
+  }, true);
 })();

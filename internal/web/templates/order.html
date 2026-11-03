@@ -1,27 +1,43 @@
 {{define "content"}}
-<section class="card" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
+{{$pay := and .Requisites (not .O.ReportedAt)}}
+<section class="order-head" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
   <p class="eyebrow">Заказ №{{.O.ID}} · {{.Ref}}</p>
-  <h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>
-  {{if .Steps}}<ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}">{{.Title}}</li>{{end}}</ol>{{end}}
-  {{if not .Final}}<p class="keep muted small">Сохраните эту страницу: здесь всегда видно, что с заказом. Она обновляется сама.</p>{{end}}
-  {{if .Waiting}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
-  {{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
-
-  {{if .O.Lines}}
-  <table class="lines">
-    {{range .O.Lines}}<tr><td>{{.Title}} × {{.Qty}}</td><td class="num">{{money .Sum}}</td></tr>{{end}}
-    {{range .O.Fees}}<tr><td>{{.Title}}</td><td class="num">{{money .Sum}}</td></tr>{{end}}
-    <tr class="sum"><td>Итого</td><td class="num">{{money .O.Total}} {{cur .Business.Currency}}</td></tr>
-  </table>
-  {{else if .O.Priced}}
-  <p class="big">К оплате: {{money .O.Total}} {{cur .Business.Currency}}</p>
-  {{end}}
-
-  <dl class="facts">
-    {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</dd>{{end}}
-    <dt>Оплата</dt><dd>{{.MethodTitle}}{{if .O.Paid}}, оплачено{{end}}</dd>
-  </dl>
+  {{if $pay}}<h1>Переведите {{if .O.Split}}{{if .O.AdvanceAt}}остаток {{else}}аванс {{end}}{{end}}{{money .O.Due}} {{cur .Business.Currency}}</h1>
+  <p class="lead">Заказ ждёт оплаты. Переведите деньги по реквизитам ниже и нажмите «Я оплатил».</p>
+  {{else}}<h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>{{end}}
 </section>
+
+{{with .Requisites}}
+<section class="card pay">
+  {{if $.O.ReportedAt}}
+  <p class="banner ok" role="status">Вы сообщили об оплате. Продавец проверит поступление и подтвердит заказ: статус обновится здесь сам.</p>
+  {{else}}
+  {{if $.QR}}<div class="pay-qr"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="240">
+    <p class="small">Отсканируйте QR в приложении банка и введите сумму <b>{{$.O.Due.Plain}}</b>.</p></div>{{end}}
+  <dl class="pay-rows">
+    <div><dt>{{if $.O.Split}}{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}{{else}}Сумма{{end}}</dt><dd><b>{{$.O.Due.Plain}} {{cur $.Business.Currency}}</b><button class="copy-btn" type="button" data-copy="{{$.O.Due.Plain}}">Скопировать</button></dd></div>
+    {{range .Lines}}<div><dt>{{.Label}}</dt><dd><b>{{.Value}}</b><button class="copy-btn" type="button" data-copy="{{.Value}}">Скопировать</button></dd></div>{{end}}
+    <div><dt>Получатель</dt><dd>{{.Recipient}}</dd></div>
+    <div><dt>Назначение платежа</dt><dd>{{$.Purpose}}<button class="copy-btn" type="button" data-copy="{{$.Purpose}}">Скопировать</button></dd></div>
+    {{if $.O.Split}}<div><dt>Вся стоимость</dt><dd>{{$.O.Total.Plain}} {{cur $.Business.Currency}}</dd></div>{{end}}
+  </dl>
+  {{if and $.O.Split $.O.AdvanceAt}}<p class="banner ok" role="status">Аванс получен. Остаток можно перевести после работы или отдать на месте.</p>{{end}}
+  <form method="post" action="{{p}}/o/{{$.O.Token}}/paid">
+    <input type="hidden" name="csrf" value="{{$.CSRF}}">
+    <button class="cta wide" type="submit">Я оплатил</button>
+  </form>
+  <p class="muted small">Нажмите после перевода: продавец сразу увидит это и проверит поступление.</p>
+  <details class="pay-more"><summary>Важно про перевод</summary>
+    <p class="muted small">Укажите сумму и назначение платежа точно как здесь: по ним продавец находит оплату. Реквизиты действуют только для этого заказа.</p>
+    {{if .Note}}<p class="muted small">{{.Note}}</p>{{end}}
+    {{if $.P.Texts.Rules}}<p class="muted small">{{$.P.Texts.Rules}}</p>{{end}}
+  </details>
+  {{end}}
+</section>
+{{end}}
+
+{{if .Waiting}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
+{{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
 
 {{if .NeedCode}}
 <section class="card">
@@ -38,30 +54,30 @@
 </section>
 {{end}}
 
-{{with .Requisites}}
-<section class="card pay">
-  <h2>{{if .Title}}{{.Title}}{{else}}Реквизиты для оплаты{{end}}</h2>
-  <dl class="facts">
-    <dt>Получатель</dt><dd>{{.Recipient}}</dd>
-    {{range .Lines}}<dt>{{.Label}}</dt><dd class="copy">{{.Value}}</dd>{{end}}
-    {{if $.O.Split}}<dt>Стоимость</dt><dd>{{$.O.Total.Plain}}</dd>
-    <dt>{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}</dt><dd class="copy"><b>{{$.O.Due.Plain}}</b></dd>
-    {{else}}<dt>Сумма</dt><dd class="copy">{{$.O.Total.Plain}}</dd>{{end}}
-    <dt>Назначение платежа</dt><dd class="copy">{{$.Purpose}}</dd>
-  </dl>
-  {{if $.QR}}<div class="pay-qr"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="220"><p class="small">Отсканируйте QR в приложении банка и введите сумму <b>{{$.O.Due.Plain}}</b>.</p></div>{{end}}
-  <p class="muted small">Укажите сумму и назначение платежа точно как здесь: по ним оператор находит оплату. Реквизиты действуют только для этого заказа.</p>
-  {{if .Note}}<p class="muted small">{{.Note}}</p>{{end}}
-  {{if $.P.Texts.Rules}}<p class="muted small">{{$.P.Texts.Rules}}</p>{{end}}
-  {{if and $.O.Split $.O.AdvanceAt}}<p class="banner ok" role="status">Аванс получен. Остаток можно перевести после работы или отдать на месте.</p>{{end}}
-  {{if $.O.ReportedAt}}<p class="banner ok" role="status">Вы сообщили об оплате. Продавец проверит поступление и подтвердит заказ.</p>
-  {{else}}<form method="post" action="{{p}}/o/{{$.O.Token}}/paid">
-    <input type="hidden" name="csrf" value="{{$.CSRF}}">
-    <button class="cta" type="submit">Я оплатил</button>
-    <p class="muted small">Нажмите после перевода: продавец увидит это сразу и проверит поступление.</p>
-  </form>{{end}}
+{{if .Steps}}
+<section class="card">
+  <h2>Статус заказа</h2>
+  <ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}">{{.Title}}</li>{{end}}</ol>
+  {{if not .Final}}<p class="keep muted small">Сохраните эту страницу: здесь всегда видно, что с заказом. Она обновляется сама.</p>{{end}}
 </section>
 {{end}}
+
+<section class="card">
+  <h2>Ваш заказ</h2>
+  {{if .O.Lines}}
+  <table class="lines">
+    {{range .O.Lines}}<tr><td>{{.Title}} × {{.Qty}}</td><td class="num">{{money .Sum}}</td></tr>{{end}}
+    {{range .O.Fees}}<tr><td>{{.Title}}</td><td class="num">{{money .Sum}}</td></tr>{{end}}
+    <tr class="sum"><td>Итого</td><td class="num">{{money .O.Total}} {{cur .Business.Currency}}</td></tr>
+  </table>
+  {{else if .O.Priced}}
+  <p class="big">К оплате: {{money .O.Total}} {{cur .Business.Currency}}</p>
+  {{end}}
+  <dl class="facts">
+    {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</dd>{{end}}
+    <dt>Оплата</dt><dd>{{.MethodTitle}}{{if .O.Paid}}, оплачено{{end}}</dd>
+  </dl>
+</section>
 
 {{if .Call}}
 <section class="card">
@@ -73,7 +89,7 @@
 {{if .Actions}}
 <section class="card actions">
   {{range .Actions}}
-  <form method="post" action="{{p}}/o/{{$.O.Token}}/t/{{.ID}}">
+  <form method="post" action="{{p}}/o/{{$.O.Token}}/t/{{.ID}}"{{if or (eq .To "cancelled") (eq .To "rejected")}} data-confirm="{{.Title}}?"{{end}}>
     <input type="hidden" name="csrf" value="{{$.CSRF}}">
     <button type="submit" class="{{if or (eq .To "cancelled") (eq .To "rejected")}}secondary{{end}}">{{.Title}}</button>
   </form>

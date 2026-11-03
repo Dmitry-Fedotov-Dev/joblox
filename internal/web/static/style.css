@@ -459,3 +459,18 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
   .top .brand .brand-mark { display: inline-block; margin-right: 10px; vertical-align: 1px; }
   .top .cart-link { flex: none; padding: 7px 14px; font-size: 14px; }
 }
+
+/* the order page: when it waits for money, the sum and where to send it come first */
+.order-head { margin: 8px 0 4px; }
+.order-head h1 { margin: 0 0 6px; }
+.pay { border: 2px solid var(--accent); }
+.pay-qr { justify-content: center; text-align: center; flex-direction: column; }
+.pay-qr img { width: 240px; }
+.pay-rows { margin: 4px 0 14px; display: grid; gap: 0; }
+.pay-rows > div { display: grid; gap: 2px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.pay-rows > div:last-child { border-bottom: 0; }
+.pay-rows dt { font-size: 13px; color: var(--muted); }
+.pay-rows dd { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 17px; overflow-wrap: anywhere; }
+.copy-btn { flex: none; font-size: 13px; font-weight: 700; padding: 6px 12px; min-height: 0; border-radius: 99px; background: var(--soft); color: var(--fg); border: 0; cursor: pointer; }
+.copy-btn.done { background: color-mix(in srgb, var(--ok) 18%, var(--panel)); color: var(--ok); }
+.pay-more summary { cursor: pointer; color: var(--muted); font-size: 14px; margin-top: 6px; }
