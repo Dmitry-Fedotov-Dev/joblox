@@ -25,6 +25,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/sysexec"
 )
 
 // Version of cloudflared downloaded when none is installed. The sums are from its release notes: a file
@@ -200,6 +202,12 @@ func untar(tgz []byte, name string) ([]byte, error) {
 	}
 }
 
+// startError: cloudflared did not start at all, as opposed to a tunnel that dropped.
+type startError struct{ err error }
+
+func (e *startError) Error() string { return "start cloudflared: " + e.err.Error() }
+func (e *startError) Unwrap() error { return e.err }
+
 // Tunnel keeps cloudflared running and restarts it when it falls.
 type Tunnel struct {
 	Bin   string // cloudflared
@@ -209,6 +217,8 @@ type Tunnel struct {
 	// Ready is called each time the tunnel is up, with its public address (empty for a named tunnel:
 	// its address is the owner's domain).
 	Ready func(url string)
+	// Failed is told once when cloudflared cannot even start, so the owner sees why there is no public link.
+	Failed func(err error)
 }
 
 var (
@@ -229,6 +239,11 @@ func (t *Tunnel) Run(ctx context.Context) {
 			wait = 2 * time.Second
 		}
 		t.Log.Warn("tunnel dropped, reconnecting", "err", err, "in", wait)
+		var fail *startError
+		if errors.As(err, &fail) && t.Failed != nil {
+			t.Failed(fail.err)
+			t.Failed = nil
+		}
 		select {
 		case <-ctx.Done():
 			return
@@ -245,7 +260,7 @@ func (t *Tunnel) once(ctx context.Context) error {
 	} else {
 		args = append(args, "--url", t.Local)
 	}
-	cmd := exec.CommandContext(ctx, t.Bin, args...) // #nosec G204 -- our own cloudflared with our own arguments
+	cmd := sysexec.CommandContext(ctx, t.Bin, args...) // #nosec G204 -- our own cloudflared with our own arguments
 	cmd.Env = append(os.Environ(), "TUNNEL_ORIGIN_CERT=")
 	out, err := cmd.StderrPipe() // cloudflared logs to stderr
 	if err != nil {
@@ -253,7 +268,7 @@ func (t *Tunnel) once(ctx context.Context) error {
 	}
 	cmd.Stdout = io.Discard
 	if err := cmd.Start(); err != nil {
-		return err
+		return &startError{err}
 	}
 	url, announced := "", false
 	sc := bufio.NewScanner(out)

@@ -35,6 +35,7 @@ import (
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/hub"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/sysexec"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/tunnel"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/web"
 	"github.com/Dmitry-Fedotov-Dev/joblox/profiles"
@@ -160,7 +161,10 @@ func up(log *slog.Logger) error {
 			return
 		}
 		fmt.Println("Получаем публичную ссылку от Cloudflare…")
-		(&tunnel.Tunnel{Bin: bin, Local: local, Token: token, Log: log, Ready: l.ready}).Run(ctx)
+		(&tunnel.Tunnel{Bin: bin, Local: local, Token: token, Log: log, Ready: l.ready, Failed: func(err error) {
+			fmt.Printf("\nНе получилось запустить cloudflared (%s): %v\n"+
+				"Сайт пока работает только на этом устройстве. Подробности: %s\n\n", bin, err, l.path("joblox.log"))
+		}}).Run(ctx)
 	}()
 
 	market := strings.TrimRight(env("JOBLOX_NETWORK_URL", ""), "/")
@@ -211,7 +215,7 @@ func dataDir() (string, error) {
 	if d := env("JOBLOX_HOME", ""); d != "" {
 		return filepath.Abs(d)
 	}
-	exe, err := os.Executable()
+	exe, err := sysexec.Self()
 	if err != nil {
 		return filepath.Abs("joblox-data")
 	}
@@ -628,6 +632,9 @@ func openBrowser(url string) {
 			cmd = exec.Command("xdg-open", url)
 		}
 	}
+	if sysexec.Loader != "" {
+		cmd = sysexec.CommandContext(context.Background(), cmd.Path, cmd.Args[1:]...)
+	}
 	_ = cmd.Start() // no browser (a server, a bare phone shell): the link is printed anyway
 }
 
@@ -650,7 +657,7 @@ func useFallbackDNS() {
 // fails with "certificate signed by unknown authority". Point Go at Termux's bundle or Android's store.
 // It must run before the first https request: Go reads the roots once.
 func useAndroidCerts() {
-	if runtime.GOOS != "linux" || os.Getenv("SSL_CERT_FILE") != "" || os.Getenv("SSL_CERT_DIR") != "" {
+	if (runtime.GOOS != "linux" && runtime.GOOS != "android") || os.Getenv("SSL_CERT_FILE") != "" || os.Getenv("SSL_CERT_DIR") != "" {
 		return
 	}
 	for _, dir := range []string{"/etc/ssl/certs", "/etc/pki/tls/certs"} {

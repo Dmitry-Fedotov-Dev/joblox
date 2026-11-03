@@ -36,12 +36,14 @@ import (
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/shop"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/store"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/sysexec"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/web"
 )
 
 var version = "dev"
 
 func main() {
+	sysexec.FixArgs() // Android: Termux starts us through the system loader, which shifts the arguments
 	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	fitMemory()
 	// started without arguments, by a double click or from the installer: the owner's quick start
