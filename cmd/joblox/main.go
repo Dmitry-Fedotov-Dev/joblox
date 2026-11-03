@@ -106,6 +106,9 @@ type Config struct {
 	BotToken   string
 	Operators  []int64
 	OwnerKey   string // opens the owner's area on a server too: BaseURL/owner/enter?k=OwnerKey
+	// SSO: the owner's sign-in with Google (JOBLOX_GOOGLE_CLIENT_ID, JOBLOX_GOOGLE_CLIENT_SECRET) and Apple ID
+	// (JOBLOX_APPLE_SERVICE_ID, JOBLOX_APPLE_TEAM_ID, JOBLOX_APPLE_KEY_ID, JOBLOX_APPLE_KEY_FILE: the .p8 key).
+	SSO web.SSO
 	// Demo is a showcase site: no mail and no bot needed, a banner on every page, payment requisites that say
 	// not to pay, and a shop filled with sample products on the first start.
 	Demo bool
@@ -169,6 +172,27 @@ func loadConfig(quick bool) (Config, error) {
 		}
 	} else if c.Env == "prod" && !relaxed {
 		errs = append(errs, errors.New("SMTP_HOST: production needs a mail relay for codes and statuses"))
+	}
+	if id := env("JOBLOX_GOOGLE_CLIENT_ID", ""); id != "" {
+		c.SSO.Google = &web.GoogleSSO{ClientID: id, Secret: os.Getenv("JOBLOX_GOOGLE_CLIENT_SECRET")}
+		if c.SSO.Google.Secret == "" {
+			errs = append(errs, errors.New("JOBLOX_GOOGLE_CLIENT_SECRET: the secret of the Google OAuth client"))
+		}
+	}
+	if id := env("JOBLOX_APPLE_SERVICE_ID", ""); id != "" {
+		a := &web.AppleSSO{ServiceID: id, TeamID: env("JOBLOX_APPLE_TEAM_ID", ""), KeyID: env("JOBLOX_APPLE_KEY_ID", "")}
+		raw, err := os.ReadFile(env("JOBLOX_APPLE_KEY_FILE", "")) // #nosec G304 -- the operator's configuration
+		if err == nil {
+			a.Key, err = web.ParseAppleKey(raw)
+		}
+		switch {
+		case err != nil:
+			errs = append(errs, fmt.Errorf("JOBLOX_APPLE_KEY_FILE: %w", err))
+		case a.TeamID == "" || a.KeyID == "":
+			errs = append(errs, errors.New("JOBLOX_APPLE_TEAM_ID and JOBLOX_APPLE_KEY_ID: from the Apple developer account"))
+		default:
+			c.SSO.Apple = a
+		}
 	}
 	for _, part := range strings.FieldsFunc(env("JOBLOX_OPERATORS", ""), func(r rune) bool { return r == ',' || r == ' ' }) {
 		id, err := strconv.ParseInt(part, 10, 64)
@@ -312,7 +336,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if botMgr != nil {
 		botPanel = botMgr
 	}
-	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, ReqFixed: cfg.Demo, Trusted: trusted, Dev: cfg.Env == "dev",
+	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, ReqFixed: cfg.Demo, SSO: cfg.SSO, Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
 		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: fileNextTo(cfg.Profile, p.Business.Cover), OGImage: fileNextTo(cfg.Profile, p.Business.OGImage),
 		MarketURL: marketURL()}, log)

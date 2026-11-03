@@ -80,6 +80,24 @@
     {{if .Temporary}}<p class="muted small">Ссылка временная: после перезапуска программы она станет другой. Карточка на бирже обновится сама, а тем, кому вы отправляли ссылку, отправьте новую. Постоянный адрес: ниже, «Свой домен».</p>{{end}}
   </div>
 
+  {{if .SSO}}
+  <div class="card" id="sso">
+    <p class="eyebrow">Вход в админку</p>
+    {{if .SSOLinked}}<div class="alert ok" role="status">Аккаунт привязан. Теперь в админку можно входить кнопкой на странице входа.</div>{{end}}
+    {{range .SSO}}
+    <div class="actions">
+      {{if .Linked}}<span>{{.Title}}: <b>{{if .Email}}{{.Email}}{{else}}привязан{{end}}</b></span>
+      <form method="post" action="{{p}}/owner/sso/{{.ID}}/unlink" data-confirm="Отвязать {{.Title}}? Войти можно будет по мастер-ссылке.">
+        <input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="secondary" type="submit">Отвязать</button></form>
+      {{else}}<span>{{.Title}} не привязан.</span>
+      <a class="btn small" href="{{p}}/owner/sso/{{.ID}}/start?mode=link&amp;csrf={{$.CSRF}}">Привязать {{.Title}}</a>{{end}}
+    </div>
+    {{end}}
+    <p class="muted small">Привяжите свой аккаунт, и админка будет открываться кнопкой «Войти через …» без мастер-ссылки.
+      Мастер-ссылка продолжит работать: это запасной вход.</p>
+  </div>
+  {{end}}
+
   <div class="card">
     <p class="eyebrow">Приём заказов</p>
     <form method="post" action="{{p}}/owner/pause" class="actions">

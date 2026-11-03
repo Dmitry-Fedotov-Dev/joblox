@@ -62,6 +62,8 @@ type Config struct {
 	// ReqFixed: a demo's requisites; the cabinet only shows them. A server's requisites file only seeds the
 	// requisites: what the owner saves in the cabinet wins.
 	ReqFixed bool
+	// SSO: the owner's sign-in with Google or Apple ID (the hosting and the turnkey tariffs).
+	SSO SSO
 }
 
 type Server struct {
@@ -140,9 +142,9 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 	}
 	s.tpl = map[string]*template.Template{}
 	// the back office has its own layout, made after the admin of Mama's workshop; the rest is the site's
-	office := map[string]bool{"home": true, "orders": true, "aorder": true, "owner": true, "catalog": true, "item": true}
+	office := map[string]bool{"home": true, "orders": true, "aorder": true, "owner": true, "catalog": true, "item": true, "login": true}
 	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms", "store", "product", "cart", "catalog", "item",
-		"home", "orders", "aorder"} {
+		"home", "orders", "aorder", "login"} {
 		layout := "layout.html"
 		if office[page] {
 			layout = "alayout.html"
@@ -233,6 +235,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /terms", s.terms)
 	if s.cfg.Owner != nil {
 		s.ownerRoutes(mux)
+		s.ssoRoutes(mux)
 	}
 	if s.cfg.Dev && s.outbox != nil {
 		mux.HandleFunc("GET /dev/outbox", func(w http.ResponseWriter, _ *http.Request) {

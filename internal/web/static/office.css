@@ -351,3 +351,8 @@ pre { background: var(--paper-2); padding: 12px; border-radius: 12px; overflow-x
 .pre-copy { position: absolute; top: 8px; right: 8px; font-size: 13px; font-weight: 700; padding: 6px 12px; min-height: 0;
   border-radius: 99px; border: 0; cursor: pointer; background: rgba(127,127,127,.22); color: inherit; }
 @media (max-width: 560px) { .pre-wrap pre { padding-right: 12px; padding-top: 44px; } }
+
+/* the sign-in page: one button per provider */
+.sso-buttons { display: grid; gap: 10px; margin: 16px 0; max-width: 360px; }
+.btn.sso-google { background: #fff; color: #1f1f1f; border-color: var(--line); }
+.btn.sso-apple { background: #000; color: #fff; border-color: #000; }

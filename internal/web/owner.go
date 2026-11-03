@@ -112,6 +112,10 @@ func (s *Server) isOwner(r *http.Request) bool {
 func (s *Server) ownerOnly(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.isOwner(r) {
+			if s.ssoOn() && r.Method == http.MethodGet { // a site with Google or Apple sign-in shows the way in
+				s.redirect(w, r, "/owner/login", http.StatusSeeOther)
+				return
+			}
 			s.message(w, r, http.StatusNotFound, "Страница не найдена", "Владелец входит по мастер-ссылке из окна программы.")
 			return
 		}
@@ -200,6 +204,8 @@ type ownerView struct {
 	Waiting     bool          // the public address is not there yet
 	PhoneQR     template.HTML // the master link: the owner scans it to open the cabinet on a phone
 	Prepay      int           // the prepayment of new orders, percent
+	SSO         []ssoRow      // sign-in with Google or Apple ID, when the server has their keys
+	SSOLinked   bool          // an account was just linked
 }
 
 type ownerOrder struct {
@@ -244,6 +250,7 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	}
 	v.Nav = "settings"
 	v.Prepay = s.svc.PrepayPercent(r.Context())
+	v.SSO, v.SSOLinked = s.ssoRows(r.Context()), r.URL.Query().Get("sso") == "linked"
 	if ow.Portal != nil {
 		v.Portal = ow.Portal(r.Context())
 	}

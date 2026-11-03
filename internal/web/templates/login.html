@@ -1,0 +1,13 @@
+{{define "content"}}
+<section class="setup">
+  <div class="a-title"><h1>Вход в админку</h1></div>
+  <div class="card">
+    <p class="muted">Войдите аккаунтом, который вы привязали в «Настройках».</p>
+    <div class="sso-buttons">
+      {{range .Providers}}<a class="btn sso-{{.ID}}" href="{{p}}/owner/sso/{{.ID}}/start">Войти через {{.Title}}</a>{{end}}
+    </div>
+    <p class="muted small">Аккаунт ещё не привязан или потерян? Откройте мастер-ссылку из окна программы или из письма
+      при подключении: она тоже открывает админку.</p>
+  </div>
+</section>
+{{end}}
