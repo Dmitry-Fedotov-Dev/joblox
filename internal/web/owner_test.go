@@ -296,8 +296,8 @@ func TestNotOpenBeforeTheSetup(t *testing.T) {
 		t.Fatal("healthz must answer before the setup")
 	}
 	s.get(t, "/owner/enter?k=masterkey0123456789")
-	if resp, _ := s.client.Get(s.http.URL + "/"); resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/owner" {
-		t.Fatalf("the owner goes to the setup: %d", resp.StatusCode)
+	if code, to := status(t, s, "/"); code != http.StatusSeeOther || to != "/owner" {
+		t.Fatalf("the owner goes to the setup: %d %s", code, to)
 	}
 	f.setups = []SetupInput{{Kind: "bakery"}}
 	if code, _ := s.get(t, "/"); code != http.StatusOK {

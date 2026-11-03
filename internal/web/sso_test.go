@@ -41,8 +41,19 @@ func (f *fakeGoogle) serve(t *testing.T) *httptest.Server {
 	return srv
 }
 
+// status asks for a page without following redirects: its status code and where it sends.
+func status(t *testing.T, s *site, path string) (int, string) {
+	t.Helper()
+	resp, err := s.client.Get(s.http.URL + path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	return resp.StatusCode, resp.Header.Get("Location")
+}
+
 // signIn goes the browser's way: start, «Google», back to the callback with the state from the auth URL.
-func signIn(t *testing.T, s *site, f *fakeGoogle, start string) *http.Response {
+func signIn(t *testing.T, s *site, f *fakeGoogle, start string) (int, string) {
 	t.Helper()
 	resp, err := s.client.Get(s.http.URL + start)
 	if err != nil {
@@ -58,12 +69,7 @@ func signIn(t *testing.T, s *site, f *fakeGoogle, start string) *http.Response {
 		t.Fatalf("auth URL: %s", auth)
 	}
 	f.nonce = q.Get("nonce")
-	resp, err = s.client.Get(s.http.URL + "/owner/sso/google/callback?code=good-code&state=" + url.QueryEscape(q.Get("state")))
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = resp.Body.Close()
-	return resp
+	return status(t, s, "/owner/sso/google/callback?code=good-code&state="+url.QueryEscape(q.Get("state")))
 }
 
 func ssoSite(t *testing.T) (*site, *fakeGoogle) {
@@ -79,15 +85,15 @@ func ssoSite(t *testing.T) (*site, *fakeGoogle) {
 func TestGoogleLinkThenSignIn(t *testing.T) {
 	s, g := ssoSite(t)
 	// a stranger is sent to the sign-in page instead of a 404
-	if resp, _ := s.client.Get(s.http.URL + "/admin"); resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/owner/login" {
-		t.Fatalf("stranger on /admin: %d %s", resp.StatusCode, resp.Header.Get("Location"))
+	if code, to := status(t, s, "/admin"); code != http.StatusSeeOther || to != "/owner/login" {
+		t.Fatalf("stranger on /admin: %d %s", code, to)
 	}
 	if _, page := s.get(t, "/owner/login"); !strings.Contains(page, "Войти через Google") {
 		t.Fatal("no Google button on the sign-in page")
 	}
 	// not linked yet: Google says who it is, the back office does not open
-	if resp := signIn(t, s, g, "/owner/sso/google/start"); resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("an account nobody linked opened the back office: %d", resp.StatusCode)
+	if code, _ := signIn(t, s, g, "/owner/sso/google/start"); code != http.StatusForbidden {
+		t.Fatalf("an account nobody linked opened the back office: %d", code)
 	}
 	// the owner comes in with the master link and links the account
 	s.get(t, "/owner/enter?k=masterkey0123456789")
@@ -96,23 +102,23 @@ func TestGoogleLinkThenSignIn(t *testing.T) {
 		t.Fatal("the settings offer no Google link")
 	}
 	csrf := match(t, csrfRe, settings)
-	if resp, _ := s.client.Get(s.http.URL + "/owner/sso/google/start?mode=link&csrf=wrong"); resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("link without the page's token: %d", resp.StatusCode)
+	if code, _ := status(t, s, "/owner/sso/google/start?mode=link&csrf=wrong"); code != http.StatusForbidden {
+		t.Fatalf("link without the page's token: %d", code)
 	}
-	if resp := signIn(t, s, g, "/owner/sso/google/start?mode=link&csrf="+url.QueryEscape(csrf)); resp.StatusCode != http.StatusSeeOther ||
-		!strings.Contains(resp.Header.Get("Location"), "sso=linked") {
-		t.Fatalf("link: %d %s", resp.StatusCode, resp.Header.Get("Location"))
+	if code, to := signIn(t, s, g, "/owner/sso/google/start?mode=link&csrf="+url.QueryEscape(csrf)); code != http.StatusSeeOther ||
+		!strings.Contains(to, "sso=linked") {
+		t.Fatalf("link: %d %s", code, to)
 	}
 	if _, settings := s.get(t, "/owner"); !strings.Contains(settings, "owner@gmail.com") {
 		t.Fatal("the linked account is not shown")
 	}
 	// signed out, back in with Google
 	s.post(t, "/owner/logout", url.Values{"csrf": {csrf}})
-	if resp, _ := s.client.Get(s.http.URL + "/admin"); resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("still the owner after signing out: %d", resp.StatusCode)
+	if code, _ := status(t, s, "/admin"); code != http.StatusSeeOther {
+		t.Fatalf("still the owner after signing out: %d", code)
 	}
-	if resp := signIn(t, s, g, "/owner/sso/google/start"); resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/admin" {
-		t.Fatalf("sign-in: %d %s", resp.StatusCode, resp.Header.Get("Location"))
+	if code, to := signIn(t, s, g, "/owner/sso/google/start"); code != http.StatusSeeOther || to != "/admin" {
+		t.Fatalf("sign-in: %d %s", code, to)
 	}
 	if code, _ := s.get(t, "/admin"); code != http.StatusOK {
 		t.Fatalf("the back office after the sign-in: %d", code)
@@ -120,8 +126,8 @@ func TestGoogleLinkThenSignIn(t *testing.T) {
 	// someone else's Google account does not get in
 	other, _ := ssoSiteSameKeys(t, s, g)
 	g.sub = "intruder"
-	if resp := signIn(t, other, g, "/owner/sso/google/start"); resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("another account got in: %d", resp.StatusCode)
+	if code, _ := signIn(t, other, g, "/owner/sso/google/start"); code != http.StatusForbidden {
+		t.Fatalf("another account got in: %d", code)
 	}
 }
 
@@ -136,18 +142,9 @@ func ssoSiteSameKeys(t *testing.T, s *site, _ *fakeGoogle) (*site, struct{}) {
 
 func TestSSOStateMustMatch(t *testing.T) {
 	s, _ := ssoSite(t)
-	resp, err := s.client.Get(s.http.URL + "/owner/sso/google/start")
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = resp.Body.Close()
-	resp, err = s.client.Get(s.http.URL + "/owner/sso/google/callback?code=good-code&state=forged")
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = resp.Body.Close()
-	if resp.StatusCode != http.StatusForbidden {
-		t.Fatalf("a forged state: %d", resp.StatusCode)
+	status(t, s, "/owner/sso/google/start")
+	if code, _ := status(t, s, "/owner/sso/google/callback?code=good-code&state=forged"); code != http.StatusForbidden {
+		t.Fatalf("a forged state: %d", code)
 	}
 }
 
@@ -157,8 +154,8 @@ func TestNoSSOWithoutKeys(t *testing.T) {
 	if code, _ := s.get(t, "/owner/login"); code == http.StatusOK {
 		t.Fatal("a sign-in page without any provider")
 	}
-	if resp, _ := s.client.Get(s.http.URL + "/admin"); resp.StatusCode != http.StatusNotFound {
-		t.Fatalf("a free install keeps the master link only: %d", resp.StatusCode)
+	if code, _ := status(t, s, "/admin"); code != http.StatusNotFound {
+		t.Fatalf("a free install keeps the master link only: %d", code)
 	}
 }
 
