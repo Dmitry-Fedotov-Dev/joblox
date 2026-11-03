@@ -341,3 +341,13 @@ pre { background: var(--paper-2); padding: 12px; border-radius: 12px; overflow-x
 .switch.soon em { font-style: normal; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .soon-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
   border: 1px solid var(--line); border-radius: 99px; padding: 2px 8px; margin-left: 6px; }
+
+/* copy by a tap */
+[data-copy] { cursor: pointer; }
+.copied:not(button) { outline: 2px solid color-mix(in srgb, #2e9d5b 60%, transparent); outline-offset: 3px; border-radius: 8px; }
+.copied:not(button)::after { content: " ✓ скопировано"; font-size: 12px; font-weight: 700; color: #2e9d5b; }
+.pre-wrap { position: relative; }
+.pre-wrap pre { padding-right: 120px; }
+.pre-copy { position: absolute; top: 8px; right: 8px; font-size: 13px; font-weight: 700; padding: 6px 12px; min-height: 0;
+  border-radius: 99px; border: 0; cursor: pointer; background: rgba(127,127,127,.22); color: inherit; }
+@media (max-width: 560px) { .pre-wrap pre { padding-right: 12px; padding-top: 44px; } }

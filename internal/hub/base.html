@@ -195,6 +195,13 @@ li { margin: 4px 0; }
 .cmp td:first-child { color: var(--muted); }
 @media (max-width: 620px) { .cmp { font-size: 12.5px; } .cmp th, .cmp td { padding: 7px 5px; } }
 footer { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--muted); margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); }
+/* copy by a tap: commands and the text for the AI get a «Скопировать» button */
+.pre-wrap { position: relative; }
+.pre-wrap pre { padding-right: 120px; }
+.pre-copy { position: absolute; top: 8px; right: 8px; font: inherit; font-size: 13px; font-weight: 700; padding: 6px 12px;
+  border-radius: 99px; border: 0; cursor: pointer; background: rgba(127,127,127,.25); color: inherit; }
+.pre-copy.copied { background: #2e9d5b; color: #fff; }
+@media (max-width: 560px) { .pre-wrap pre { padding-right: 12px; padding-top: 44px; } }
 </style>
 </head>
 <body>
@@ -212,6 +219,7 @@ footer { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(
 </footer>
 </main>
 <script src="/cubes.js" defer></script>
+<script src="/copy.js" defer></script>
 <script src="/kitten/dymok.js" defer></script>
 <script src="/kitten/kitten.js" defer></script>
 </body>

@@ -59,6 +59,10 @@ func LoadRequisites(path string) (*Requisites, error) {
 	if !strings.Contains(r.Purpose, "{ref}") {
 		return nil, errors.New("requisites: purpose must contain {ref}, otherwise payments cannot be matched to orders")
 	}
+	// a «\n» typed into a value (copied from an .env file) is a line break, not two characters on the page
+	for i := range r.Lines {
+		r.Lines[i].Value = strings.ReplaceAll(r.Lines[i].Value, `\n`, "\n")
+	}
 	return &r, nil
 }
 

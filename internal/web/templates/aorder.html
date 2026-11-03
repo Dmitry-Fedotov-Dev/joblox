@@ -26,7 +26,7 @@
     <div class="a-card">
       <h2>Покупатель</h2>
       <dl class="kv" style="margin:0">
-        {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}</dd>{{end}}
+        {{range .Fields}}<dt>{{.Label}}</dt><dd data-copy="">{{.Value}}</dd>{{end}}
         <dt>Создан</dt><dd>{{.Row.When}}</dd>
       </dl>
     </div>

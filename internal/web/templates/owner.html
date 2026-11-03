@@ -73,7 +73,7 @@
 
   <div class="card">
     <p class="eyebrow">Ваш сайт</p>
-    <p class="big copy">{{.SiteURL}}</p>
+    <p class="big copy" data-copy="{{.SiteURL}}">{{.SiteURL}}</p>
     <p class="actions"><a class="button secondary" href="{{.SiteURL}}" target="_blank" rel="noopener">Открыть сайт ↗</a></p>
     {{if .SiteQR}}<div class="qr-box">{{.SiteQR}}<p class="muted small">Покажите QR-код клиенту: камера телефона откроет ваш сайт. Или перешлите ссылку в WhatsApp и Telegram.</p></div>{{end}}
     {{if .PhoneQR}}<details><summary>Открыть эту админку на телефоне</summary><div class="qr-box">{{.PhoneQR}}<p class="muted small">Наведите камеру телефона: откроется админка. Этот код никому не показывайте, он даёт полный доступ к заказам.</p></div></details>{{end}}

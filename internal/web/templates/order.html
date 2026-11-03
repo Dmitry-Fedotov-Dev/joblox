@@ -15,10 +15,10 @@
   {{if $.QR}}<div class="pay-qr"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="240">
     <p class="small">Отсканируйте QR в приложении банка и введите сумму <b>{{$.O.Due.Plain}}</b>.</p></div>{{end}}
   <dl class="pay-rows">
-    <div><dt>{{if $.O.Split}}{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}{{else}}Сумма{{end}}</dt><dd><b>{{$.O.Due.Plain}} {{cur $.Business.Currency}}</b><button class="copy-btn" type="button" data-copy="{{$.O.Due.Plain}}">Скопировать</button></dd></div>
-    {{range .Lines}}<div><dt>{{.Label}}</dt><dd><b>{{.Value}}</b><button class="copy-btn" type="button" data-copy="{{.Value}}">Скопировать</button></dd></div>{{end}}
-    <div><dt>Получатель</dt><dd>{{.Recipient}}</dd></div>
-    <div><dt>Назначение платежа</dt><dd>{{$.Purpose}}<button class="copy-btn" type="button" data-copy="{{$.Purpose}}">Скопировать</button></dd></div>
+    <div><dt>{{if $.O.Split}}{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}{{else}}Сумма{{end}}</dt><dd data-copy="{{$.O.Due.Plain}}"><b>{{money $.O.Due}} {{cur $.Business.Currency}}</b><button class="copy-btn" type="button" data-copy="{{$.O.Due.Plain}}">Скопировать</button></dd></div>
+    {{range .Lines}}<div><dt>{{.Label}}</dt><dd data-copy="{{.Value}}"><b>{{.Value}}</b><button class="copy-btn" type="button" data-copy="{{.Value}}">Скопировать</button></dd></div>{{end}}
+    <div><dt>Получатель</dt><dd data-copy="{{.Recipient}}">{{.Recipient}}<button class="copy-btn" type="button" data-copy="{{.Recipient}}">Скопировать</button></dd></div>
+    <div><dt>Назначение платежа</dt><dd data-copy="{{$.Purpose}}">{{$.Purpose}}<button class="copy-btn" type="button" data-copy="{{$.Purpose}}">Скопировать</button></dd></div>
     {{if $.O.Split}}<div><dt>Вся стоимость</dt><dd>{{$.O.Total.Plain}} {{cur $.Business.Currency}}</dd></div>{{end}}
   </dl>
   {{if and $.O.Split $.O.AdvanceAt}}<p class="banner ok" role="status">Аванс получен. Остаток можно перевести после работы или отдать на месте.</p>{{end}}

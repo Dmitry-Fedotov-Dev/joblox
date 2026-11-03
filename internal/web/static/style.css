@@ -470,7 +470,17 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .pay-rows > div { display: grid; gap: 2px; padding: 11px 0; border-bottom: 1px solid var(--line); }
 .pay-rows > div:last-child { border-bottom: 0; }
 .pay-rows dt { font-size: 13px; color: var(--muted); }
-.pay-rows dd { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 17px; overflow-wrap: anywhere; }
+.pay-rows dd { white-space: pre-line; margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 17px; overflow-wrap: anywhere; }
 .copy-btn { flex: none; font-size: 13px; font-weight: 700; padding: 6px 12px; min-height: 0; border-radius: 99px; background: var(--soft); color: var(--fg); border: 0; cursor: pointer; }
 .copy-btn.done { background: color-mix(in srgb, var(--ok) 18%, var(--panel)); color: var(--ok); }
 .pay-more summary { cursor: pointer; color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+/* copy by a tap */
+[data-copy] { cursor: pointer; }
+.copied:not(button) { outline: 2px solid color-mix(in srgb, #2e9d5b 60%, transparent); outline-offset: 3px; border-radius: 8px; }
+.copied:not(button)::after { content: " ✓ скопировано"; font-size: 12px; font-weight: 700; color: #2e9d5b; }
+.pre-wrap { position: relative; }
+.pre-wrap pre { padding-right: 120px; }
+.pre-copy { position: absolute; top: 8px; right: 8px; font-size: 13px; font-weight: 700; padding: 6px 12px; min-height: 0;
+  border-radius: 99px; border: 0; cursor: pointer; background: rgba(127,127,127,.22); color: inherit; }
+@media (max-width: 560px) { .pre-wrap pre { padding-right: 12px; padding-top: 44px; } }
