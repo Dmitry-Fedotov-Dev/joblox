@@ -33,10 +33,14 @@ jobs:
     steps:
       # the head of main: cd archives the commit the run stands on (GITHUB_SHA); a newer push simply wins
       - uses: actions/checkout@v7
-      # the image learns its version from this file: cd passes no build arguments
-      - run: git rev-parse --short HEAD > VERSION
+      # the bundle cd builds: the sources plus a VERSION file with the commit, as cd passes no build arguments
+      - run: |
+          git rev-parse --short HEAD > VERSION
+          git archive --format=tar --prefix=app/ -o bundle.tar HEAD cmd internal profiles go.mod go.sum Dockerfile .dockerignore
+          tar --transform 's,^,app/,' -rf bundle.tar VERSION
+          gzip -9 bundle.tar
       - uses: Dmitry-Fedotov-Dev/cd@v1
         with:
           server: ${{ vars.CD_SERVER }}
           project: ${{ matrix.project }}
-          paths: cmd internal profiles go.mod go.sum Dockerfile .dockerignore VERSION
+          bundle: bundle.tar.gz
