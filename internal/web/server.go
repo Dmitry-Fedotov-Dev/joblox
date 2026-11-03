@@ -58,7 +58,8 @@ type Config struct {
 	MarketURL string
 	// Bot connects the operator bot from the cabinet; nil when the server's environment sets the bot.
 	Bot BotPanel
-	// ReqFixed: the requisites come from the server's file (or the demo); the cabinet only shows them.
+	// ReqFixed: a demo's requisites; the cabinet only shows them. A server's requisites file only seeds the
+	// requisites: what the owner saves in the cabinet wins.
 	ReqFixed bool
 }
 

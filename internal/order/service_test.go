@@ -385,3 +385,36 @@ func TestShopStock(t *testing.T) {
 		t.Fatalf("expiry did not restock: %d", p.Stock())
 	}
 }
+
+// The server's requisites file only seeds the requisites: what the owner saves in the cabinet wins after a
+// restart, and requisites removed in the cabinet do not come back from the file.
+func TestCabinetRequisitesWinOverTheFile(t *testing.T) {
+	e := newEnv(t, "bakery")
+	ctx := context.Background()
+	restart := func() *order.Service { // the same database, the file's requisites again
+		file := &order.Requisites{Recipient: "ИП Тест", Lines: []order.RequisiteRow{{Label: "Счёт", Value: "40802810000000000001"}},
+			Purpose: "Оплата заказа {ref}"}
+		svc := order.New(preset(t, "bakery"), e.st, e.mail, file, []byte("test-secret"), "https://shop.example")
+		if err := svc.LoadSettings(ctx); err != nil {
+			t.Fatal(err)
+		}
+		return svc
+	}
+	if r := restart().Req(); r == nil || r.Recipient != "ИП Тест" {
+		t.Fatalf("nothing saved yet: the file's requisites, got %+v", r)
+	}
+	mine := &order.Requisites{Recipient: "Валентина В.", Lines: []order.RequisiteRow{{Label: "MBank", Value: "+996 755 000 000"}},
+		Purpose: "Заказ {ref}"}
+	if err := e.svc.SaveRequisites(ctx, mine, false); err != nil {
+		t.Fatal(err)
+	}
+	if r := restart().Req(); r == nil || r.Recipient != "Валентина В." {
+		t.Fatalf("after a restart the cabinet's requisites must stay, got %+v", r)
+	}
+	if err := e.svc.SaveRequisites(ctx, nil, false); err != nil {
+		t.Fatal(err)
+	}
+	if r := restart().Req(); r != nil {
+		t.Fatalf("removed in the cabinet, back from the file: %+v", r)
+	}
+}

@@ -1,0 +1,45 @@
+# Магазин мягких игрушек Вали. Товары, фото и остатки Валя ведёт в кабинете: /owner/catalog.
+business:
+  name: Магазин мягких игрушек от Вали 🐻
+  kind: shop
+  currency: KGS
+  timezone: Asia/Bishkek
+  og_image: valya-og.jpg
+  placeholder: knit
+
+pricing:
+  mode: shop
+
+checkout:
+  fields:
+    - {id: name, label: Как вас зовут, type: text, required: true, max_len: 80}
+    - {id: phone, label: Телефон, type: phone, required: true}
+    - {id: email, label: Email, type: email, required: true}
+    - {id: delivery, label: Получение, type: select, required: true, options: [Доставка, Самовывоз]}
+    - {id: address, label: Адрес доставки, type: textarea, max_len: 300, hint: Для доставки}
+
+payment:
+  methods: [cash, transfer]
+  reference_prefix: IG
+  window_hours: 48
+
+workflow:
+  initial: new
+  states:
+    - {id: new, title: Новый, customer: "Заказ получен, скоро свяжемся"}
+    - {id: packing, title: Собирается, customer: "Заказ собирается"}
+    - {id: shipped, title: В пути, customer: "Заказ в пути"}
+    - {id: done, title: Получен, customer: "Заказ получен. Спасибо!", final: true}
+    - {id: cancelled, title: Отменён, customer: "Заказ отменён", final: true, restock: true}
+    - {id: expired, title: Истёк, customer: "Заказ закрыт без подтверждения", final: true, restock: true}
+  transitions:
+    - {id: pack, title: Собирать, from: new, to: packing, by: operator, requires: [paid, approved], notify: true}
+    - {id: ship, title: Отправлен, from: packing, to: shipped, by: operator, notify: true}
+    - {id: deliver, title: Получен, from: [packing, shipped], to: done, by: operator, notify: true}
+    - {id: cancel, title: Отменить, from: new, to: cancelled, by: [customer, operator], notify: true}
+    - {id: cancel_late, title: Отменить, from: [packing, shipped], to: cancelled, by: operator, notify: true}
+    - {id: expire, title: Истёк срок, from: new, to: expired, by: system}
+
+antifraud:
+  new_customer_review_above: 15000
+  block_disposable_email: true

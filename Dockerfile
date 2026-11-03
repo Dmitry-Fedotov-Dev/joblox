@@ -4,8 +4,11 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-ARG VERSION=dev
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/joblox ./cmd/joblox     && mkdir -p /out/data
+# the version: the VERSION build argument, else the VERSION file the deploy puts next to the sources (cd), else dev
+ARG VERSION=
+RUN v="${VERSION}"; [ -z "$v" ] && [ -f VERSION ] && v=$(head -c 40 VERSION); \
+    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${v:-dev}" -o /out/joblox ./cmd/joblox \
+    && mkdir -p /out/data
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/joblox /usr/local/bin/joblox

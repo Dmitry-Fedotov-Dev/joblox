@@ -1,6 +1,7 @@
 # Живые примеры шаблонов: после зелёного CI на main те же исходники выкладываются через cd
-# (github.com/Dmitry-Fedotov-Dev/cd): сайты на этом коде — магазин Вали и мастер Хитаги-сан. Каким шаблоном
-# стать, решают настройки проекта на сервере (JOBLOX_PROFILE, JOBLOX_DEMO=1), не репозиторий.
+# (github.com/Dmitry-Fedotov-Dev/cd): магазин Вали, мастер Хитаги-сан, заказ тарифов и сам сайт Joblox (хаб,
+# JOBLOX_COMMAND=hub). Профили сайтов лежат здесь, в profiles/ (JOBLOX_PROFILE=/profiles/…), а реквизиты и
+# прочие настройки владелец меняет в админке: на сервере правится только env-файл проекта.
 name: Demo
 
 on:
@@ -32,8 +33,10 @@ jobs:
     steps:
       # the head of main: cd archives the commit the run stands on (GITHUB_SHA); a newer push simply wins
       - uses: actions/checkout@v7
+      # the image learns its version from this file: cd passes no build arguments
+      - run: git rev-parse --short HEAD > VERSION
       - uses: Dmitry-Fedotov-Dev/cd@v1
         with:
           server: ${{ vars.CD_SERVER }}
           project: ${{ matrix.project }}
-          paths: cmd internal profiles go.mod go.sum Dockerfile .dockerignore
+          paths: cmd internal profiles go.mod go.sum Dockerfile .dockerignore VERSION

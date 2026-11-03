@@ -1,4 +1,6 @@
-# Joblox Network: биржа исполнителей и публичный счётчик установок. Слушает 127.0.0.1:8099, HTTPS даёт Caddy на хосте:
+# Joblox Network: биржа исполнителей и публичный счётчик установок. На joblox.openline.one хаб выкладывает cd
+# (проект joblox-hub, JOBLOX_COMMAND=hub, см. .github/workflows/demo.yml); этот файл для своего сервера без cd.
+# Слушает 127.0.0.1:8099, HTTPS даёт Caddy на хосте:
 #
 #   joblox.example.com {
 #   	reverse_proxy 127.0.0.1:8099

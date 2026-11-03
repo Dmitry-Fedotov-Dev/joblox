@@ -48,7 +48,9 @@ func main() {
 	fitMemory()
 	// started without arguments, by a double click or from the installer: the owner's quick start
 	implicit := len(os.Args) == 1 && os.Getenv("JOBLOX_PROFILE") == ""
-	cmd := "serve"
+	// JOBLOX_COMMAND: a deploy that cannot pass arguments (cd starts every image with «serve») picks the
+	// command in the environment, e.g. JOBLOX_COMMAND=hub for the Joblox Network site
+	cmd := env("JOBLOX_COMMAND", "serve")
 	if implicit {
 		cmd = "up"
 	}
@@ -310,7 +312,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if botMgr != nil {
 		botPanel = botMgr
 	}
-	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, ReqFixed: cfg.Requisites != "" || cfg.Demo, Trusted: trusted, Dev: cfg.Env == "dev",
+	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, ReqFixed: cfg.Demo, Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
 		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: fileNextTo(cfg.Profile, p.Business.Cover), OGImage: fileNextTo(cfg.Profile, p.Business.OGImage),
 		MarketURL: marketURL()}, log)
@@ -466,6 +468,9 @@ func sweep(ctx context.Context, svc *order.Service, log *slog.Logger) {
 
 func health() error {
 	addr := env("JOBLOX_ADDR", ":8080")
+	if os.Getenv("JOBLOX_COMMAND") == "hub" {
+		addr = env("JOBLOX_HUB_ADDR", ":8099")
+	}
 	if strings.HasPrefix(addr, ":") {
 		addr = "127.0.0.1" + addr
 	}

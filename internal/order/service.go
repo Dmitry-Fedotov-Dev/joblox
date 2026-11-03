@@ -473,12 +473,15 @@ func (s *Service) SetCashOff(off bool) { s.cashOff.Store(off) }
 
 // SaveRequisites keeps requisites typed in the cabinet in the site's database and uses them at once; nil
 // removes them. cashOff turns «при получении» off for new orders.
+// noRequisites marks requisites the owner removed in the cabinet.
+const noRequisites = "-"
+
 func (s *Service) SaveRequisites(ctx context.Context, r *Requisites, cashOff bool) error {
 	ms, ok := s.Store.(metaStore)
 	if !ok {
 		return ErrForbidden
 	}
-	raw := ""
+	raw := noRequisites // removed in the cabinet: the server's file does not bring them back
 	if r != nil {
 		if err := r.Check(); err != nil {
 			return err
@@ -539,12 +542,14 @@ func (s *Service) LoadSettings(ctx context.Context) error {
 	if off, err := ms.Meta(ctx, "cash_off"); err == nil {
 		s.SetCashOff(off == "1")
 	}
-	if s.Req() != nil {
-		return nil
-	}
+	// the requisites the owner saved in the back office win over the server's file, which only seeds them
 	raw, err := ms.Meta(ctx, "requisites")
 	if err != nil || raw == "" {
 		return err
+	}
+	if raw == noRequisites {
+		s.SetReq(nil)
+		return nil
 	}
 	var r Requisites
 	if err := json.Unmarshal([]byte(raw), &r); err != nil {
