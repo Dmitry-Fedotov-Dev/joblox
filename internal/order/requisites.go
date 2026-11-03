@@ -59,11 +59,38 @@ func LoadRequisites(path string) (*Requisites, error) {
 	if !strings.Contains(r.Purpose, "{ref}") {
 		return nil, errors.New("requisites: purpose must contain {ref}, otherwise payments cannot be matched to orders")
 	}
-	// a «\n» typed into a value (copied from an .env file) is a line break, not two characters on the page
-	for i := range r.Lines {
-		r.Lines[i].Value = strings.ReplaceAll(r.Lines[i].Value, `\n`, "\n")
-	}
+	r.Split()
 	return &r, nil
+}
+
+// Split makes one row of every line of a value: «Демир Банк\nТелефон: +996…\nПолучатель: Дмитрий Ф.» typed
+// into one field becomes the rows Банк, Телефон and the recipient, each copied on its own. A «\n» typed as two
+// characters (copied from an .env file) counts as a line break too.
+func (r *Requisites) Split() {
+	var rows []RequisiteRow
+	for _, row := range r.Lines {
+		parts := strings.Split(strings.ReplaceAll(row.Value, `\n`, "\n"), "\n")
+		if len(parts) == 1 {
+			rows = append(rows, row)
+			continue
+		}
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			label, value := row.Label, part
+			if l, v, ok := strings.Cut(part, ": "); ok && len([]rune(l)) <= 24 {
+				label, value = strings.TrimSpace(l), strings.TrimSpace(v)
+			}
+			if strings.EqualFold(label, "Получатель") {
+				r.Recipient = value // the recipient written in the value is the one the bank shows
+				continue
+			}
+			rows = append(rows, RequisiteRow{Label: label, Value: value})
+		}
+	}
+	r.Lines = rows
 }
 
 // Fingerprint is a short hash of everything a payer would copy. The bot reports it on every start: if someone

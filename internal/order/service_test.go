@@ -418,3 +418,21 @@ func TestCabinetRequisitesWinOverTheFile(t *testing.T) {
 		t.Fatalf("removed in the cabinet, back from the file: %+v", r)
 	}
 }
+
+// Bank, phone and recipient typed into one value become rows of their own: each is copied separately.
+func TestRequisitesSplit(t *testing.T) {
+	r := &order.Requisites{Recipient: "Федотов Д.А.", Purpose: "Заказ {ref}", Lines: []order.RequisiteRow{
+		{Label: "Перевод в рублях по номеру телефона", Value: `Демир Банк (Кыргызстан)\nТелефон: +996 559 472 777\nПолучатель: Дмитрий Ф. (DMITRII FEDOTOV)`},
+		{Label: "Карта", Value: "4000 0000 0000 0002"}}}
+	r.Split()
+	want := []order.RequisiteRow{{Label: "Перевод в рублях по номеру телефона", Value: "Демир Банк (Кыргызстан)"},
+		{Label: "Телефон", Value: "+996 559 472 777"}, {Label: "Карта", Value: "4000 0000 0000 0002"}}
+	if len(r.Lines) != len(want) || r.Recipient != "Дмитрий Ф. (DMITRII FEDOTOV)" {
+		t.Fatalf("split: %+v %q", r.Lines, r.Recipient)
+	}
+	for i := range want {
+		if r.Lines[i] != want[i] {
+			t.Fatalf("row %d: %+v", i, r.Lines[i])
+		}
+	}
+}
