@@ -1,7 +1,7 @@
 {{define "content"}}
 <h1>Корзина</h1>
 {{if not .Lines}}
-<p class="empty"><b>Пока пусто</b><a href="{{p}}/">Вернуться к товарам</a></p>
+<p class="empty"><b>Пока пусто</b><a href="{{p}}/">{{if .Food}}Вернуться к меню{{else}}Вернуться к товарам{{end}}</a></p>
 {{else}}
 <div class="cart">
   <section>
@@ -11,7 +11,7 @@
         <a class="thumb" href="{{p}}/p/{{.Product.Slug}}">{{with .Product.Cover}}<img src="{{p}}/img/{{.File}}_t.jpg" alt="">{{else}}{{mascot .Product.ID}}{{end}}</a>
         <div class="t">
           <a href="{{p}}/p/{{.Product.Slug}}">{{.Product.Title}}</a>
-          {{if .Variant.Name}}<span class="muted small">Размер {{.Variant.Name}}</span>{{end}}
+          {{if .Variant.Name}}<span class="muted small">{{.Variant.Name}}</span>{{end}}
           <span class="price">{{price .Sum}} {{sign}}</span>
         </div>
         <form class="q" method="post" action="{{p}}/cart">

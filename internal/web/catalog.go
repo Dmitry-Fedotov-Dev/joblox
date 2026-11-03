@@ -41,7 +41,7 @@ func (s *Server) catalogPage(w http.ResponseWriter, r *http.Request) {
 		s.message(w, r, http.StatusInternalServerError, "Ошибка", "Товары не загрузились, обновите страницу.")
 		return
 	}
-	v := catalogView{base: s.base(w, r, "Товары"), Products: cards(list), Currency: currencySign(s.svc.P.Business.Currency)}
+	v := catalogView{base: s.base(w, r, "Товары"), Products: cards(list, s.isFood()), Currency: currencySign(s.svc.P.Business.Currency)}
 	v.Nav = "products"
 	s.render(w, "catalog", http.StatusOK, v)
 }

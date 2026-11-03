@@ -34,12 +34,14 @@ type base struct {
 	// Nav is the back office section the page belongs to (home, orders, products, settings, load); empty on
 	// public pages. It shows the back office menu.
 	Nav string
+	// Food: a bakery or a food stall; the shop's words become the menu's (блюда, порции, «на заказ»).
+	Food bool
 }
 
 func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base {
 	v := s.visitor(w, r)
 	s.rec.Seen(v)
-	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Demo: s.cfg.Demo, Cover: s.coverURL(),
+	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Food: s.isFood(), Demo: s.cfg.Demo, Cover: s.coverURL(),
 		Services: s.isServices(), Catalog: s.hasCatalog(), Rows: s.rowsPerPage(r)}
 	if b.Shop {
 		b.Cart = s.readCart(r).count()
@@ -168,7 +170,7 @@ func (s *Server) shop(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			s.log.Error("services", "err", err)
 		}
-		v.Cards = cards(list)
+		v.Cards = cards(list, s.isFood())
 	}
 	s.render(w, "shop", http.StatusOK, v)
 }

@@ -24,6 +24,9 @@ func (s *Server) isShop() bool { return s.cfg.Shop != nil && !s.cfg.Shop.Service
 // requests with the price named by the performer.
 func (s *Server) isServices() bool { return s.cfg.Shop != nil && s.cfg.Shop.Services }
 
+// isFood: a bakery or a food stall, made to order.
+func (s *Server) isFood() bool { return s.svc.P.Business.Kind == "bakery" }
+
 // hasCatalog: products or services live in the database and the owner edits them.
 func (s *Server) hasCatalog() bool { return s.cfg.Shop != nil }
 
@@ -100,8 +103,11 @@ type productCard struct {
 	LabelHot bool
 }
 
-func label(p *shop.Product) (string, bool) {
+func label(p *shop.Product, food bool) (string, bool) {
 	if p.Preorder {
+		if food {
+			return "На заказ", true
+		}
 		return "Предзаказ", true
 	}
 	switch n := p.Stock(); {
@@ -119,10 +125,10 @@ func label(p *shop.Product) (string, bool) {
 	return "", false
 }
 
-func cards(list []*shop.Product) []productCard {
+func cards(list []*shop.Product, food bool) []productCard {
 	out := make([]productCard, len(list))
 	for i, p := range list {
-		l, hot := label(p)
+		l, hot := label(p, food)
 		out[i] = productCard{Product: p, Label: l, LabelHot: hot}
 	}
 	return out
@@ -143,7 +149,7 @@ func (s *Server) storeFront(w http.ResponseWriter, r *http.Request) {
 	}
 	// what can be bought comes first; sold-out pieces stay at the end as a portfolio
 	sort.SliceStable(list, func(i, j int) bool { return list[i].InStock() && !list[j].InStock() })
-	s.render(w, "store", http.StatusOK, storeView{base: s.base(w, r, s.svc.P.Business.Name), Products: cards(list),
+	s.render(w, "store", http.StatusOK, storeView{base: s.base(w, r, s.svc.P.Business.Name), Products: cards(list, s.isFood()),
 		Intro: s.svc.P.Texts.Intro})
 }
 
@@ -169,7 +175,7 @@ func (s *Server) productPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderProduct(w http.ResponseWriter, r *http.Request, p *shop.Product, code int, msg string) {
-	l, hot := label(p)
+	l, hot := label(p, s.isFood())
 	if s.isServices() {
 		l, hot = "", false // a service has no stock to speak of
 	}

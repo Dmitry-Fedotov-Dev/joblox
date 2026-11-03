@@ -18,7 +18,7 @@
     {{range .Products}}{{template "pcard" .}}{{end}}
   </div>
   {{else}}
-  <p class="empty"><b>Скоро здесь появятся товары</b>Загляните чуть позже.</p>
+  <p class="empty"><b>{{if .Food}}Скоро здесь появится меню{{else}}Скоро здесь появятся товары{{end}}</b>Загляните чуть позже.</p>
   {{end}}
   {{if .Intro}}<p class="muted small note">{{.Intro}}</p>{{end}}
 </section>

@@ -1,5 +1,5 @@
 {{define "content"}}
-<div class="a-title"><h1>Здравствуйте! 🌸</h1>{{if .Catalog}}<a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a>{{end}}</div>
+<div class="a-title"><h1>Здравствуйте! 🌸</h1>{{if .Catalog}}<a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else if .Food}}Добавить блюдо{{else}}Добавить товар{{end}}</a>{{end}}</div>
 {{if .NoBot}}<div class="alert">Telegram-бот не подключён — заказы видно только здесь. <a href="{{p}}/owner#bot">Подключить</a></div>{{end}}
 {{if .Review}}<div class="alert warn">{{.Review}} {{plural .Review "заказ ждёт" "заказа ждут" "заказов ждут"}} вашей проверки.</div>{{end}}
 <div class="stats">
@@ -28,11 +28,11 @@
   <div>
     {{if .Catalog}}
     <div class="a-card">
-      <h2>{{if .Services}}Услуги{{else}}Товары{{end}}</h2>
+      <h2>{{if .Services}}Услуги{{else if .Food}}Меню{{else}}Товары{{end}}</h2>
       <p style="margin:0 0 14px">На сайте {{.Shown}} из {{.Products}}.</p>
       {{if .Low}}<h3>Заканчивается</h3>
       <ul style="margin:0;padding-left:18px;font-size:14px">{{range .Low}}<li>{{.}}</li>{{end}}</ul>{{end}}
-      <a class="btn ghost small" href="{{p}}/owner/catalog" style="margin-top:16px">{{if .Services}}Все услуги{{else}}Все товары{{end}}</a>
+      <a class="btn ghost small" href="{{p}}/owner/catalog" style="margin-top:16px">{{if .Services}}Все услуги{{else if .Food}}Всё меню{{else}}Все товары{{end}}</a>
     </div>
     {{end}}
     <div class="a-card">

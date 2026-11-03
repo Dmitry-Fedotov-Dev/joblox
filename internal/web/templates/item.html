@@ -1,6 +1,6 @@
 {{define "content"}}
 <div class="a-title">
-  <h1>{{if .Product}}{{.Product.Title}}{{else if .Services}}Новая услуга{{else}}Новый товар{{end}}</h1>
+  <h1>{{if .Product}}{{.Product.Title}}{{else if .Services}}Новая услуга{{else if .Food}}Новое блюдо{{else}}Новый товар{{end}}</h1>
   {{if and .Product (not .Hidden)}}<a class="btn ghost small" href="{{p}}/p/{{.Product.Slug}}" target="_blank" rel="noopener">Открыть на сайте ↗</a>{{end}}
 </div>
 {{if .Saved}}<div class="alert ok" role="status">Сохранено.</div>{{end}}
@@ -13,27 +13,27 @@
     <div class="a-card">
       <h2>Описание</h2>
       <div class="field"><label for="title">Название <span class="req">*</span></label>
-        <input id="title" name="title" value="{{.Title}}" maxlength="80" required placeholder="{{if .Services}}Сборка мебели{{else}}Например, платье «Ромашка»{{end}}"></div>
+        <input id="title" name="title" value="{{.Title}}" maxlength="80" required placeholder="{{if .Services}}Сборка мебели{{else if .Food}}Например, пирог с капустой{{else}}Например, кружка ручной работы{{end}}"></div>
       <div class="row-2">
         <div class="field"><label for="price">{{if .Services}}Цена от, {{.Currency}}{{else}}Цена, {{.Currency}} <span class="req">*</span>{{end}}</label>
-          <input id="price" name="price" value="{{.Price}}" inputmode="decimal"{{if not .Services}} required{{end}} placeholder="{{if .Services}}0 — по договорённости{{else}}4500{{end}}"></div>
+          <input id="price" name="price" value="{{.Price}}" inputmode="decimal"{{if not .Services}} required{{end}} placeholder="{{if .Services}}0 — по договорённости{{else if .Food}}450{{else}}1500{{end}}"></div>
         <div class="field"><label for="old_price">Старая цена, {{.Currency}}</label>
           <input id="old_price" name="old_price" value="{{.OldPrice}}" inputmode="decimal" placeholder="для скидки, можно пусто"></div>
       </div>
       <div class="field"><label for="description">Описание</label>
-        <textarea id="description" name="description" rows="6" maxlength="3000" placeholder="{{if .Services}}Что входит, сколько занимает{{else}}Какая вещь, с чем носить, как сидит…{{end}}">{{.Description}}</textarea></div>
+        <textarea id="description" name="description" rows="6" maxlength="3000" placeholder="{{if .Services}}Что входит, сколько занимает{{else if .Food}}Состав, вес или размер порции, сколько готовится…{{else}}Что это, из чего сделано, размеры, как ухаживать…{{end}}">{{.Description}}</textarea></div>
     </div>
 
     {{if not .Services}}
     <div class="a-card">
-      <h2>Размеры и количество</h2>
-      <p class="help">Сколько штук каждого размера есть. Когда вещь покупают, количество уменьшается само. Если размер один — оставьте название пустым и укажите количество. Пустая строка не сохраняется.</p>
-      <div class="variant-head"><span>Размер</span><span>Штук</span><span></span></div>
+      <h2>{{if .Food}}Порции и количество{{else}}Варианты и количество{{end}}</h2>
+      <p class="help">{{if .Food}}Если продаёте разными порциями (целый, половина, 4 шт.), впишите каждую с количеством, которое успеете приготовить. Одна порция: оставьте название пустым. Если готовите к заказу без ограничений, включите ниже «Готовим на заказ».{{else}}Сколько штук каждого варианта есть: размер, цвет, объём. Когда покупают, количество уменьшается само. Вариант один: оставьте название пустым и укажите количество.{{end}} Пустая строка не сохраняется.</p>
+      <div class="variant-head"><span>{{if .Food}}Порция{{else}}Вариант{{end}}</span><span>Штук</span><span></span></div>
       <div class="variants">
         {{range $i, $r := .Rows}}
         <div class="variant-row">
           <input type="hidden" name="v_id_{{$i}}" value="{{if $r.ID}}{{$r.ID}}{{end}}">
-          <input name="v_name_{{$i}}" value="{{$r.Name}}" maxlength="30" placeholder="M" aria-label="Размер">
+          <input name="v_name_{{$i}}" value="{{$r.Name}}" maxlength="30" placeholder="{{if $.Food}}целый{{else}}M, красный, 0,5 л{{end}}" aria-label="{{if $.Food}}Порция{{else}}Вариант{{end}}">
           <input name="v_stock_{{$i}}" value="{{$r.Stock}}" inputmode="numeric" placeholder="0" aria-label="Количество">
           <span></span>
         </div>
@@ -44,15 +44,15 @@
 
     <div class="a-card">
       <label class="switch"><input type="checkbox" name="hidden" value="1"{{if .Hidden}} checked{{end}}>
-        <span><b>Скрыть с сайта</b><small>Товар пропадёт с витрины, но не удалится</small></span></label>
+        <span><b>Скрыть с сайта</b><small>{{if .Food}}Блюдо пропадёт из меню{{else}}Товар пропадёт с витрины{{end}}, но не удалится</small></span></label>
       {{if not .Services}}
       <label class="switch" style="margin-bottom:0"><input type="checkbox" name="preorder" value="1"{{if .Preorder}} checked{{end}}>
-        <span><b>Предзаказ</b><small>Можно заказать, даже если нет в наличии: сделаете под заказ</small></span></label>
+        <span>{{if .Food}}<b>Готовим на заказ</b><small>Можно заказать без остатка: приготовите к сроку</small>{{else}}<b>Предзаказ</b><small>Можно заказать, даже если нет в наличии: сделаете под заказ</small>{{end}}</span></label>
       {{end}}
     </div>
 
     <div class="save-bar">
-      <button class="btn rose" type="submit">{{if .Product}}Сохранить{{else if .Services}}Создать услугу{{else}}Создать товар{{end}}</button>
+      <button class="btn rose" type="submit">{{if .Product}}Сохранить{{else if .Services}}Создать услугу{{else if .Food}}Добавить в меню{{else}}Создать товар{{end}}</button>
       <a class="btn ghost" href="{{p}}/owner/catalog">Назад</a>
     </div>
   </form>
@@ -84,7 +84,7 @@
     {{if not .Services}}
     <div class="a-card">
       <h2>Настоящие фото</h2>
-      <p class="help">Обычные снимки самой вещи, без обработки: покупатель откроет их кнопкой «Посмотреть настоящее изображение».</p>
+      <p class="help">Обычные снимки {{if .Food}}самого блюда{{else}}самого товара{{end}}, без обработки: покупатель откроет их кнопкой «Посмотреть настоящее изображение».</p>
       {{if .Product}}{{if .Product.Real}}
       <div class="photos">
         {{range $i, $im := .Product.Real}}
@@ -107,7 +107,7 @@
     {{if .Product}}
     <div class="a-card">
       <div class="danger-zone">
-        <span>Удалить {{if .Services}}услугу{{else}}товар{{end}} навсегда вместе с фото</span>
+        <span>Удалить {{if .Services}}услугу{{else if .Food}}блюдо{{else}}товар{{end}} навсегда вместе с фото</span>
         <form method="post" action="{{p}}/owner/catalog/{{.Product.ID}}/delete" data-confirm="Удалить «{{.Product.Title}}»? Это нельзя отменить. Чтобы просто спрятать — отметьте «Скрыть с сайта».">
           <input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="sure" value="1">
           <button class="btn danger small" type="submit">Удалить</button>

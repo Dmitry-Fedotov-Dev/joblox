@@ -1,5 +1,5 @@
 {{define "content"}}
-<div class="a-title"><h1>{{if .Services}}Услуги{{else}}Товары{{end}}</h1><a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a></div>
+<div class="a-title"><h1>{{if .Services}}Услуги{{else if .Food}}Меню{{else}}Товары{{end}}</h1><a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else if .Food}}Добавить блюдо{{else}}Добавить товар{{end}}</a></div>
 <div class="a-card">
   {{if .Products}}
   <table class="a-table resp">
@@ -9,7 +9,7 @@
       <tr class="click" data-href="{{p}}/owner/catalog/{{$p.ID}}" id="p{{$p.ID}}">
         <td class="c-img">{{with $p.Cover}}<img class="thumb" src="{{p}}/img/{{.File}}_t.jpg" alt="" loading="lazy">{{else}}<span class="thumb"></span>{{end}}</td>
         <td><a href="{{p}}/owner/catalog/{{$p.ID}}">{{$p.Title}}</a>
-          <div style="font-size:13px;color:var(--muted)">{{if $p.Preorder}}предзаказ{{else if not $.Services}}{{range $k, $v := $p.Variants}}{{if $k}} · {{end}}{{if $v.Name}}{{$v.Name}}: {{end}}{{$v.Stock}}{{end}}{{end}}</div></td>
+          <div style="font-size:13px;color:var(--muted)">{{if $p.Preorder}}{{if $.Food}}на заказ{{else}}предзаказ{{end}}{{else if not $.Services}}{{range $k, $v := $p.Variants}}{{if $k}} · {{end}}{{if $v.Name}}{{$v.Name}}: {{end}}{{$v.Stock}}{{end}}{{end}}</div></td>
         <td>{{if $.Services}}{{if $p.Price}}от {{price $p.Price}} {{$.Currency}}{{else}}по договорённости{{end}}{{else}}{{price $p.Price}} {{$.Currency}}{{end}}</td>
         <td class="c-hide">
           {{if not $.Services}}{{if $p.Preorder}}под заказ{{else}}{{$p.Stock}} шт.{{end}}{{end}}
@@ -30,9 +30,9 @@
   </table>
   {{else}}
   <div class="empty" style="border:0;padding:30px 10px">
-    <h2>{{if .Services}}Услуг пока нет{{else}}Товаров пока нет{{end}}</h2>
-    <p>{{if .Services}}Добавьте первую: название, цена «от», описание и фото выполненных работ.{{else}}Добавьте первую вещь — с фото, ценой и размерами.{{end}}</p>
-    <a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else}}Добавить товар{{end}}</a>
+    <h2>{{if .Services}}Услуг пока нет{{else if .Food}}В меню пока пусто{{else}}Товаров пока нет{{end}}</h2>
+    <p>{{if .Services}}Добавьте первую: название, цена «от», описание и фото выполненных работ.{{else if .Food}}Добавьте первое блюдо или выпечку: фото, цена, состав и вес.{{else}}Добавьте первый товар: фото, цена, варианты и количество.{{end}}</p>
+    <a class="btn rose" href="{{p}}/owner/catalog/new">+ {{if .Services}}Добавить услугу{{else if .Food}}Добавить блюдо{{else}}Добавить товар{{end}}</a>
   </div>
   {{end}}
 </div>

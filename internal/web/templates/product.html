@@ -29,7 +29,7 @@
       <input type="hidden" name="qty" value="1">
       {{if or (gt (len $p.Variants) 1) (index $p.Variants 0).Name}}
       <fieldset class="sizes">
-        <legend>Размер</legend>
+        <legend>{{if .Food}}Порция{{else}}Вариант{{end}}</legend>
         {{$first := true}}
         {{range $p.Variants}}
         <label><input type="radio" name="item" value="v{{.ID}}"{{if and (not .Stock) (not $p.Preorder)}} disabled{{else if $first}} checked{{$first = false}}{{end}} required><span>{{.Name}}</span></label>
@@ -37,11 +37,11 @@
       </fieldset>
       {{else}}{{range $p.Variants}}<input type="hidden" name="item" value="v{{.ID}}">{{end}}{{end}}
       <div class="sticky-buy">
-        <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>{{if $p.Preorder}}Предзаказ{{else}}В корзину{{end}}</button>
+        <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>{{if and $p.Preorder (not .Food)}}Предзаказ{{else}}В корзину{{end}}</button>
       </div>
     </form>
     {{else}}
-    <p class="banner">Этого товара сейчас нет в наличии.{{if .Business.Contact}} Спросите продавца: {{.Business.Contact}}{{end}}</p>
+    <p class="banner">{{if .Food}}Это блюдо сейчас закончилось.{{else}}Этого товара сейчас нет в наличии.{{end}}{{if .Business.Contact}} Спросите продавца: {{.Business.Contact}}{{end}}</p>
     {{end}}
     {{end}}
 
@@ -59,7 +59,7 @@
 
 {{if .More}}
 <section>
-  <div class="section-head"><h2>{{if .Services}}Ещё услуги{{else}}Ещё в магазине{{end}}</h2><a href="{{p}}/">{{if .Services}}Все услуги{{else}}Все товары{{end}}</a></div>
+  <div class="section-head"><h2>{{if .Services}}Ещё услуги{{else if .Food}}Ещё в меню{{else}}Ещё в магазине{{end}}</h2><a href="{{p}}/">{{if .Services}}Все услуги{{else if .Food}}Всё меню{{else}}Все товары{{end}}</a></div>
   <div class="grid">{{range .More}}{{if $.Services}}{{template "scard" .}}{{else}}{{template "pcard" .}}{{end}}{{end}}</div>
 </section>
 {{end}}

@@ -185,7 +185,7 @@ func TestCartToOrder(t *testing.T) {
 
 	checkout := func(c *site, email string) reply {
 		_, cart := c.get(t, "/cart")
-		if !strings.Contains(cart, "Размер 44") || !strings.Contains(cart, price450) {
+		if !strings.Contains(cart, ">44<") || !strings.Contains(cart, price450) {
 			t.Fatal("cart page without the line")
 		}
 		r, _ := c.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, cart)}, "stamp": {match(t, stampRe, cart)},
@@ -411,5 +411,26 @@ func TestRowsPerPage(t *testing.T) {
 	}
 	if _, page := s.get(t, "/"); strings.Contains(page, "data-paginate") {
 		t.Fatal("«all at once» still pages")
+	}
+}
+
+// A food stall speaks of a menu: dishes and portions, «на заказ», not goods and sizes.
+func TestFoodWords(t *testing.T) {
+	s, cat := catalogSite(t, "food")
+	if err := shop.SeedExamples(context.Background(), cat, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, home := s.get(t, "/"); !strings.Contains(home, ">На заказ<") || !strings.Contains(home, "в меню") || strings.Contains(home, "Предзаказ") {
+		t.Fatal("the storefront of a food stall")
+	}
+	s.get(t, "/owner/enter?k="+testOwnerKey)
+	_, form := s.get(t, "/owner/catalog/new")
+	for _, w := range []string{"Новое блюдо", ">Меню<", "пирог с капустой", "Порции и количество", "Готовим на заказ"} {
+		if !strings.Contains(form, w) {
+			t.Fatalf("the dish form has no %q", w)
+		}
+	}
+	if strings.Contains(form, "платье") || strings.Contains(form, "носить") {
+		t.Fatal("clothes words in a food stall")
 	}
 }
