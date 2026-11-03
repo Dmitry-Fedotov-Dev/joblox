@@ -22,7 +22,11 @@ jobs:
           for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; do
             os=${target%/*}; arch=${target#*/}; ext=""
             [ "$os" = windows ] && ext=.exe
-            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" \
+            # Linux builds are position-independent: Android (Termux) starts programs through its own loader,
+            # which refuses a plain executable with «unexpected e_type: 2»; servers run a PIE just the same
+            mode=""
+            [ "$os" = linux ] && mode=-buildmode=pie
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath $mode -ldflags "-s -w -X main.version=${GITHUB_REF_NAME}" \
               -o "dist/joblox-$os-$arch$ext" ./cmd/joblox
           done
           cd dist && sha256sum joblox-* > SHA256SUMS && cat SHA256SUMS
