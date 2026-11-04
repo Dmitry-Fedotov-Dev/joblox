@@ -447,10 +447,14 @@ func TestAdvance(t *testing.T) {
 // A button elsewhere opens the order with its item already chosen (?add=item).
 func TestAddFromLink(t *testing.T) {
 	s := newSite(t, "openline")
-	if _, page := s.get(t, "/?add=hosting"); !strings.Contains(page, `name="item_hosting" min="0" max="12" step="1" inputmode="numeric" value="1"`) {
-		t.Fatal("the hosting is not chosen")
+	// the tariff site places orders by one tap: an old «?add=» link goes there, the empty start page goes home
+	if code, to := status(t, s, "/?add=hosting"); code != http.StatusSeeOther || to != "/quick?add=hosting" {
+		t.Fatalf("an old link: %d %s", code, to)
 	}
-	if _, page := s.get(t, "/?add=nonsense"); strings.Contains(page, `value="1" placeholder`) {
-		t.Fatal("an unknown item was chosen")
+	if code, to := status(t, s, "/"); code != http.StatusSeeOther || to != "https://free-sellers.com/" {
+		t.Fatalf("the start page: %d %s", code, to)
+	}
+	if _, page := s.get(t, "/quick?add=hosting"); !strings.Contains(page, `href="https://free-sellers.com/"`) {
+		t.Fatal("the name in the header does not lead to the brand's site")
 	}
 }

@@ -94,6 +94,9 @@ type Business struct {
 	// Placeholder is the picture of products without photos: kittens (default) or knit, pixel loaders of
 	// knitting needles and a ball of yarn.
 	Placeholder string `yaml:"placeholder"`
+	// Home is the brand's own site when this one only takes its orders (the tariffs of free-sellers.com): the
+	// name in the header leads there, and a quick order site sends its empty start page there too.
+	Home string `yaml:"home"`
 }
 
 type Item struct {

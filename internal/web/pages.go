@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -140,6 +141,17 @@ func (s *Server) shopView(w http.ResponseWriter, r *http.Request, form map[strin
 }
 
 func (s *Server) shop(w http.ResponseWriter, r *http.Request) {
+	// a quick order site has no form to show: an old «?add=» link places the order by one tap, the rest go home
+	if p := s.svc.P; p.Checkout.Quick() {
+		if add := r.URL.Query().Get("add"); add != "" {
+			s.redirect(w, r, "/quick?add="+url.QueryEscape(add), http.StatusSeeOther)
+			return
+		}
+		if p.Business.Home != "" {
+			http.Redirect(w, r, p.Business.Home, http.StatusSeeOther)
+			return
+		}
+	}
 	if s.isShop() {
 		s.storeFront(w, r)
 		return
