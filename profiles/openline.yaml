@@ -2,7 +2,7 @@
 # сразу платит всё по реквизитам и жмёт «Я оплатил»; заявку рассматривают только после оплаты. Оператор
 # видит деньги, отмечает «Оплата получена», берёт в работу и закрывает «Готово». Не взяли: возврат тем же путём.
 business:
-  name: Openline
+  name: free-sellers.com
   kind: hosting
   description: Оплата тарифа. Заявку смотрим после оплаты, напишем в Telegram в течение рабочего дня.
   currency: RUB
@@ -10,7 +10,7 @@ business:
   contact: Telegram @how_many_roads
 
 catalog:
-  - {id: hosting, title: "Хостинг: сайт имя.openline.one", description: "7 $ в месяц: сервер, адрес, личная проверка бизнеса. Количество — месяцы", price: 700, unit: мес, max_qty: 12}
+  - {id: hosting, title: "Хостинг: сайт имя.free-sellers.com", description: "7 $ в месяц: сервер, адрес, личная проверка бизнеса. Количество — месяцы", price: 700, unit: мес, max_qty: 12}
   - {id: turnkey, title: "Под ключ: настройка на вашем сервере", description: "Предоплата за настройку, итог от 500 $ согласуем до начала работ", price: 10000, unit: шт, max_qty: 1}
 
 pricing:
@@ -21,7 +21,7 @@ checkout:
   fields:
     - {id: name, label: Как к вам обращаться, type: text, required: true, max_len: 80}
     - {id: phone, label: Телефон или Telegram, type: phone, required: true, hint: На этот номер напишем в Telegram или WhatsApp}
-    - {id: site, label: Адрес сайта, type: text, max_len: 40, hint: "Например, valya: будет valya.openline.one"}
+    - {id: site, label: Адрес сайта, type: text, max_len: 40, hint: "Например, valya: будет valya.free-sellers.com"}
     - {id: business, label: Что продаёте, type: textarea, required: true, max_len: 600, hint: "Товары или услуги, город, как сейчас принимаете заказы"}
     - {id: email, label: Email для документов, type: email}
 

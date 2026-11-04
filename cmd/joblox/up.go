@@ -150,7 +150,7 @@ func up(log *slog.Logger) error {
 	defer stop()
 
 	l.local = local
-	fmt.Printf("\nJoblox работает. Кабинет на этом компьютере:\n  %s/owner/enter?k=%s\nПапка с данными: %s\n\n", local, l.key, dir)
+	fmt.Printf("\nfree-sellers.com работает. Кабинет на этом компьютере:\n  %s/owner/enter?k=%s\nПапка с данными: %s\n\n", local, l.key, dir)
 	// the site and the browser come up at once; the public address follows when the tunnel is ready
 	go func() {
 		bin, err := tunnel.Ensure(ctx, l.path("bin"), log, downloadProgress())
@@ -532,7 +532,7 @@ func keyFile(path string) (string, error) {
 	return k, writeFile(path, []byte(k+"\n"))
 }
 
-const envTemplate = `# Настройки Joblox. Строка вида КЛЮЧ=значение, после правки перезапустите программу.
+const envTemplate = `# Настройки free-sellers.com. Строка вида КЛЮЧ=значение, после правки перезапустите программу.
 # Решётка в начале строки выключает её. Всё описано в кабинете, раздел «Инструкции».
 
 # Свой домен через Cloudflare Tunnel (вместо временной ссылки trycloudflare.com)
@@ -550,7 +550,7 @@ const envTemplate = `# Настройки Joblox. Строка вида КЛЮЧ
 #TELEGRAM_TOKEN=
 #JOBLOX_OPERATORS=
 
-# Счётчик и биржа Joblox Network; off выключает
+# Счётчик и биржа free-sellers.com; off выключает
 #JOBLOX_NETWORK_URL=off
 `
 

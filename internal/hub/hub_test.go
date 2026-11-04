@@ -252,7 +252,7 @@ func TestStartTariffs(t *testing.T) {
 	page := get(t, srv.URL+"/start?for=master").body
 	for _, want := range []string{"Сделать себе такую же страничку мастера", "Запустить бесплатно", "Адрес меняется при смене сети", "7 $", "от 500 $",
 		`href="/order/?add=hosting#order">Запустить на хостинге`, `href="https://t.me/how_many_roads?text=`,
-		strings.ReplaceAll(url.QueryEscape("такую же страничку мастера на openline.one"), "+", "%20"), `id="self"`} {
+		strings.ReplaceAll(url.QueryEscape("такую же страничку мастера на free-sellers.com"), "+", "%20"), `id="self"`} {
 		if !strings.Contains(page, want) {
 			t.Errorf("start page has no %q", want)
 		}

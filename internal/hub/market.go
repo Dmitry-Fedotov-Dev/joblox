@@ -51,8 +51,8 @@ var Featured = []Card{
 		URL: "https://openline.one/radio/", Badge: "OpenLine"},
 	{Kind: "agent", Title: "Agent Pay", About: "Оплата зарубежных услуг и IT-сервисов для ООО и ИП через агента, с полным комплектом документов для бухгалтерии.",
 		URL: "https://pay.openline.one", Badge: "OpenLine"},
-	{Kind: "idea", Title: "Идея Joblox", About: "Свой сайт у каждого мастера и лавки, без посредника и комиссии. Открытый код.",
-		URL: "/about", Badge: "Joblox"},
+	{Kind: "idea", Title: "Идея free-sellers.com", About: "Свой сайт у каждого мастера и лавки, без посредника и комиссии. Открытый код.",
+		URL: "/about", Badge: "free-sellers.com"},
 }
 
 // Roles are the "become a performer" choices under the big button: one per ready-made profile.
@@ -197,10 +197,19 @@ func (h *Hub) hide(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// HostedZone is the domain of the network's own hosting: a site there was set up after a check of its owner.
-const HostedZone = ".openline.one"
+// HostedZones are the domains of the network's own hosting: a site there was set up after a check of its owner.
+// free-sellers.com is the brand's; the first shops still live under openline.one.
+var HostedZones = []string{".free-sellers.com", ".openline.one"}
 
 func hosted(site string) bool {
 	u, err := url.Parse(site)
-	return err == nil && u.Scheme == "https" && strings.HasSuffix(u.Hostname(), HostedZone)
+	if err != nil || u.Scheme != "https" {
+		return false
+	}
+	for _, z := range HostedZones {
+		if strings.HasSuffix(u.Hostname(), z) {
+			return true
+		}
+	}
+	return false
 }

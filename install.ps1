@@ -31,10 +31,10 @@ $exe = Join-Path $dir 'joblox.exe'
 Move-Item -Force $new $exe
 
 $shell = New-Object -ComObject WScript.Shell
-$link = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Joblox.lnk'))
+$link = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'free-sellers.com.lnk'))
 $link.TargetPath = $exe
 $link.WorkingDirectory = $dir
 $link.Save()
 
-Write-Host "Готово: $dir, ярлык Joblox на рабочем столе. Запускаем..."
+Write-Host "Готово: $dir, ярлык free-sellers.com на рабочем столе. Запускаем..."
 Start-Process $exe -WorkingDirectory $dir

@@ -43,7 +43,7 @@ func (m *Manager) SharedAvailable(ctx context.Context) bool {
 		return false
 	}
 	u, err := url.Parse(m.site())
-	if err != nil || u.Scheme != "https" || !strings.HasSuffix(u.Hostname(), ".openline.one") {
+	if err != nil || u.Scheme != "https" || !strings.HasSuffix(u.Hostname(), ".free-sellers.com") && !strings.HasSuffix(u.Hostname(), ".openline.one") {
 		return false
 	}
 	m.mu.Lock()

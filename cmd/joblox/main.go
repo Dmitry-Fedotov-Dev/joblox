@@ -249,7 +249,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 		return err
 	}
 	if cfg.Demo && req == nil {
-		req = &order.Requisites{Title: "Это демо", Recipient: "Демо-сайт Joblox",
+		req = &order.Requisites{Title: "Это демо", Recipient: "Демо-сайт free-sellers.com",
 			Lines: []order.RequisiteRow{{Label: "Перевод", Value: "не переводите деньги: это пример сайта"}}}
 	}
 	if p.AcceptsTransfer() && req == nil {
@@ -602,7 +602,7 @@ func marketURL() string {
 		if n := env("JOBLOX_NETWORK_URL", ""); strings.HasPrefix(n, "https://") {
 			return n
 		}
-		return "https://joblox.openline.one"
+		return "https://free-sellers.com"
 	default:
 		return v
 	}

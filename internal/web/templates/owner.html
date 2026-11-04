@@ -60,7 +60,7 @@
     </div>
     {{if .MarketURL}}
     <label class="switch"><input type="checkbox" name="show" value="1"{{if .Form.Show}} checked{{end}}>
-      <span><b>Показать на главной Joblox</b><small>Будут видны название, место, описание, контакт и ссылка на ваш сайт, пока программа включена.</small></span></label>
+      <span><b>Показать на главной free-sellers.com</b><small>Будут видны название, место, описание, контакт и ссылка на ваш сайт, пока программа включена.</small></span></label>
     {{end}}
     <label class="switch"><input type="checkbox" name="terms" value="1" required>
       <span><b>Я принимаю <a href="{{if .MarketURL}}{{.MarketURL}}/terms{{else}}{{p}}/terms{{end}}" target="_blank" rel="noopener">пользовательское соглашение</a></b><small>и сам отвечаю за свои товары и услуги</small></span></label>
@@ -107,10 +107,10 @@
     {{if .MarketURL}}
     <form method="post" action="{{p}}/owner/market" class="actions">
       <input type="hidden" name="csrf" value="{{.CSRF}}">
-      {{if .Shown}}<span>Ваша плитка есть на <a href="{{.MarketURL}}" target="_blank" rel="noopener">главной Joblox</a>.</span><button class="secondary" name="show" value="0">Убрать с главной</button>
-      {{else}}<span>Вашей плитки нет на <a href="{{.MarketURL}}" target="_blank" rel="noopener">главной Joblox</a>.</span><button class="secondary" name="show" value="1">Показать на главной</button>{{end}}
+      {{if .Shown}}<span>Ваша плитка есть на <a href="{{.MarketURL}}" target="_blank" rel="noopener">главной free-sellers.com</a>.</span><button class="secondary" name="show" value="0">Убрать с главной</button>
+      {{else}}<span>Вашей плитки нет на <a href="{{.MarketURL}}" target="_blank" rel="noopener">главной free-sellers.com</a>.</span><button class="secondary" name="show" value="1">Показать на главной</button>{{end}}
     </form>
-    <p class="muted small">Главная Joblox — каталог сайтов-исполнителей: там покупатели находят вас поиском «Что нужно?».</p>
+    <p class="muted small">Главная free-sellers.com — каталог сайтов-исполнителей: там покупатели находят вас поиском «Что нужно?».</p>
     {{end}}
   </div>
 
@@ -179,14 +179,14 @@
   <div class="card" id="bot">
     <p class="eyebrow">Telegram-бот</p>
     {{if .BotShared}}
-      <p>Подключён общий <b>бот Joblox</b>{{if .BotName}} (@{{.BotName}}){{end}}. Заказы получают: {{if .BotOps}}<b>{{.BotOps}}</b> {{plural .BotOps "чат" "чата" "чатов"}}{{else}}пока никто{{end}}.</p>
+      <p>Подключён общий <b>бот free-sellers.com</b>{{if .BotName}} (@{{.BotName}}){{end}}. Заказы получают: {{if .BotOps}}<b>{{.BotOps}}</b> {{plural .BotOps "чат" "чата" "чатов"}}{{else}}пока никто{{end}}.</p>
       {{if .BotLink}}<a class="cta button" href="{{.BotLink}}" target="_blank" rel="noopener">{{if .BotOps}}Добавить ещё один телефон{{else}}Получать заказы в Telegram{{end}}</a>{{end}}
       <p class="muted small">Откройте ссылку на телефоне и нажмите «Start»: бот пришлёт туда новые заказы с кнопками. Ссылка одноразовая. Уведомления идут через Openline, так устроен тариф «Хостинг»; если нужно, чтобы их не видел никто, подключите свой бот.</p>
       <form method="post" action="{{p}}/owner/bot/shared" class="actions"><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="off" value="1"><button class="link">Отключить бот Joblox</button></form>
     {{else}}
     {{if and .BotCanShare (not .BotName)}}
-      <p><b>Бот Joblox</b> — для сайтов на нашем хостинге: одна кнопка, ничего создавать не нужно.</p>
-      <form method="post" action="{{p}}/owner/bot/shared" class="actions"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Подключить бот Joblox</button></form>
+      <p><b>Общий бот free-sellers.com</b> — для сайтов на нашем хостинге: одна кнопка, ничего создавать не нужно.</p>
+      <form method="post" action="{{p}}/owner/bot/shared" class="actions"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Подключить общий бот</button></form>
       <details><summary class="small">Или свой бот, чтобы заказы не шли через Openline</summary>
     {{end}}
     {{if .BotName}}
@@ -238,7 +238,7 @@ JOBLOX_BASE_URL=https://taxi.example.com</pre></li>
 
   <details class="card"><summary><b>Оплата</b></summary>
     <p>Клиент переводит деньги вам напрямую по реквизитам, которые вы указали при запуске: номер телефона в банке или кошельке, карта. На странице заказа он видит их вместе с номером заказа для назначения платежа, только после вашей проверки.</p>
-    <p>Пришли деньги: нажмите «Оплата получена» у заказа. Joblox деньги не принимает и не хранит. Автоматически узнать о переводе программа не может: у переводов по номеру телефона нет открытого API для этого.</p>
+    <p>Пришли деньги: нажмите «Оплата получена» у заказа. free-sellers.com деньги не принимает и не хранит. Автоматически узнать о переводе программа не может: у переводов по номеру телефона нет открытого API для этого.</p>
     <p>Реквизиты лежат в файле <code>requisites.yaml</code>. Поменять: исправьте файл или удалите <code>settings.json</code> и пройдите запуск заново.</p>
   </details>
 
@@ -272,7 +272,7 @@ JOBLOX_OPERATORS=ваш Telegram id</pre>
 
   {{template "portal" .}}
 
-  <details class="card"><summary><b>Счётчик Joblox Network</b></summary>
+  <details class="card"><summary><b>Счётчик free-sellers.com</b></summary>
     <p>Раз в 5 минут программа сообщает бирже случайный номер установки, вид услуг, версию и два числа: людей на сайте и заказов за сутки. Карточка уходит, только если она показана на бирже. Заказы, клиенты и деньги никуда не уходят. Выключить всё: строка <code>JOBLOX_NETWORK_URL=off</code> в <code>joblox.env</code>.</p>
   </details>
 </section>
@@ -281,7 +281,7 @@ JOBLOX_OPERATORS=ваш Telegram id</pre>
 {{define "portal"}}
 {{if .Portal}}
 <section>
-  <h2>Портал Joblox{{if .MarketURL}} <a class="small" href="{{.MarketURL}}" target="_blank" rel="noopener">открыть биржу</a>{{end}}</h2>
+  <h2>Портал free-sellers.com{{if .MarketURL}} <a class="small" href="{{.MarketURL}}" target="_blank" rel="noopener">открыть биржу</a>{{end}}</h2>
   <div class="tiles">
     {{range .Portal}}
     <a class="tile" href="{{.URL}}" target="_blank" rel="noopener ugc">

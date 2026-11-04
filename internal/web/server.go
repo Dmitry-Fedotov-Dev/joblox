@@ -198,7 +198,7 @@ func (s *Server) notOpenYet(next http.Handler) http.Handler {
 		}
 		w.Header().Set("Retry-After", "600")
 		v := s.base(w, r, "Магазин скоро откроется")
-		v.Business = profile.Business{Name: "Joblox"} // not the template's sample name and contact
+		v.Business = profile.Business{Name: "free-sellers.com"} // not the template's sample name and contact
 		v.Shop, v.CloneURL = false, ""
 		s.render(w, "message", http.StatusServiceUnavailable, struct {
 			base

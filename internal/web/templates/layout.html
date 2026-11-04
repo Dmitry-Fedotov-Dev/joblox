@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="{{asset "style.css"}}">
 </head>
 <body>
-  {{if .Demo}}<p class="demo-bar">Это пример сайта на <a href="https://joblox.openline.one">Joblox</a>: заказы никто не выполнит, деньги не переводите.</p>{{end}}
+  {{if .Demo}}<p class="demo-bar">Это пример сайта на <a href="https://free-sellers.com">free-sellers.com</a>: заказы никто не выполнит, деньги не переводите.</p>{{end}}
   <header class="top">
     <div class="wrap">
       <a class="brand" href="{{p}}/"><span class="brand-mark" aria-hidden="true"></span>{{.Business.Name}}</a>
@@ -35,7 +35,7 @@
   {{if .CloneURL}}<div class="wrap"><a class="clone" href="{{.CloneURL}}" rel="noopener"><span aria-hidden="true">✨</span> Сделать себе {{.CloneText}}<small>бесплатно, за 5 минут, с телефона</small></a></div>{{end}}
   <footer class="wrap foot">
     <span>{{.Business.Name}}{{if and .Shop .Business.Contact}} · {{.Business.Contact}}{{end}}</span>
-    <span><a href="{{p}}/terms">Условия</a> · Работает на <a href="https://github.com/Dmitry-Fedotov-Dev/joblox">Joblox</a></span>
+    <span><a href="{{p}}/terms">Условия</a> · Работает на <a href="https://free-sellers.com">free-sellers.com</a></span>
   </footer>
   {{if eq .Business.Placeholder "knit"}}<script src="{{asset "yarn.js"}}" defer></script>{{end}}
   {{block "scripts" .}}<script src="{{asset "app.js"}}" defer></script>{{end}}

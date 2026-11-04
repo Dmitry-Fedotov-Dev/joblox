@@ -1,4 +1,4 @@
-{{template "top" "Открытое API · Joblox"}}
+{{template "top" "Открытое API · free-sellers.com"}}
 <h1>Открытое API</h1>
 <p>Биржа и счётчик открыты: любой сайт или приложение может показывать исполнителей и числа. Ответы в JSON,
   с CORS для всех.</p>
@@ -19,7 +19,7 @@ GET /api/v1/market?kind=taxi
 {"installations": 12, "online": 340, "orders_today": 95, "kinds": {"bakery": 4, "taxi": 3}, "updated_at": "..."}</pre>
 
 <h2>Пульс установки</h2>
-<p>Программа Joblox присылает его сама раз в 5 минут. Карточка <code>listing</code> есть, только если владелец
+<p>Программа free-sellers.com присылает его сама раз в 5 минут. Карточка <code>listing</code> есть, только если владелец
   включил «Показать на бирже».</p>
 <pre>POST /api/v1/beat
 {"id": "32 hex", "kind": "taxi", "version": "1.0.0", "online": 7, "orders_today": 3,

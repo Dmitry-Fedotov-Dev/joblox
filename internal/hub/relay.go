@@ -208,7 +208,7 @@ func (h *Hub) relayRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	in.URL = strings.TrimRight(in.URL, "/")
 	if !hosted(in.URL) || len(in.Nonce) < 16 || len(in.Name) > 200 {
-		writeJSON(w, http.StatusForbidden, map[string]string{"error": "общий бот только для сайтов на хостинге openline.one"})
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "общий бот только для сайтов на хостинге free-sellers.com"})
 		return
 	}
 	if !h.allow("relay:"+in.URL, clientAddr(r)) || !verifier(r.Context(), in.URL, in.Nonce) {
@@ -514,8 +514,8 @@ func (r *relay) handle(ctx context.Context, u tgUpdate) {
 	}
 	var site int64
 	if err := db.QueryRowContext(ctx, `SELECT site FROM relay_chats WHERE chat=? ORDER BY active DESC LIMIT 1`, chat).Scan(&site); err != nil {
-		r.say(ctx, chat, "Это бот Joblox для продавцов на хостинге openline.one. Подключите его в админке своего сайта: "+
-			"«Настройки» → «Telegram-бот» → «Подключить бот Joblox».", nil)
+		r.say(ctx, chat, "Это бот free-sellers.com для продавцов на его хостинге. Подключите его в админке своего сайта: "+
+			"«Настройки» → «Telegram-бот» → «Подключить общий бот».", nil)
 		return
 	}
 	r.forward(ctx, site, map[string]any{"update_id": u.UpdateID, "message": u.Message})
