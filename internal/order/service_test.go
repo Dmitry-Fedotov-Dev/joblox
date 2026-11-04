@@ -436,3 +436,19 @@ func TestRequisitesSplit(t *testing.T) {
 		}
 	}
 }
+
+// Ways to pay as tabs: a «Вкладка» row starts the rows of a tab, typed in the cabinet or in the file.
+func TestRequisitesTabs(t *testing.T) {
+	r := &order.Requisites{Recipient: "Дмитрий Ф.", Purpose: "Заказ {ref}", Lines: []order.RequisiteRow{
+		{Label: "Вкладка", Value: "Из России"}, {Label: "Телефон", Value: "+996 559 472 777"},
+		{Label: "Карта", Value: "4000 0000 0000 0002", Tab: "Из Кыргызстана"}, {Label: "MBank", Value: "+996 700 000 000", Tab: "Из Кыргызстана"}}}
+	r.Split()
+	tabs := r.Tabs()
+	if len(tabs) != 2 || tabs[0].Name != "Из России" || len(tabs[0].Lines) != 1 || tabs[1].Name != "Из Кыргызстана" || len(tabs[1].Lines) != 2 {
+		t.Fatalf("tabs: %+v", tabs)
+	}
+	one := &order.Requisites{Lines: []order.RequisiteRow{{Label: "Карта", Value: "1"}, {Label: "Счёт", Value: "2"}}}
+	if tabs := one.Tabs(); len(tabs) != 1 || tabs[0].Name != "" || len(tabs[0].Lines) != 2 {
+		t.Fatalf("no tabs: %+v", tabs)
+	}
+}

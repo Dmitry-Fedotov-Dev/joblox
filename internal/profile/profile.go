@@ -104,6 +104,9 @@ type Item struct {
 	Unit        string       `yaml:"unit"`
 	MaxQty      int          `yaml:"max_qty"`
 	Hidden      bool         `yaml:"hidden"`
+	// Choices are the quantities offered as buttons on the order page while it waits for money (months of a
+	// tariff: 1, 3, 12); empty: the quantity is the one ordered.
+	Choices []int `yaml:"choices"`
 }
 
 type Pricing struct {
@@ -126,7 +129,13 @@ type Fee struct {
 
 type Checkout struct {
 	Fields []Field `yaml:"fields"`
+	// After lists the fields asked on the order page once the customer said he paid, not before: with it the
+	// order is placed by one tap (/quick?add=item), with no form at all. The first one is the contact.
+	After []string `yaml:"after"`
 }
+
+// Quick: the order is placed by one tap and the fields come after.
+func (c Checkout) Quick() bool { return len(c.After) > 0 }
 
 // Field types.
 const (
@@ -321,6 +330,18 @@ func (p *Profile) Validate() error {
 	}
 	fields := map[string]Field{}
 	hasEmail, hasPhone := false, false
+	for _, id := range p.Checkout.After {
+		if !slices.ContainsFunc(p.Checkout.Fields, func(f Field) bool { return f.ID == id }) {
+			add("checkout.after: %q is not a checkout field", id)
+		}
+	}
+	for _, it := range p.Catalog {
+		for _, q := range it.Choices {
+			if q < 1 || (it.MaxQty > 0 && q > it.MaxQty) {
+				add("catalog item %q: choice %d is outside 1..max_qty", it.ID, q)
+			}
+		}
+	}
 	for _, f := range p.Checkout.Fields {
 		if !idRe.MatchString(f.ID) {
 			add("checkout field id %q: lowercase letters, digits and _ only", f.ID)

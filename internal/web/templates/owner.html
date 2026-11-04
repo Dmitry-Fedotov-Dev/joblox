@@ -154,8 +154,10 @@
         <div class="req-row">
           <input name="label{{inc $i}}" value="{{$r.Label}}" placeholder="{{if eq $i 0}}MBank по номеру{{else if eq $i 1}}Карта{{else}}Другое{{end}}" maxlength="60" aria-label="Как переводить">
           <input name="value{{inc $i}}" value="{{$r.Value}}" placeholder="{{if eq $i 0}}+996 700 000 000{{else if eq $i 1}}4000 0000 0000 0000{{end}}" maxlength="120" aria-label="Номер или реквизиты">
+          <input name="tab{{inc $i}}" value="{{$r.Tab}}" placeholder="{{if eq $i 0}}Вкладка: Из Кыргызстана{{else if eq $i 1}}Из России{{else}}Вкладка{{end}}" maxlength="30" aria-label="Вкладка">
         </div>
         {{end}}
+        <p class="muted small">Вкладка необязательна. Разные способы оплаты, например «Из России» и «Из Кыргызстана», покупатель увидит отдельными вкладками.</p>
         <label class="field"><span>Подсказка покупателю (необязательно)</span><input name="note" value="{{with .Req}}{{.Note}}{{end}}" placeholder="Например: в комментарии к переводу укажите номер заказа" maxlength="300"></label>
         {{if .Cash}}<label class="check"><input type="checkbox" name="cash" value="1" {{if not .CashOff}}checked{{end}}> Принимать и оплату при получении</label>{{end}}
         <button>Сохранить реквизиты</button>

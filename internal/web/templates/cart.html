@@ -17,9 +17,11 @@
         <form class="q" method="post" action="{{p}}/cart">
           <input type="hidden" name="csrf" value="{{$.CSRF}}">
           <input type="hidden" name="item" value="{{.Item}}">
-          <label class="sr" for="q{{.Item}}">Количество</label>
-          <input id="q{{.Item}}" type="number" name="qty" value="{{.Qty}}" min="0" max="99" inputmode="numeric">
-          <button class="secondary" type="submit">OK</button>
+          <div class="stepper">
+            <button type="submit" name="qty" value="{{dec .Qty}}" aria-label="{{if eq .Qty 1}}Убрать{{else}}Меньше{{end}}">−</button>
+            <output aria-label="Количество">{{.Qty}}</output>
+            <button type="submit" name="qty" value="{{inc .Qty}}" aria-label="Больше">+</button>
+          </div>
         </form>
         {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
       </li>

@@ -9,15 +9,42 @@
   {{else if not $pay}}<h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>{{end}}
 </section>
 
+{{if .Ask}}
+<section class="card ask" id="contact">
+  <h2>Куда написать, когда всё будет готово?</h2>
+  {{if .TGLogin}}<a class="cta tg" href="{{.TGLogin}}">Продолжить через Telegram</a>
+  <form id="tg-login" method="post" action="{{p}}/o/{{.O.Token}}/tg" hidden><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="data"></form>
+  <p class="or muted small">или впишите сами</p>{{end}}
+  <form method="post" action="{{p}}/o/{{.O.Token}}/contact">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    {{range .Ask}}<div class="field{{if .Error}} has-error{{end}}">
+      <label for="f_{{.ID}}">{{.Label}}{{if not .Required}} <span class="muted small">— можно позже</span>{{end}}</label>
+      {{if eq .Type "textarea"}}<textarea id="f_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
+      {{else}}<input id="f_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}"{{if eq .Type "phone"}} type="text" autocomplete="tel" placeholder="@ник или +996 …"{{else}} type="text"{{end}}{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
+      {{if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
+      {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
+    </div>{{end}}
+    <button class="cta wide" type="submit">Сохранить</button>
+  </form>
+</section>
+{{end}}
+
 {{if $pay}}{{with .Requisites}}
 <section class="card pay">
   <p class="pay-label">{{if $.O.Split}}{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}{{else}}К оплате{{end}}</p>
   <h1 class="pay-sum"><span data-copy="{{sumPlain $.O.Due}}" title="Скопировать сумму">{{sum $.O.Due}} {{cur $.Business.Currency}}</span></h1>
   {{if $.O.Split}}<p class="pay-of muted small">из {{sum $.O.Total}} {{cur $.Business.Currency}}</p>{{end}}
+  {{if $.Choices}}<form class="choices" method="post" action="{{p}}/o/{{$.O.Token}}/qty" aria-label="Срок">
+    <input type="hidden" name="csrf" value="{{$.CSRF}}">
+    {{range $.Choices}}<button type="submit" name="qty" value="{{.Qty}}"{{if .On}} aria-pressed="true" class="on"{{end}}>{{.Label}}</button>{{end}}
+  </form>{{end}}
   {{if $.QR}}<div class="pay-qr"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="200">
     <p class="small muted">Отсканируйте в приложении банка и введите сумму <b>{{sumPlain $.O.Due}}</b></p></div>{{end}}
+  {{$tabs := .Tabs}}{{if gt (len $tabs) 1}}<div class="pay-tabs" role="tablist" aria-label="Откуда платите">
+    {{range $i, $t := $tabs}}<input type="radio" name="paytab" id="paytab{{$i}}"{{if eq $i 0}} checked{{end}}><label for="paytab{{$i}}">{{$t.Name}}</label>{{end}}
+  </div>{{end}}
   <div class="pay-rows">
-    {{range .Lines}}{{if copyable .Value}}<button class="pay-row" type="button" data-copy="{{.Value}}"><span>{{.Label}}</span><b>{{.Value}}</b><i aria-hidden="true"></i></button>{{else}}<div class="pay-row plain"><span>{{.Label}}</span><b>{{.Value}}</b></div>{{end}}{{end}}
+    {{range $i, $t := $tabs}}{{range $t.Lines}}{{if copyable .Value}}<button class="pay-row" type="button" data-tab="{{$i}}" data-copy="{{.Value}}"><span>{{.Label}}</span><b>{{.Value}}</b><i aria-hidden="true"></i></button>{{else}}<div class="pay-row plain" data-tab="{{$i}}"><span>{{.Label}}</span><b>{{.Value}}</b></div>{{end}}{{end}}{{end}}
     {{if .Recipient}}<button class="pay-row" type="button" data-copy="{{.Recipient}}"><span>Получатель</span><b>{{.Recipient}}</b><i aria-hidden="true"></i></button>{{end}}
     <button class="pay-row" type="button" data-copy="{{$.Purpose}}"><span>Назначение платежа</span><b>{{$.Purpose}}</b><i aria-hidden="true"></i></button>
   </div>

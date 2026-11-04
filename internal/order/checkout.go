@@ -34,7 +34,7 @@ func (e FieldErrors) Error() string {
 	return strings.Join(parts, "; ")
 }
 
-var phoneRe = regexp.MustCompile(`^\+?[0-9][0-9 ()\-]{5,22}$`)
+var phoneRe = regexp.MustCompile(`^(\+?[0-9][0-9 ()\-]{5,22}|@[A-Za-z][A-Za-z0-9_]{4,31})$`) // a number or a Telegram @name
 
 const datetimeLayout = "2006-01-02T15:04" // what <input type="datetime-local"> sends
 

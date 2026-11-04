@@ -64,6 +64,9 @@ type Config struct {
 	ReqFixed bool
 	// SSO: the owner's sign-in with Google or Apple ID (the hosting and the turnkey tariffs).
 	SSO SSO
+	// TelegramLogin is the token of the bot whose «Продолжить через Telegram» gives a quick order its contact
+	// (JOBLOX_TELEGRAM_LOGIN); empty: the customer types the contact.
+	TelegramLogin string
 }
 
 type Server struct {
@@ -97,6 +100,7 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		"cur":   currencySign,
 		"join":  strings.Join,
 		"inc":   func(i int) int { return i + 1 },
+		"dec":   func(i int) int { return max(i-1, 0) },
 		"list":  func(a ...int) []int { return a },
 		"sign":  func() string { return currencySign(svc.P.Business.Currency) },
 		"mascot": func(id int64) template.HTML {
@@ -149,7 +153,7 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 	// the back office has its own layout, made after the admin of Mama's workshop; the rest is the site's
 	office := map[string]bool{"home": true, "orders": true, "aorder": true, "owner": true, "catalog": true, "item": true, "login": true}
 	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms", "store", "product", "cart", "catalog", "item",
-		"home", "orders", "aorder", "login"} {
+		"home", "orders", "aorder", "login", "quick"} {
 		layout := "layout.html"
 		if office[page] {
 			layout = "alayout.html"
@@ -220,6 +224,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /o/{token}/resend", s.resendCode)
 	mux.HandleFunc("POST /o/{token}/t/{transition}", s.customerTransition)
 	mux.HandleFunc("POST /o/{token}/paid", s.reportPaid)
+	mux.HandleFunc("GET /quick", s.quickOrder)
+	mux.HandleFunc("POST /o/{token}/qty", s.orderQty)
+	mux.HandleFunc("POST /o/{token}/contact", s.orderContact)
+	mux.HandleFunc("POST /o/{token}/tg", s.orderTelegram)
 	mux.HandleFunc("POST /beat", s.beat)
 	for path, file := range map[string]string{"GET /cover": s.cfg.Cover, "GET /og": s.cfg.OGImage} {
 		if file == "" {

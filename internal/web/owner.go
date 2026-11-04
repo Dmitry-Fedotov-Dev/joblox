@@ -245,7 +245,7 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	if v.Req != nil {
 		v.ReqRows = append(v.ReqRows, v.Req.Lines...)
 	}
-	for len(v.ReqRows) < 3 {
+	for len(v.ReqRows) < 6 {
 		v.ReqRows = append(v.ReqRows, order.RequisiteRow{})
 	}
 	v.Nav = "settings"
@@ -483,14 +483,15 @@ func (s *Server) ownerRequisites(w http.ResponseWriter, r *http.Request) {
 	if r.PostFormValue("off") != "1" {
 		req = &order.Requisites{Recipient: strings.TrimSpace(r.PostFormValue("recipient")), Purpose: "Заказ {ref}",
 			Note: strings.TrimSpace(r.PostFormValue("note"))}
-		for i := 1; i <= 3; i++ {
+		for i := 1; i <= 6; i++ {
 			n := strconv.Itoa(i)
 			label, value := strings.TrimSpace(r.PostFormValue("label"+n)), strings.TrimSpace(r.PostFormValue("value"+n))
 			if value != "" {
 				if label == "" {
 					label = "Перевод"
 				}
-				req.Lines = append(req.Lines, order.RequisiteRow{Label: clip(label, 60), Value: clip(value, 120)})
+				req.Lines = append(req.Lines, order.RequisiteRow{Label: clip(label, 60), Value: clip(value, 120),
+					Tab: clip(strings.TrimSpace(r.PostFormValue("tab"+n)), 30)})
 			}
 		}
 		req.Recipient, req.Note = clip(req.Recipient, 120), clip(req.Note, 300)

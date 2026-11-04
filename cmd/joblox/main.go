@@ -343,7 +343,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, ReqFixed: cfg.Demo, SSO: cfg.SSO, Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
 		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: fileNextTo(cfg.Profile, p.Business.Cover), OGImage: fileNextTo(cfg.Profile, p.Business.OGImage),
-		MarketURL: marketURL()}, log)
+		MarketURL: marketURL(), TelegramLogin: os.Getenv("JOBLOX_TELEGRAM_LOGIN")}, log)
 	if err != nil {
 		return err
 	}

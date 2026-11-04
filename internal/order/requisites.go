@@ -25,6 +25,42 @@ type Requisites struct {
 type RequisiteRow struct {
 	Label string `yaml:"label" json:"label"`
 	Value string `yaml:"value" json:"value"`
+	// Tab groups the rows of one way to pay («Из России», «Из Кыргызстана»): the order page shows each group
+	// under its own tab. Empty everywhere: one list, no tabs.
+	Tab string `yaml:"tab,omitempty" json:"tab,omitempty"`
+}
+
+// ReqTab is one way to pay: its name on the tab and its rows.
+type ReqTab struct {
+	Name  string
+	Lines []RequisiteRow
+}
+
+// Tabs groups the rows by their tab, in the order the tabs first appear; rows with no tab go to the first one.
+// With no tab named it is one group without a name.
+func (r *Requisites) Tabs() []ReqTab {
+	var tabs []ReqTab
+	at := map[string]int{}
+	for _, row := range r.Lines {
+		name := row.Tab
+		if name == "" && len(tabs) > 0 {
+			name = tabs[0].Name
+		}
+		i, ok := at[name]
+		if !ok {
+			i = len(tabs)
+			at[name] = i
+			tabs = append(tabs, ReqTab{Name: name})
+		}
+		tabs[i].Lines = append(tabs[i].Lines, row)
+	}
+	return tabs
+}
+
+// isTabMark: a row «Вкладка: Из России» starts the rows of that tab.
+func isTabMark(label string) bool {
+	l := strings.ToLower(strings.TrimSpace(label))
+	return l == "вкладка" || l == "tab"
 }
 
 // LoadRequisites reads the requisites file; an empty path means the shop takes no transfers.
@@ -68,7 +104,15 @@ func LoadRequisites(path string) (*Requisites, error) {
 // characters (copied from an .env file) counts as a line break too.
 func (r *Requisites) Split() {
 	var rows []RequisiteRow
+	tab := ""
 	for _, row := range r.Lines {
+		if isTabMark(row.Label) {
+			tab = strings.TrimSpace(row.Value)
+			continue
+		}
+		if row.Tab == "" {
+			row.Tab = tab
+		}
 		parts := strings.Split(strings.ReplaceAll(row.Value, `\n`, "\n"), "\n")
 		if len(parts) == 1 {
 			rows = append(rows, row)
@@ -87,7 +131,7 @@ func (r *Requisites) Split() {
 				r.Recipient = value // the recipient written in the value is the one the bank shows
 				continue
 			}
-			rows = append(rows, RequisiteRow{Label: label, Value: value})
+			rows = append(rows, RequisiteRow{Label: label, Value: value, Tab: row.Tab})
 		}
 	}
 	r.Lines = rows

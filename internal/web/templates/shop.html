@@ -55,16 +55,19 @@
       <div class="item-text">
         <b>{{.Title}}</b>
         {{if .Description}}<span class="muted">{{.Description}}</span>{{end}}
-        <span class="price" data-price="{{.Price.Plain}}">{{money .Price}} {{cur $.Business.Currency}}{{if .Unit}} / {{.Unit}}{{end}}</span>
+        <span class="price" data-price="{{.Price.Plain}}">{{sum .Price}} {{cur $.Business.Currency}}{{if .Unit}} / {{.Unit}}{{end}}</span>
       </div>
-      <label class="qty"><span class="sr">Количество: {{.Title}}</span>
-        <input type="number" name="item_{{.ID}}" min="0" max="{{.Max}}" step="1" inputmode="numeric" value="{{if .Qty}}{{.Qty}}{{end}}" placeholder="0">
-      </label>
+      <div class="stepper">
+        <button type="button" data-step="-1" aria-label="Меньше: {{.Title}}">−</button>
+        <label><span class="sr">Количество: {{.Title}}</span>
+          <input type="number" name="item_{{.ID}}" min="0" max="{{.Max}}" step="1" inputmode="numeric" value="{{if .Qty}}{{.Qty}}{{else}}0{{end}}"></label>
+        <button type="button" data-step="1" aria-label="Больше: {{.Title}}">+</button>
+      </div>
       {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
     </li>
     {{end}}
   </ul>
-  <p class="total">Товары: <b data-total>0.00</b> {{cur .Business.Currency}}
+  <p class="total">Товары: <b data-total>0</b> {{cur .Business.Currency}}
     {{if .P.Pricing.Fees}}<span class="muted">плюс доставка и сборы, если есть, итог на следующем шаге</span>{{end}}</p>
   {{end}}
 

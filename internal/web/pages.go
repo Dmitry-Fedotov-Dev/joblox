@@ -207,9 +207,15 @@ func (s *Server) createOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	method := r.PostFormValue("method")
+	// a quick order's page sends itself at once: no typing to time, a robot without scripts never gets here
+	quick := r.PostFormValue("quick") == "1" && p.Checkout.Quick()
+	fill := s.fillSeconds(r.PostFormValue("stamp"), time.Now())
+	if quick {
+		fill = float64(p.Antifraud.MinFillSeconds + 1)
+	}
 	o, _, err := s.svc.Create(r.Context(), order.CreateInput{
 		Items: qty, Fields: fields, Method: method, ClientIP: ip,
-		FillSeconds: s.fillSeconds(r.PostFormValue("stamp"), time.Now()), Honeypot: r.PostFormValue("website"),
+		FillSeconds: fill, Honeypot: r.PostFormValue("website"), Quick: quick,
 	})
 	var fe order.FieldErrors
 	switch {
@@ -261,6 +267,9 @@ type orderView struct {
 	MethodTitle string
 	P           *profile.Profile
 	Call        string
+	Choices     []monthChoice // «1 мес · 3 мес · 12 мес» while the order waits for money
+	Ask         []fieldView   // a quick order's contact card, after «Я оплатил»
+	TGLogin     string        // «Продолжить через Telegram», when the site has the bot
 }
 
 func (s *Server) loadOrder(w http.ResponseWriter, r *http.Request) (*order.Order, bool) {
@@ -296,6 +305,10 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 	v.Actions = s.svc.Flow.Open(o.State, profile.ActorCustomer, o.Flags())
 	v.Steps = track(p, o)
 	v.Call = s.callLink(o)
+	v.Choices = s.choices(o)
+	if v.Ask = s.askAfter(o, nil, nil); v.Ask != nil {
+		v.TGLogin = s.telegramLogin(o)
+	}
 	switch {
 	case st.Final:
 	case !o.Priced:

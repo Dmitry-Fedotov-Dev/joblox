@@ -306,7 +306,7 @@ button.status { border: 0; cursor: pointer; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0 0 12px; }
 .inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .inline input { width: auto; flex: 1 1 160px; min-height: 44px; }
-.req-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; margin-bottom: 8px; }
+.req-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, .8fr); gap: 8px; margin-bottom: 8px; }
 @media (max-width: 560px) { .req-row { grid-template-columns: 1fr; } }
 .check { display: flex; gap: 10px; align-items: center; margin: 4px 0 14px; font-size: 15px; }
 .big { font-size: 20px; font-weight: 700; color: var(--plum); margin: 0 0 12px; overflow-wrap: anywhere; }

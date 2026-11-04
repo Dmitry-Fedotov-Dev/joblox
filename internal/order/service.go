@@ -171,6 +171,20 @@ type CreateInput struct {
 	ClientIP    string
 	FillSeconds float64
 	Honeypot    string
+	// Quick: placed by one tap on a profile with checkout.after; the fields are asked later, none is needed now.
+	Quick bool
+}
+
+// later drops «обязательное поле» for the fields a quick order asks after: what was typed is still checked.
+func later(errs FieldErrors, keep func(id string) bool) FieldErrors {
+	var out FieldErrors
+	for _, e := range errs {
+		if e.Msg == "обязательное поле" && !keep(e.Field) {
+			continue
+		}
+		out = append(out, e)
+	}
+	return out
 }
 
 // Create validates, prices and checks the order, stores it and sends the email code.
@@ -180,6 +194,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*Order, antifraud
 		return nil, antifraud.Decision{}, ErrPaused
 	}
 	fields, errs := ValidateFields(s.P, in.Fields)
+	if in.Quick && s.P.Checkout.Quick() {
+		errs = later(errs, func(string) bool { return false })
+	}
 	method := in.Method
 	if method == "" {
 		if m := s.Methods(); len(m) > 0 {
@@ -555,6 +572,7 @@ func (s *Service) LoadSettings(ctx context.Context) error {
 	if err := json.Unmarshal([]byte(raw), &r); err != nil {
 		return err
 	}
+	r.Split()
 	s.SetReq(&r)
 	return nil
 }
@@ -698,6 +716,93 @@ func (s *Service) RejectReport(ctx context.Context, o *Order, operatorID string)
 	now := s.Now()
 	o.ReportedAt, o.UpdatedAt = nil, now
 	return s.save(ctx, o, Event{At: now, Actor: profile.ActorOperator, ActorID: operatorID, Kind: "not_found", Note: "оплата не найдена"})
+}
+
+// SetQty changes how many of the order's one item the customer takes (months of a tariff) while the order still
+// waits for money: only to one of the item's choices, and only before «Я оплатил».
+func (s *Service) SetQty(ctx context.Context, o *Order, qty int) error {
+	if len(o.Lines) != 1 || o.Paid || o.ReportedAt != nil || o.AdvanceAt != nil || o.State != s.Flow.Initial() || s.Stock != nil {
+		return ErrForbidden
+	}
+	item, ok := s.P.Item(o.Lines[0].ItemID)
+	if !ok || !slices.Contains(item.Choices, qty) {
+		return ErrForbidden
+	}
+	if o.Lines[0].Qty == qty {
+		return nil
+	}
+	lines, fees, total, priced, errs := Price(s.P, s.P.Catalog, map[string]int{item.ID: qty}, o.Fields)
+	if len(errs) > 0 {
+		return errs
+	}
+	now := s.Now()
+	o.Lines, o.Fees, o.Total, o.Priced, o.UpdatedAt = lines, fees, total, priced, now
+	return s.save(ctx, o, Event{At: now, Actor: profile.ActorCustomer, Kind: "qty", Note: fmt.Sprintf("%s × %d", item.Title, qty)})
+}
+
+// SetFields saves what the customer of a quick order typed after it (checkout.after): the contact first.
+// Only those fields change; the contact, the first of them, is needed, the others may stay empty.
+func (s *Service) SetFields(ctx context.Context, o *Order, in map[string]string) error {
+	after := s.P.Checkout.After
+	if len(after) == 0 || s.IsFinal(o.State) {
+		return ErrForbidden
+	}
+	merged := map[string]string{}
+	for k, v := range o.Fields {
+		merged[k] = v
+	}
+	for _, id := range after {
+		merged[id] = in[id]
+	}
+	fields, errs := ValidateFields(s.P, merged)
+	errs = later(errs, func(id string) bool { return id == after[0] })
+	var mine FieldErrors
+	for _, e := range errs {
+		if slices.Contains(after, e.Field) {
+			mine = append(mine, e)
+		}
+	}
+	if len(mine) > 0 {
+		return mine
+	}
+	for _, id := range after {
+		if v, ok := fields[id]; ok {
+			o.Fields[id] = v
+		} else {
+			delete(o.Fields, id)
+		}
+	}
+	if o.Email == "" && fields["email"] != "" {
+		o.Email = fields["email"]
+	}
+	now := s.Now()
+	o.UpdatedAt = now
+	return s.save(ctx, o, Event{At: now, Actor: profile.ActorCustomer, Kind: "contact", Note: "клиент оставил контакт: " + o.Fields[after[0]]})
+}
+
+// SetTelegram is the contact by «Продолжить через Telegram»: the account Telegram vouched for. The contact field
+// gets the @name (or the account number when there is none), the name field the name; the account's number is
+// kept for the bot to write to.
+func (s *Service) SetTelegram(ctx context.Context, o *Order, id int64, name, username string) error {
+	after := s.P.Checkout.After
+	if len(after) == 0 || s.IsFinal(o.State) || id <= 0 {
+		return ErrForbidden
+	}
+	contact := "Telegram id " + strconv.FormatInt(id, 10)
+	if username != "" {
+		contact = "@" + username
+	}
+	if o.Fields == nil {
+		o.Fields = map[string]string{}
+	}
+	o.Fields[after[0]] = contact
+	o.Fields["telegram_id"] = strconv.FormatInt(id, 10)
+	if name = clean(name); name != "" && o.Fields["name"] == "" {
+		o.Fields["name"] = name
+	}
+	now := s.Now()
+	o.UpdatedAt = now
+	return s.save(ctx, o, Event{At: now, Actor: profile.ActorCustomer, Kind: "contact", Note: "контакт через Telegram: " + contact})
 }
 
 // ReportPaid records the customer's «Я оплатил» and tells the operators. It confirms nothing: only an

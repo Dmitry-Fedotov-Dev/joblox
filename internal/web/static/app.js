@@ -17,11 +17,33 @@
         var q = parseInt(qty.value, 10);
         if (q > 0) cents += Math.round(parseFloat(price.getAttribute("data-price")) * 100) * q;
       });
-      if (out) out.textContent = (cents / 100).toFixed(2);
+      if (out) out.textContent = (cents % 100 ? (cents / 100).toFixed(2) : String(cents / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
     };
     cart.addEventListener("input", recalc);
     recalc();
   }
+
+  // a quick order's page sends its form at once
+  var auto = document.querySelector("form[data-auto]");
+  if (auto) setTimeout(function () { auto.submit(); }, 50);
+
+  // back from Telegram's sign-in: the account is in the address after #tgAuthResult=; the page passes it on
+  var tg = location.hash.match(/^#tgAuthResult=(.+)$/), tgForm = document.getElementById("tg-login");
+  if (tg && tgForm) {
+    history.replaceState(null, "", location.pathname + location.search);
+    tgForm.querySelector("[name=data]").value = decodeURIComponent(tg[1]);
+    tgForm.submit();
+  }
+
+  // «− 1 +»: the buttons step the number between its min and max, as typing it would
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest(".stepper button[data-step]");
+    if (!b) return;
+    var input = b.parentNode.querySelector("input");
+    var min = input.min === "" ? 0 : +input.min, max = input.max === "" ? Infinity : +input.max;
+    input.value = Math.min(max, Math.max(min, (parseInt(input.value, 10) || 0) + (+b.getAttribute("data-step"))));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
 
   // Order page: poll the state, reload when the operator moved the order.
   var order = document.querySelector("[data-order]");
