@@ -87,6 +87,11 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		general: NewLimiter(20, 60), orders: NewLimiter(0.1, 5), codes: NewLimiter(0.2, 8)}
 	funcs := template.FuncMap{
 		"money": func(a money.Amount) string { return a.String() },
+		// sum and sumPlain drop «.00» from a whole amount: «700 ₽» to read, «700» to paste into a bank app
+		"sum":      func(a money.Amount) string { return strings.TrimSuffix(a.String(), ".00") },
+		"sumPlain": func(a money.Amount) string { return strings.TrimSuffix(a.Plain(), ".00") },
+		// copyable: a requisite worth pasting (a phone, a card, an account) has digits; a bank's name is only read
+		"copyable": func(v string) bool { return strings.ContainsAny(v, "0123456789") },
 		// price is a shop price: whole sums without the kopecks, "4 500" rather than "4 500.00"
 		"price": func(a money.Amount) string { return strings.TrimSuffix(a.String(), ".00") },
 		"cur":   currencySign,

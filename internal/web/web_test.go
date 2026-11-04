@@ -160,7 +160,7 @@ func TestCheckoutToRequisites(t *testing.T) {
 		t.Fatalf("right code: %d", resp.StatusCode)
 	}
 	_, page = s.get(t, link)
-	for _, want := range []string{"40802810000000000042", "Оплата заказа KL-1, без НДС", "298.00"} {
+	for _, want := range []string{"40802810000000000042", "Оплата заказа KL-1, без НДС", `data-copy="298"`} {
 		if !strings.Contains(page, want) {
 			t.Errorf("order page lacks %q", want)
 		}
@@ -379,7 +379,7 @@ func TestOrderTrack(t *testing.T) {
 		}
 		titles = append(titles, st.Title+mark)
 	}
-	if got := strings.Join(titles, " "); got != "Оформлен+ Ожидает оплаты* Собирается Передан в доставку Получен" {
+	if got := strings.Join(titles, " "); got != "Принят+ Ожидает оплаты* Собирается Передан в доставку Получен" {
 		t.Fatalf("track: %s", got)
 	}
 	o.State, o.Paid = "shipped", true
@@ -412,7 +412,7 @@ func TestAdvance(t *testing.T) {
 	if err := s.svc.Transition(ctx, o, "quote", profile.ActorOperator, "owner"); err != nil {
 		t.Fatal(err)
 	}
-	if _, page := s.get(t, loc); !strings.Contains(page, "Аванс 50%") || !strings.Contains(page, "1000.00") {
+	if _, page := s.get(t, loc); !strings.Contains(page, "Аванс 50%") || !strings.Contains(page, `data-copy="1000"`) {
 		t.Fatal("the order page does not ask for the advance (half of 1999, rounded up)")
 	}
 	if err := s.svc.Transition(ctx, o, "book", profile.ActorOperator, "owner"); err == nil {
@@ -421,7 +421,7 @@ func TestAdvance(t *testing.T) {
 	if err := s.svc.ConfirmAdvance(ctx, o, "owner", ""); err != nil {
 		t.Fatal(err)
 	}
-	if _, page := s.get(t, loc); !strings.Contains(page, "Остаток после работы") || !strings.Contains(page, "999.00") {
+	if _, page := s.get(t, loc); !strings.Contains(page, "Остаток после работы") || !strings.Contains(page, `data-copy="999"`) {
 		t.Fatal("after the advance the page does not show the rest")
 	}
 	for _, step := range []string{"book", "arrive"} {

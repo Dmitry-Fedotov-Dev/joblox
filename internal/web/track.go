@@ -60,7 +60,7 @@ func track(p *profile.Profile, o *order.Order) []Step {
 	for i, st := range path {
 		title := st.Title
 		if i == 0 {
-			title = "Оформлен"
+			title = "Принят"
 		}
 		steps = append(steps, Step{Title: title, Done: i < at, Now: i == at && (i != 0 || !needsPayment(o))})
 		if i == 0 && needsPayment(o) {

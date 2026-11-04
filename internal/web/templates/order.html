@@ -2,39 +2,39 @@
 {{$pay := and .Requisites (not .O.ReportedAt)}}
 <section class="order-head" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
   <p class="eyebrow">Заказ №{{.O.ID}} · {{.Ref}}</p>
-  {{if $pay}}<h1>Переведите {{if .O.Split}}{{if .O.AdvanceAt}}остаток {{else}}аванс {{end}}{{end}}{{money .O.Due}} {{cur .Business.Currency}}</h1>
-  <p class="lead">Заказ ждёт оплаты. Переведите деньги по реквизитам ниже и нажмите «Я оплатил».</p>
-  {{else}}<h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>{{end}}
+  {{if not .Final}}<p class="live" role="status"><span class="pulse"></span>{{if and .O.ReportedAt (not .O.Paid)}}Статус обновится здесь сам{{else if $pay}}Заказ принят и уже в обработке{{else if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</p>{{end}}
+  {{if .Steps}}<ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}">{{.Title}}</li>{{end}}</ol>{{end}}
+  {{if and .O.ReportedAt (not .O.Paid) (not .Final)}}<h1>Спасибо! Проверяем перевод</h1>
+  <p class="lead">Продавец увидит поступление и подтвердит заказ. Страницу можно закрыть: ссылка на неё остаётся рабочей.</p>
+  {{else if not $pay}}<h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>{{end}}
 </section>
 
-{{with .Requisites}}
+{{if $pay}}{{with .Requisites}}
 <section class="card pay">
-  {{if $.O.ReportedAt}}
-  <p class="banner ok" role="status">Вы сообщили об оплате. Продавец проверит поступление и подтвердит заказ: статус обновится здесь сам.</p>
-  {{else}}
-  {{if $.QR}}<div class="pay-qr"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="240">
-    <p class="small">Отсканируйте QR в приложении банка и введите сумму <b>{{$.O.Due.Plain}}</b>.</p></div>{{end}}
-  <dl class="pay-rows">
-    <div><dt>{{if $.O.Split}}{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}{{else}}Сумма{{end}}</dt><dd data-copy="{{$.O.Due.Plain}}"><b>{{money $.O.Due}} {{cur $.Business.Currency}}</b><button class="copy-btn" type="button" data-copy="{{$.O.Due.Plain}}">Скопировать</button></dd></div>
-    {{range .Lines}}<div><dt>{{.Label}}</dt><dd data-copy="{{.Value}}"><b>{{.Value}}</b><button class="copy-btn" type="button" data-copy="{{.Value}}">Скопировать</button></dd></div>{{end}}
-    <div><dt>Получатель</dt><dd data-copy="{{.Recipient}}">{{.Recipient}}<button class="copy-btn" type="button" data-copy="{{.Recipient}}">Скопировать</button></dd></div>
-    <div><dt>Назначение платежа</dt><dd data-copy="{{$.Purpose}}">{{$.Purpose}}<button class="copy-btn" type="button" data-copy="{{$.Purpose}}">Скопировать</button></dd></div>
-    {{if $.O.Split}}<div><dt>Вся стоимость</dt><dd>{{$.O.Total.Plain}} {{cur $.Business.Currency}}</dd></div>{{end}}
-  </dl>
+  <p class="pay-label">{{if $.O.Split}}{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}{{else}}К оплате{{end}}</p>
+  <h1 class="pay-sum"><span data-copy="{{sumPlain $.O.Due}}" title="Скопировать сумму">{{sum $.O.Due}} {{cur $.Business.Currency}}</span></h1>
+  {{if $.O.Split}}<p class="pay-of muted small">из {{sum $.O.Total}} {{cur $.Business.Currency}}</p>{{end}}
+  {{if $.QR}}<div class="pay-qr"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="200">
+    <p class="small muted">Отсканируйте в приложении банка и введите сумму <b>{{sumPlain $.O.Due}}</b></p></div>{{end}}
+  <div class="pay-rows">
+    {{range .Lines}}{{if copyable .Value}}<button class="pay-row" type="button" data-copy="{{.Value}}"><span>{{.Label}}</span><b>{{.Value}}</b><i aria-hidden="true"></i></button>{{else}}<div class="pay-row plain"><span>{{.Label}}</span><b>{{.Value}}</b></div>{{end}}{{end}}
+    {{if .Recipient}}<button class="pay-row" type="button" data-copy="{{.Recipient}}"><span>Получатель</span><b>{{.Recipient}}</b><i aria-hidden="true"></i></button>{{end}}
+    <button class="pay-row" type="button" data-copy="{{$.Purpose}}"><span>Назначение платежа</span><b>{{$.Purpose}}</b><i aria-hidden="true"></i></button>
+  </div>
+  <p class="pay-tip muted small">Нажмите на строку, чтобы скопировать</p>
   {{if and $.O.Split $.O.AdvanceAt}}<p class="banner ok" role="status">Аванс получен. Остаток можно перевести после работы или отдать на месте.</p>{{end}}
   <form method="post" action="{{p}}/o/{{$.O.Token}}/paid">
     <input type="hidden" name="csrf" value="{{$.CSRF}}">
     <button class="cta wide" type="submit">Я оплатил</button>
   </form>
-  <p class="muted small">Нажмите после перевода: продавец сразу увидит это и проверит поступление.</p>
+  <p class="muted small pay-after">После нажатия сразу начнём проверку перевода</p>
   <details class="pay-more"><summary>Важно про перевод</summary>
     <p class="muted small">Укажите сумму и назначение платежа точно как здесь: по ним продавец находит оплату. Реквизиты действуют только для этого заказа.</p>
     {{if .Note}}<p class="muted small">{{.Note}}</p>{{end}}
     {{if $.P.Texts.Rules}}<p class="muted small">{{$.P.Texts.Rules}}</p>{{end}}
   </details>
-  {{end}}
 </section>
-{{end}}
+{{end}}{{end}}
 
 {{if .Waiting}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
 {{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
@@ -54,24 +54,16 @@
 </section>
 {{end}}
 
-{{if .Steps}}
-<section class="card">
-  <h2>Статус заказа</h2>
-  <ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}">{{.Title}}</li>{{end}}</ol>
-  {{if not .Final}}<p class="keep muted small">Сохраните эту страницу: здесь всегда видно, что с заказом. Она обновляется сама.</p>{{end}}
-</section>
-{{end}}
-
 <section class="card">
   <h2>Ваш заказ</h2>
   {{if .O.Lines}}
   <table class="lines">
-    {{range .O.Lines}}<tr><td>{{.Title}} × {{.Qty}}</td><td class="num">{{money .Sum}}</td></tr>{{end}}
-    {{range .O.Fees}}<tr><td>{{.Title}}</td><td class="num">{{money .Sum}}</td></tr>{{end}}
-    <tr class="sum"><td>Итого</td><td class="num">{{money .O.Total}} {{cur .Business.Currency}}</td></tr>
+    {{range .O.Lines}}<tr><td>{{.Title}} × {{.Qty}}</td><td class="num">{{sum .Sum}}</td></tr>{{end}}
+    {{range .O.Fees}}<tr><td>{{.Title}}</td><td class="num">{{sum .Sum}}</td></tr>{{end}}
+    <tr class="sum"><td>Итого</td><td class="num">{{sum .O.Total}} {{cur .Business.Currency}}</td></tr>
   </table>
   {{else if .O.Priced}}
-  <p class="big">К оплате: {{money .O.Total}} {{cur .Business.Currency}}</p>
+  <p class="big">К оплате: {{sum .O.Total}} {{cur .Business.Currency}}</p>
   {{end}}
   <dl class="facts">
     {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</dd>{{end}}
