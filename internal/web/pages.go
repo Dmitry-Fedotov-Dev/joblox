@@ -267,9 +267,12 @@ type orderView struct {
 	MethodTitle string
 	P           *profile.Profile
 	Call        string
-	Choices     []monthChoice // «1 мес · 3 мес · 12 мес» while the order waits for money
-	Ask         []fieldView   // a quick order's contact card, after «Я оплатил»
-	TGLogin     string        // «Продолжить через Telegram», when the site has the bot
+	Choices     []monthChoice   // «1 мес · 3 мес · 12 мес» while the order waits for money
+	Ask         []fieldView     // a quick order's contact card, after «Я оплатил»
+	Chat        bool            // the order's chat with the seller, through the bot
+	Messages    []order.Message // the chat so far
+	BotLink     string          // «Получать статус в Telegram»: the bot, tied to this order
+	BotLinked   bool            // the customer's Telegram is tied to the order
 }
 
 func (s *Server) loadOrder(w http.ResponseWriter, r *http.Request) (*order.Order, bool) {
@@ -306,9 +309,8 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 	v.Steps = track(p, o)
 	v.Call = s.callLink(o)
 	v.Choices = s.choices(o)
-	if v.Ask = s.askAfter(o, nil, nil); v.Ask != nil {
-		v.TGLogin = s.telegramLogin(o)
-	}
+	v.Ask = s.askAfter(o, nil, nil)
+	s.chat(r, o, &v)
 	switch {
 	case st.Final:
 	case !o.Priced:

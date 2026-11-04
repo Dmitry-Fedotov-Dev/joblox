@@ -1,18 +1,9 @@
 package web
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
-	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
@@ -129,95 +120,47 @@ func (s *Server) orderContact(w http.ResponseWriter, r *http.Request) {
 	s.redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
 }
 
-// orderTelegram takes what Telegram sent back after «Продолжить через Telegram» (the page passes it on from the
-// address): the account, signed with the bot's token.
-func (s *Server) orderTelegram(w http.ResponseWriter, r *http.Request) {
+// chat fills the order's chat: shown while the order is open and a bot carries it; a quick order shows it after
+// «Я оплатил», with the rest of what comes after.
+func (s *Server) chat(r *http.Request, o *order.Order, v *orderView) {
+	name := ""
+	if s.cfg.CustomerBot != nil {
+		name = s.cfg.CustomerBot()
+	}
+	if name == "" || s.svc.IsFinal(o.State) || (s.svc.P.Checkout.Quick() && o.ReportedAt == nil) {
+		return
+	}
+	v.Chat, v.BotLinked = true, o.Fields["telegram_id"] != ""
+	v.BotLink = "https://t.me/" + name + "?start=o" + o.Token
+	msgs, err := s.svc.Messages(r.Context(), o)
+	if err != nil {
+		s.log.Error("order messages", "err", err)
+	}
+	v.Messages = msgs
+}
+
+func (s *Server) orderMessage(w http.ResponseWriter, r *http.Request) {
 	o, ok := s.formOrder(w, r)
 	if !ok {
 		return
 	}
-	u, err := verifyTelegram(s.cfg.TelegramLogin, r.PostFormValue("data"), time.Now())
-	if err != nil {
-		s.log.Info("telegram login refused", "err", err)
-		v := s.orderView(w, r, o, "", "Telegram не подтвердил вход. Попробуйте ещё раз или впишите контакт.")
-		s.render(w, "order", http.StatusForbidden, v)
+	if !s.codes.Allow(ClientIP(r, s.cfg.Trusted)) {
+		s.message(w, r, http.StatusTooManyRequests, "Слишком много сообщений", "Подождите минуту и напишите ещё раз.")
 		return
 	}
-	name := strings.TrimSpace(u.FirstName + " " + u.LastName)
-	if err := s.svc.SetTelegram(r.Context(), o, u.ID, name, u.Username); err != nil && !errors.Is(err, order.ErrForbidden) {
-		s.log.Error("order telegram", "err", err)
+	if err := s.svc.CustomerSays(r.Context(), o, r.PostFormValue("text")); err != nil && !errors.Is(err, order.ErrForbidden) {
+		s.log.Error("order message", "err", err)
 	}
-	s.redirect(w, r, "/o/"+o.Token, http.StatusSeeOther)
+	s.redirect(w, r, "/o/"+o.Token+"#chat", http.StatusSeeOther)
 }
 
-// telegramLogin is the address of Telegram's sign-in for the bot, coming back to the order page; empty without
-// the bot's token. Telegram shows it only on the domain the bot was given (BotFather → /setdomain).
-func (s *Server) telegramLogin(o *order.Order) string {
-	token := s.cfg.TelegramLogin
-	id, _, ok := strings.Cut(token, ":")
-	if token == "" || !ok {
-		return ""
+func (s *Server) orderBotOnly(w http.ResponseWriter, r *http.Request) {
+	o, ok := s.formOrder(w, r)
+	if !ok {
+		return
 	}
-	back, err := url.Parse(s.svc.Link(o))
-	if err != nil {
-		return ""
+	if err := s.svc.SetBotOnly(r.Context(), o, r.PostFormValue("on") == "1"); err != nil {
+		s.log.Error("order bot only", "err", err)
 	}
-	q := url.Values{"bot_id": {id}, "origin": {back.Scheme + "://" + back.Host}, "request_access": {"write"}, "return_to": {back.String()}}
-	return "https://oauth.telegram.org/auth?" + q.Encode()
-}
-
-type tgUser struct {
-	ID        int64
-	FirstName string
-	LastName  string
-	Username  string
-}
-
-// verifyTelegram checks what Telegram's sign-in returned (base64 of a JSON object): the hash is the HMAC-SHA-256
-// of the other fields, sorted «key=value» lines, keyed by the SHA-256 of the bot's token; a day old at most.
-func verifyTelegram(token, data string, now time.Time) (tgUser, error) {
-	if token == "" {
-		return tgUser{}, errors.New("no bot token")
-	}
-	data = strings.TrimRight(strings.TrimSpace(data), "=")
-	raw, err := base64.RawURLEncoding.DecodeString(strings.NewReplacer("+", "-", "/", "_").Replace(data))
-	if err != nil {
-		return tgUser{}, fmt.Errorf("not base64: %w", err)
-	}
-	dec := json.NewDecoder(strings.NewReader(string(raw)))
-	dec.UseNumber()
-	var m map[string]any
-	if err := dec.Decode(&m); err != nil {
-		return tgUser{}, fmt.Errorf("not JSON: %w", err)
-	}
-	hash, _ := m["hash"].(string)
-	var lines []string
-	for k, v := range m {
-		if k == "hash" {
-			continue
-		}
-		lines = append(lines, k+"="+fmt.Sprint(v))
-	}
-	sort.Strings(lines)
-	key := sha256.Sum256([]byte(token))
-	mac := hmac.New(sha256.New, key[:])
-	mac.Write([]byte(strings.Join(lines, "\n")))
-	want := hex.EncodeToString(mac.Sum(nil))
-	if !hmac.Equal([]byte(want), []byte(strings.ToLower(hash))) {
-		return tgUser{}, errors.New("bad hash")
-	}
-	num := func(k string) int64 {
-		n, _ := m[k].(json.Number)
-		v, _ := n.Int64()
-		return v
-	}
-	str := func(k string) string { v, _ := m[k].(string); return v }
-	if at := time.Unix(num("auth_date"), 0); now.Sub(at) > 24*time.Hour || at.After(now.Add(5*time.Minute)) {
-		return tgUser{}, errors.New("too old")
-	}
-	u := tgUser{ID: num("id"), FirstName: str("first_name"), LastName: str("last_name"), Username: str("username")}
-	if u.ID <= 0 {
-		return tgUser{}, errors.New("no account")
-	}
-	return u, nil
+	s.redirect(w, r, "/o/"+o.Token+"#talk", http.StatusSeeOther)
 }

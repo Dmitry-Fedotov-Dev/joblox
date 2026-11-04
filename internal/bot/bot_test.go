@@ -160,7 +160,7 @@ func TestStrangersAreRefused(t *testing.T) {
 	b, svc, fake := setup(t, "bakery")
 	create(t, svc)
 	say(b, 777, "/orders")
-	if texts := fake.texts("sendMessage"); !strings.Contains(texts[len(texts)-1], "только для операторов") {
+	if texts := fake.texts("sendMessage"); !strings.Contains(texts[len(texts)-1], "Получать статус в Telegram") {
 		t.Fatalf("stranger: %v", texts)
 	}
 	b.Handle(context.Background(), Update{Callback: &CallbackQuery{ID: "x", From: User{ID: 777}, Data: "p:1"}})

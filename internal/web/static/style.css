@@ -566,3 +566,62 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
   .pay-tip { display: none; }
   .pay .cta { margin-top: 14px; }
 }
+
+/* the order's news card, after «Я оплатил»: one calm centred column — the question, Telegram, a small
+   «только через бота» dot under it, «или», and «Написать здесь» as a light second way */
+.talk { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  padding: 32px 24px; min-height: max(300px, calc(100svh - 470px)); }
+.talk-icon { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 24px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel)); margin-bottom: 14px; }
+.talk h2 { margin: 0; font-size: 21px; letter-spacing: -.02em; }
+.talk-sub { margin: 6px 0 22px; color: var(--muted); font-size: 14.5px; max-width: 30ch; }
+.talk-ways { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.tg-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; border-radius: 16px;
+  background: #2aabee; color: #fff; font-weight: 800; font-size: 17px; text-decoration: none; transition: background .15s ease; }
+.tg-btn:hover { background: #229ed9; }
+.tg-logo { width: 21px; height: 21px; flex: none; }
+.tg-on { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; min-height: 52px; border-radius: 16px;
+  font-weight: 700; background: color-mix(in srgb, #2aabee 14%, var(--panel)); }
+.tg-on .tg-logo { color: #2aabee; }
+.bot-only { margin: 0; }
+.dot { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; font-size: 13.5px; color: var(--muted); }
+.dot input { appearance: none; -webkit-appearance: none; flex: none; width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0;
+  border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--muted) 60%, transparent); background: transparent; display: grid;
+  place-items: center; cursor: pointer; transition: border-color .15s ease; }
+.dot input::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); transform: scale(0); transition: transform .18s ease; }
+.dot input:checked { border-color: var(--accent); }
+.dot input:checked::after { transform: scale(1); }
+.dot input:checked + span { color: var(--fg); }
+.dot input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.talk-or { width: 100%; max-width: 360px; display: flex; align-items: center; gap: 12px; margin: 18px 0 6px; color: var(--muted); font-size: 13px; }
+.talk-or::before, .talk-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.here-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; color: var(--fg);
+  font-weight: 700; font-size: 15px; text-decoration: none; transition: background .15s ease; }
+.here-btn:hover { background: var(--soft); }
+
+/* the order's chat at the bottom of the page */
+.chat h2 { margin: 0 0 6px; font-size: 20px; }
+.msgs { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.msgs li { max-width: 85%; padding: 9px 13px; border-radius: 16px 16px 16px 4px; background: var(--soft); white-space: pre-line; overflow-wrap: anywhere; }
+.msgs li.mine { align-self: flex-end; border-radius: 16px 16px 4px 16px; background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
+.say { display: flex; gap: 8px; align-items: flex-end; margin: 14px 0 0; }
+.say textarea { flex: 1; border-radius: 22px; padding: 12px 16px; min-height: 48px; resize: none; }
+.say button { flex: none; width: 48px; height: 48px; min-height: 0; padding: 0; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font-size: 22px; }
+.ask-more { margin-top: 14px; }
+.ask-more summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+.ask-more form { margin-top: 10px; }
+.ask .cta.tg { display: block; text-align: center; text-decoration: none; background: #2aabee; color: #fff; line-height: 56px; padding: 0; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+/* Telegram in its own logo's blue, with a little body; «Написать здесь» a quiet outlined pill that still reads as a button */
+.tg-btn { background: linear-gradient(180deg, #2aabee 0%, #229ed9 100%); border-radius: 18px; min-height: 54px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 2px rgba(0, 0, 0, .25), 0 12px 26px -14px rgba(34, 158, 217, .85); }
+.tg-btn:hover { background: linear-gradient(180deg, #229ed9 0%, #1b8cc4 100%); }
+.tg-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 6px 16px -12px rgba(34, 158, 217, .9); }
+.here-btn { border: 1px solid var(--line); padding: 10px 18px 10px 14px; background: transparent; }
+.here-btn::after { content: "↓"; color: var(--muted); font-weight: 600; margin-left: 2px; }
+.here-btn:hover { background: var(--soft); border-color: var(--soft); }
+
+/* how long the check takes, and the money back if it is late: a footnote under the lead */
+.check-note { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); display: flex; gap: 8px; align-items: baseline; }
+.check-note::before { content: "⏱"; }

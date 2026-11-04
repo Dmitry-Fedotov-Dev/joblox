@@ -1,50 +1,17 @@
 package web
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"net/http"
 	"net/url"
-	"sort"
-	"strconv"
 	"strings"
 	"testing"
-	"time"
 )
-
-// tgData is what Telegram's sign-in sends back, signed with the bot's token.
-func tgData(token string, fields map[string]any) string {
-	var lines []string
-	for k, v := range fields {
-		lines = append(lines, k+"="+toString(v))
-	}
-	sort.Strings(lines)
-	key := sha256.Sum256([]byte(token))
-	mac := hmac.New(sha256.New, key[:])
-	mac.Write([]byte(strings.Join(lines, "\n")))
-	fields["hash"] = hex.EncodeToString(mac.Sum(nil))
-	raw, _ := json.Marshal(fields)
-	return base64.StdEncoding.EncodeToString(raw)
-}
-
-func toString(v any) string {
-	switch x := v.(type) {
-	case int64:
-		return strconv.FormatInt(x, 10)
-	case string:
-		return x
-	}
-	panic("type")
-}
 
 // One tap on a tariff places the order: the page with the status and the sum, no form; the months are chosen
 // there; after «Я оплатил» the contact is asked, typed or by Telegram.
 func TestQuickOrder(t *testing.T) {
 	s := newSite(t, "openline")
-	s.srv.cfg.TelegramLogin = "123456:TESTTOKEN"
+	s.srv.cfg.CustomerBot = func() string { return "freesellersdotcombot" }
 	code, page := s.get(t, "/quick?add=hosting")
 	if code != http.StatusOK || !strings.Contains(page, "data-auto") || !strings.Contains(page, `name="item_hosting" value="1"`) {
 		t.Fatalf("the one-tap page: %d", code)
@@ -71,29 +38,31 @@ func TestQuickOrder(t *testing.T) {
 	}
 	s.post(t, link+"/paid", url.Values{"csrf": {csrf}})
 	_, page = s.get(t, link)
-	if !strings.Contains(page, "Куда написать") || !strings.Contains(page, "oauth.telegram.org/auth?bot_id=123456") || strings.Contains(page, ">3 мес</button>") {
-		t.Fatal("after «Я оплатил»: no contact card, no Telegram, or the months still change")
+	if !strings.Contains(page, "Куда прислать новости заказа?") || !strings.Contains(page, "https://t.me/freesellersdotcombot?start=o"+strings.TrimPrefix(link, "/o/")) ||
+		!strings.Contains(page, "Связь только через бота") || strings.Contains(page, ">3 мес</button>") {
+		t.Fatal("after «Я оплатил»: no chat, no Telegram link, no «только через бота», or the months still change")
 	}
 	if r, _ := s.post(t, link+"/contact", url.Values{"csrf": {csrf}, "f_phone": {""}}); r.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("an empty contact was taken: %d", r.StatusCode)
 	}
-	// Telegram vouches for the account
-	data := tgData("123456:TESTTOKEN", map[string]any{"id": int64(42), "first_name": "Айгуль", "username": "aigul_cakes", "auth_date": time.Now().Unix()})
-	if r, _ := s.post(t, link+"/tg", url.Values{"csrf": {csrf}, "data": {"forged" + data}}); r.StatusCode != http.StatusForbidden {
-		t.Fatalf("a forged sign-in: %d", r.StatusCode)
-	}
-	s.post(t, link+"/tg", url.Values{"csrf": {csrf}, "data": {data}})
+	s.post(t, link+"/msg", url.Values{"csrf": {csrf}, "text": {"Здравствуйте, когда будет сайт?"}})
+	s.post(t, link+"/botonly", url.Values{"csrf": {csrf}, "on": {"1"}})
 	_, page = s.get(t, link)
-	if strings.Contains(page, "Куда написать") || !strings.Contains(page, "@aigul_cakes") || !strings.Contains(page, "Айгуль") {
-		t.Fatal("the Telegram account is not the order's contact")
+	if !strings.Contains(page, `<li class="mine">Здравствуйте, когда будет сайт?</li>`) || !strings.Contains(page, `value="1" checked`) {
+		t.Fatal("the message or the tick is not on the page")
 	}
 	o, _ := s.svc.Store.ByToken(t.Context(), strings.TrimPrefix(link, "/o/"))
-	if o.Fields["telegram_id"] != "42" || o.Total != 2100*100 {
+	if !o.BotOnly() || o.Total != 2100*100 {
 		t.Fatalf("order: %+v", o.Fields)
+	}
+	if err := s.svc.OperatorSays(t.Context(), o, "1", "Завтра к обеду"); err != nil {
+		t.Fatal(err)
+	}
+	if _, page = s.get(t, link); !strings.Contains(page, "<li class=\"\">Завтра к обеду</li>") {
+		t.Fatal("the seller's answer is not on the page")
 	}
 }
 
-// A contact typed by hand: a Telegram @name is a contact too.
 func TestQuickOrderTypedContact(t *testing.T) {
 	s := newSite(t, "openline")
 	_, page := s.get(t, "/quick?add=turnkey")
@@ -101,7 +70,7 @@ func TestQuickOrderTypedContact(t *testing.T) {
 	link := r.Header.Get("Location")
 	_, page = s.get(t, link)
 	csrf := match(t, csrfRe, page)
-	if strings.Contains(page, "мес</button>") || strings.Contains(page, "oauth.telegram.org") {
+	if strings.Contains(page, "мес</button>") || strings.Contains(page, "t.me/") {
 		t.Fatal("turnkey has no months; no bot, no Telegram button")
 	}
 	s.post(t, link+"/paid", url.Values{"csrf": {csrf}})
@@ -123,15 +92,5 @@ func TestNoQuickOrderWithoutAfter(t *testing.T) {
 	r, _ := s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, page)}, "stamp": {match(t, stampRe, page)}, "quick": {"1"}, "item_baton": {"1"}, "method": {"transfer"}})
 	if r.StatusCode == http.StatusSeeOther {
 		t.Fatal("«quick» skipped the bakery's required fields")
-	}
-}
-
-func TestTelegramTooOld(t *testing.T) {
-	data := tgData("1:T", map[string]any{"id": int64(1), "auth_date": time.Now().Add(-48 * time.Hour).Unix()})
-	if _, err := verifyTelegram("1:T", data, time.Now()); err == nil {
-		t.Fatal("a two-day-old sign-in was taken")
-	}
-	if _, err := verifyTelegram("1:OTHER", tgData("1:T", map[string]any{"id": int64(1), "auth_date": time.Now().Unix()}), time.Now()); err == nil {
-		t.Fatal("signed by another bot")
 	}
 }

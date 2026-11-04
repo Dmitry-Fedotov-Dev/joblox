@@ -93,15 +93,17 @@ type Service struct {
 	Mail    Mailer
 	Notify  Notifier
 	Observe Observer
-	req     atomic.Pointer[Requisites] // the owner may set or change them in the cabinet while running
-	cashOff atomic.Bool                // the owner turned off «при получении» for new orders
-	Stock   Stock
-	Now     func() time.Time
-	Log     *slog.Logger
-	secret  []byte
-	finals  []string
-	paused  atomic.Bool
-	baseURL atomic.Pointer[string] // changes while running when a temporary tunnel address is renewed
+	// Customer reaches the customer outside the page (the bot, once he linked Telegram); nil: nobody.
+	Customer CustomerChannel
+	req      atomic.Pointer[Requisites] // the owner may set or change them in the cabinet while running
+	cashOff  atomic.Bool                // the owner turned off «при получении» for new orders
+	Stock    Stock
+	Now      func() time.Time
+	Log      *slog.Logger
+	secret   []byte
+	finals   []string
+	paused   atomic.Bool
+	baseURL  atomic.Pointer[string] // changes while running when a temporary tunnel address is renewed
 }
 
 // New wires the service. secret keys the email codes and the client hashes; keep it in the environment.
@@ -403,6 +405,7 @@ func (s *Service) Transition(ctx context.Context, o *Order, id, actor, actorID s
 	s.Observe.Transition(t.To)
 	if t.Notify {
 		s.mailState(ctx, o)
+		s.tellState(ctx, o)
 	}
 	return nil
 }
@@ -453,7 +456,11 @@ func (s *Service) ConfirmPayment(ctx context.Context, o *Order, operatorID, note
 	}
 	now := s.Now()
 	o.Paid, o.PaidAt, o.PaidNote, o.UpdatedAt = true, &now, note, now
-	return s.save(ctx, o, Event{At: now, Actor: profile.ActorOperator, ActorID: operatorID, Kind: "paid", Note: note})
+	if err := s.save(ctx, o, Event{At: now, Actor: profile.ActorOperator, ActorID: operatorID, Kind: "paid", Note: note}); err != nil {
+		return err
+	}
+	s.customer().Tell(ctx, o, "✅ Заказ №"+strconv.FormatInt(o.ID, 10)+": оплата получена. Спасибо!\n"+s.Link(o))
+	return nil
 }
 
 // ConfirmAdvance records that the advance of a split order arrived. Only an operator, only once; the customer

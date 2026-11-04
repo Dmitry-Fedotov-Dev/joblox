@@ -2,32 +2,12 @@
 {{$pay := and .Requisites (not .O.ReportedAt)}}
 <section class="order-head" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
   <p class="eyebrow">Заказ №{{.O.ID}} · {{.Ref}}</p>
-  {{if not .Final}}<p class="live" role="status"><span class="pulse"></span>{{if and .O.ReportedAt (not .O.Paid)}}Статус обновится здесь сам{{else if $pay}}Заказ принят и уже в обработке{{else if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</p>{{end}}
+  {{if and (not .Final) (not (and .O.ReportedAt (not .O.Paid)))}}<p class="live" role="status"><span class="pulse"></span>{{if $pay}}Заказ принят и уже в обработке{{else if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</p>{{end}}
   {{if .Steps}}<ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}">{{.Title}}</li>{{end}}</ol>{{end}}
   {{if and .O.ReportedAt (not .O.Paid) (not .Final)}}<h1>Спасибо! Проверяем перевод</h1>
-  <p class="lead">Продавец увидит поступление и подтвердит заказ. Страницу можно закрыть: ссылка на неё остаётся рабочей.</p>
+  <p class="lead">Продавец подтвердит оплату, статус обновится здесь сам.</p>
   {{else if not $pay}}<h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>{{end}}
 </section>
-
-{{if .Ask}}
-<section class="card ask" id="contact">
-  <h2>Куда написать, когда всё будет готово?</h2>
-  {{if .TGLogin}}<a class="cta tg" href="{{.TGLogin}}">Продолжить через Telegram</a>
-  <form id="tg-login" method="post" action="{{p}}/o/{{.O.Token}}/tg" hidden><input type="hidden" name="csrf" value="{{.CSRF}}"><input type="hidden" name="data"></form>
-  <p class="or muted small">или впишите сами</p>{{end}}
-  <form method="post" action="{{p}}/o/{{.O.Token}}/contact">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    {{range .Ask}}<div class="field{{if .Error}} has-error{{end}}">
-      <label for="f_{{.ID}}">{{.Label}}{{if not .Required}} <span class="muted small">— можно позже</span>{{end}}</label>
-      {{if eq .Type "textarea"}}<textarea id="f_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
-      {{else}}<input id="f_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}"{{if eq .Type "phone"}} type="text" autocomplete="tel" placeholder="@ник или +996 …"{{else}} type="text"{{end}}{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
-      {{if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
-      {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
-    </div>{{end}}
-    <button class="cta wide" type="submit">Сохранить</button>
-  </form>
-</section>
-{{end}}
 
 {{if $pay}}{{with .Requisites}}
 <section class="card pay">
@@ -63,6 +43,40 @@
 </section>
 {{end}}{{end}}
 
+{{if .Chat}}
+<section class="card talk" id="talk">
+  <div class="talk-icon" aria-hidden="true">🔔</div>
+  <h2>Куда прислать новости заказа?</h2>
+  <p class="talk-sub">Сообщим, когда оплата придёт и заказ будет готов</p>
+  <div class="talk-ways">
+  {{if .BotLinked}}<p class="tg-on"><svg class="tg-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.94 4.3 18.7 19.6c-.24 1.08-.88 1.34-1.78.84l-4.92-3.63-2.37 2.29c-.26.26-.48.48-.99.48l.35-5.02 9.13-8.25c.4-.35-.09-.55-.62-.2L6.2 13.2l-4.86-1.52c-1.06-.33-1.08-1.06.22-1.57L20.56 2.8c.88-.32 1.65.2 1.38 1.5z"/></svg>Новости приходят в Telegram</p>
+  {{else}}<a class="tg-btn" href="{{.BotLink}}" target="_blank" rel="noopener"><svg class="tg-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.94 4.3 18.7 19.6c-.24 1.08-.88 1.34-1.78.84l-4.92-3.63-2.37 2.29c-.26.26-.48.48-.99.48l.35-5.02 9.13-8.25c.4-.35-.09-.55-.62-.2L6.2 13.2l-4.86-1.52c-1.06-.33-1.08-1.06.22-1.57L20.56 2.8c.88-.32 1.65.2 1.38 1.5z"/></svg>Telegram</a>{{end}}
+  <form class="bot-only" method="post" action="{{p}}/o/{{.O.Token}}/botonly">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label class="dot" title="Продавец не будет звонить и писать вам лично"><input type="checkbox" name="on" value="1"{{if .O.BotOnly}} checked{{end}} data-autosubmit><span>Связь только через бота</span></label>
+    <noscript><button class="link" type="submit">Сохранить</button></noscript>
+  </form>
+  </div>
+  <p class="talk-or">или</p>
+  <a class="here-btn" href="#chat"><span aria-hidden="true">✉️</span>Написать здесь</a>
+</section>
+{{else if .Ask}}
+<section class="card ask" id="contact">
+  <h2>Куда написать, когда всё будет готово?</h2>
+  <form method="post" action="{{p}}/o/{{.O.Token}}/contact">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    {{range .Ask}}<div class="field{{if .Error}} has-error{{end}}">
+      <label for="f_{{.ID}}">{{.Label}}{{if not .Required}} <span class="muted small">— можно позже</span>{{end}}</label>
+      {{if eq .Type "textarea"}}<textarea id="f_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
+      {{else}}<input id="f_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}"{{if eq .Type "phone"}} type="text" autocomplete="tel" placeholder="@ник или +996 …"{{else}} type="text"{{end}}{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
+      {{if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
+      {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
+    </div>{{end}}
+    <button class="cta wide" type="submit">Сохранить</button>
+  </form>
+</section>
+{{end}}
+
 {{if .Waiting}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
 {{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
 
@@ -81,6 +95,7 @@
 </section>
 {{end}}
 
+
 <section class="card">
   <h2>Ваш заказ</h2>
   {{if .O.Lines}}
@@ -94,7 +109,7 @@
   {{end}}
   <dl class="facts">
     {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</dd>{{end}}
-    <dt>Оплата</dt><dd>{{.MethodTitle}}{{if .O.Paid}}, оплачено{{end}}</dd>
+    {{if or .O.Paid (ne .O.Method "transfer")}}<dt>Оплата</dt><dd>{{.MethodTitle}}{{if .O.Paid}}, оплачено{{end}}</dd>{{end}}
   </dl>
 </section>
 
@@ -116,5 +131,33 @@
 </section>
 {{end}}
 
+{{if .Chat}}
+<section class="card chat" id="chat">
+  <h2>Сообщения продавцу</h2>
+  {{if .Messages}}<ol class="msgs" aria-label="Переписка">{{range .Messages}}<li class="{{if .Mine}}mine{{end}}">{{.Text}}</li>{{end}}</ol>
+  {{else}}<p class="muted small">Спросите что угодно о заказе: ответ появится здесь{{if .BotLinked}} и в Telegram{{end}}.</p>{{end}}
+  <form class="say" method="post" action="{{p}}/o/{{.O.Token}}/msg">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <label class="sr" for="say">Сообщение продавцу</label>
+    <textarea id="say" name="text" rows="1" maxlength="1000" placeholder="Сообщение" required></textarea>
+    <button type="submit" aria-label="Отправить">↑</button>
+  </form>
+  {{if .Ask}}<details class="ask-more"{{range .Ask}}{{if .Error}} open{{end}}{{end}}><summary>Нет Telegram? Оставьте номер</summary>
+  <form method="post" action="{{p}}/o/{{.O.Token}}/contact">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    {{range .Ask}}<div class="field{{if .Error}} has-error{{end}}">
+      <label for="f_{{.ID}}">{{.Label}}{{if not .Required}} <span class="muted small">— можно позже</span>{{end}}</label>
+      {{if eq .Type "textarea"}}<textarea id="f_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
+      {{else}}<input id="f_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}"{{if eq .Type "phone"}} type="text" autocomplete="tel" placeholder="@ник или +996 …"{{else}} type="text"{{end}}{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
+      {{if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
+      {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
+    </div>{{end}}
+    <button type="submit">Сохранить</button>
+  </form>
+  </details>{{end}}
+</section>
+{{end}}
+
+{{if and .P.Texts.Check (not .Final)}}<p class="check-note">{{.P.Texts.Check}}</p>{{end}}
 <p class="muted small">Сохраните ссылку на эту страницу: статус обновляется здесь автоматически.{{if .O.Email}} Письма приходят на {{.O.Email}}.{{end}}</p>
 {{end}}

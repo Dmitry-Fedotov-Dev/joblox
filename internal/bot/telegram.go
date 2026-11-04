@@ -29,15 +29,18 @@ type Update struct {
 }
 
 type Message struct {
-	MessageID int64  `json:"message_id"`
-	From      *User  `json:"from"`
-	Chat      Chat   `json:"chat"`
-	Text      string `json:"text"`
+	MessageID int64    `json:"message_id"`
+	From      *User    `json:"from"`
+	Chat      Chat     `json:"chat"`
+	Text      string   `json:"text"`
+	ReplyTo   *Message `json:"reply_to_message"` // the message this one answers
 }
 
 type User struct {
-	ID       int64  `json:"id"`
-	Username string `json:"username"`
+	ID        int64  `json:"id"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 }
 
 type Chat struct {

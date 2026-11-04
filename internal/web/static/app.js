@@ -27,13 +27,20 @@
   var auto = document.querySelector("form[data-auto]");
   if (auto) setTimeout(function () { auto.submit(); }, 50);
 
-  // back from Telegram's sign-in: the account is in the address after #tgAuthResult=; the page passes it on
-  var tg = location.hash.match(/^#tgAuthResult=(.+)$/), tgForm = document.getElementById("tg-login");
-  if (tg && tgForm) {
-    history.replaceState(null, "", location.pathname + location.search);
-    tgForm.querySelector("[name=data]").value = decodeURIComponent(tg[1]);
-    tgForm.submit();
-  }
+  // «Написать здесь»: down to the chat, the cursor in its box
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href="#chat"]');
+    var box = document.getElementById("say");
+    if (!a || !box) return;
+    e.preventDefault();
+    document.getElementById("chat").scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(function () { box.focus({ preventScroll: true }); }, 450);
+  });
+
+  // a tick that saves itself («Связь только через бота»)
+  document.addEventListener("change", function (e) {
+    if (e.target.matches && e.target.matches("[data-autosubmit]")) e.target.form.submit();
+  });
 
   // «− 1 +»: the buttons step the number between its min and max, as typing it would
   document.addEventListener("click", function (e) {
@@ -55,7 +62,7 @@
       fetch(base + "/o/" + encodeURIComponent(token) + "/state.json", { credentials: "same-origin", cache: "no-store" })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (s) {
-          var typing = document.activeElement && document.activeElement.tagName === "INPUT";
+          var typing = document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
           if (s && String(s.version) !== version && !typing) location.reload();
         })
         .catch(function () {});

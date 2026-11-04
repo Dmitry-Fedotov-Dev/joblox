@@ -278,6 +278,23 @@ func (m *Manager) OrderChanged(ctx context.Context, o *order.Order, ev order.Eve
 	}
 }
 
+// Tell writes to an order's customer through the bot running now, if any.
+func (m *Manager) Tell(ctx context.Context, o *order.Order, text string) {
+	if b := m.current(); b != nil {
+		b.Tell(ctx, o, text)
+	}
+}
+
+// Name is the running bot's @name; empty with no bot, or with the hosting's shared one (it serves operators only).
+func (m *Manager) Name() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.bot == nil || m.shared {
+		return ""
+	}
+	return m.name
+}
+
 func (m *Manager) Refused(ctx context.Context, why string, d antifraud.Decision) {
 	if b := m.current(); b != nil {
 		b.Refused(ctx, why, d)

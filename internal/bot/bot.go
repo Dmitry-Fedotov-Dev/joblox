@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/antifraud"
@@ -33,6 +34,8 @@ type Bot struct {
 	// shop, so all of them are operators, and «everyone» is chat 0.
 	Relay bool
 	opMu  sync.RWMutex
+
+	name atomic.Value // the bot's @name, learnt when it starts
 
 	mu        sync.Mutex
 	refused   int       // refused attempts since the last summary
@@ -92,8 +95,19 @@ func (b *Bot) Started(ctx context.Context, version string) {
 		"остановите приём командой /pause и проверьте сервер.", html.EscapeString(b.svc.P.Business.Name), html.EscapeString(version), req), nil)
 }
 
+// Name is the bot's @name, empty until Telegram told it (Run asks first thing).
+func (b *Bot) Name() string {
+	v, _ := b.name.Load().(string)
+	return v
+}
+
 // Run polls Telegram until ctx ends.
 func (b *Bot) Run(ctx context.Context) {
+	if me, err := b.api.Me(ctx); err == nil {
+		b.name.Store(me.Username)
+	} else {
+		b.log.Warn("telegram getMe", "err", err)
+	}
 	var offset int64
 	for ctx.Err() == nil {
 		updates, err := b.api.Updates(ctx, offset, 30)
@@ -117,6 +131,8 @@ func (b *Bot) Run(ctx context.Context) {
 // Handle processes one update; exported for tests.
 func (b *Bot) Handle(ctx context.Context, u Update) {
 	switch {
+	case u.Message != nil && u.Message.From != nil && !b.Relay && b.customerSays(ctx, u.Message, b.isOperator(u.Message.From.ID)):
+	case u.Message != nil && u.Message.From != nil && b.isOperator(u.Message.From.ID) && b.operatorAnswers(ctx, u.Message):
 	case u.Message != nil && u.Message.From != nil:
 		if cmd, code, ok := strings.Cut(strings.TrimSpace(u.Message.Text), " "); ok && cmd == "/start" && b.Join != nil &&
 			!b.isOperator(u.Message.From.ID) && b.Join(ctx, u.Message.From.ID, strings.TrimSpace(code)) {
@@ -128,7 +144,8 @@ func (b *Bot) Handle(ctx context.Context, u Update) {
 			return
 		}
 		if !b.isOperator(u.Message.From.ID) {
-			_, _ = b.api.Send(ctx, u.Message.Chat.ID, fmt.Sprintf("Этот бот только для операторов. Ваш id: <code>%d</code>.", u.Message.From.ID), nil)
+			_, _ = b.api.Send(ctx, u.Message.Chat.ID, fmt.Sprintf("Здравствуйте! Чтобы бот присылал новости заказа, откройте его по кнопке "+
+				"«Получать статус в Telegram» на странице заказа. Ваш id: <code>%d</code>.", u.Message.From.ID), nil)
 			return
 		}
 		b.command(ctx, u.Message)
@@ -201,6 +218,9 @@ func (b *Bot) card(o *order.Order) (string, *Keyboard) {
 	var s strings.Builder
 	fmt.Fprintf(&s, "<b>Заказ №%d</b> · %s %s\n<i>%s</i>\n\n", o.ID, b.tone(o), html.EscapeString(st.Title),
 		o.CreatedAt.Format("02.01 15:04 UTC"))
+	if o.BotOnly() {
+		s.WriteString("🤫 <b>Связь только через бота</b>: не пишите и не звоните клиенту лично, отвечайте здесь\n\n")
+	}
 	for _, l := range o.Lines {
 		qty := ""
 		if l.Qty > 1 {
@@ -374,6 +394,14 @@ func (b *Bot) OrderCreated(ctx context.Context, o *order.Order, d antifraud.Deci
 func (b *Bot) OrderChanged(ctx context.Context, o *order.Order, ev order.Event) {
 	var note string
 	switch ev.Kind {
+	case "message":
+		b.broadcast(ctx, fmt.Sprintf("💬 <b>Заказ №%d</b>%s: %s\n\n<i>↩️ Ответьте на это сообщение, и ответ увидит покупатель.</i>",
+			o.ID, b.who(o), html.EscapeString(ev.Note)), nil)
+		return
+	case "telegram":
+		note = "📲 Клиент подключил Telegram: новости заказа и ваши ответы придут ему туда"
+	case "bot_only":
+		note = "🤫 " + ev.Note
 	case "verified":
 		note = "Клиент подтвердил email"
 	case "reported":

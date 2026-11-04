@@ -64,9 +64,9 @@ type Config struct {
 	ReqFixed bool
 	// SSO: the owner's sign-in with Google or Apple ID (the hosting and the turnkey tariffs).
 	SSO SSO
-	// TelegramLogin is the token of the bot whose «Продолжить через Telegram» gives a quick order its contact
-	// (JOBLOX_TELEGRAM_LOGIN); empty: the customer types the contact.
-	TelegramLogin string
+	// CustomerBot is the @name of the bot that also talks to customers (the order's chat, its news); nil or
+	// empty: the order page has no chat and no Telegram button.
+	CustomerBot func() string
 }
 
 type Server struct {
@@ -227,7 +227,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /quick", s.quickOrder)
 	mux.HandleFunc("POST /o/{token}/qty", s.orderQty)
 	mux.HandleFunc("POST /o/{token}/contact", s.orderContact)
-	mux.HandleFunc("POST /o/{token}/tg", s.orderTelegram)
+	mux.HandleFunc("POST /o/{token}/msg", s.orderMessage)
+	mux.HandleFunc("POST /o/{token}/botonly", s.orderBotOnly)
 	mux.HandleFunc("POST /beat", s.beat)
 	for path, file := range map[string]string{"GET /cover": s.cfg.Cover, "GET /og": s.cfg.OGImage} {
 		if file == "" {

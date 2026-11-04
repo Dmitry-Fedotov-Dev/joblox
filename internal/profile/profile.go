@@ -212,6 +212,8 @@ type Texts struct {
 	Intro       string `yaml:"intro"`
 	PaymentNote string `yaml:"payment_note"`
 	Rules       string `yaml:"rules"`
+	// Check is how the payment is checked and what if it is late, shown under «Я оплатил» and while it is checked.
+	Check string `yaml:"check"`
 }
 
 // StringList accepts both `from: new` and `from: [new, accepted]`.
