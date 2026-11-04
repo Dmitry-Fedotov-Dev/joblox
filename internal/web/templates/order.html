@@ -1,25 +1,28 @@
 {{define "content"}}
-{{$pay := and .Requisites (not .O.ReportedAt)}}
-<section class="order-head" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
-  <p class="eyebrow">Заказ №{{.O.ID}} · {{.Ref}}</p>
-  {{if and (not .Final) (not (and .O.ReportedAt (not .O.Paid)))}}<p class="live" role="status"><span class="pulse"></span>{{if $pay}}Заказ принят и уже в обработке{{else if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</p>{{end}}
-  {{if .Steps}}<ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}">{{.Title}}</li>{{end}}</ol>{{end}}
-  {{if and .O.ReportedAt (not .O.Paid) (not .Final)}}<h1>Спасибо! Проверяем перевод</h1>
-  <p class="lead">Продавец подтвердит оплату, статус обновится здесь сам.</p>
-  {{else if not $pay}}<h1>{{if .State.Customer}}{{.State.Customer}}{{else}}{{.State.Title}}{{end}}</h1>{{end}}
-</section>
+<div class="op">
 
-{{if $pay}}{{with .Requisites}}
+<header class="stage" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
+  {{if .Steps}}<ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}"><span>{{.Title}}</span></li>{{end}}</ol>{{end}}
+  <div class="stage-icon tone-{{.Stage.Tone}}{{if .Stage.Live}} live{{end}}" aria-hidden="true">{{.Stage.Icon}}</div>
+  <h1>{{.Stage.Title}}</h1>
+  {{if .Stage.Sub}}<p class="stage-sub" role="status">{{.Stage.Sub}}</p>{{end}}
+  <p class="stage-ref">Заказ №{{.O.ID}} · {{.Ref}}</p>
+</header>
+
+{{if and .Waiting (ne .Stage.Sub .Waiting)}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
+{{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
+
+{{if .Pay}}{{with .Requisites}}
 <section class="card pay">
   <p class="pay-label">{{if $.O.Split}}{{if $.O.AdvanceAt}}Остаток после работы{{else}}Аванс {{$.O.Prepay}}%{{end}}{{else}}К оплате{{end}}</p>
-  <h1 class="pay-sum"><span data-copy="{{sumPlain $.O.Due}}" title="Скопировать сумму">{{sum $.O.Due}} {{cur $.Business.Currency}}</span></h1>
-  {{if $.O.Split}}<p class="pay-of muted small">из {{sum $.O.Total}} {{cur $.Business.Currency}}</p>{{end}}
+  <p class="pay-sum"><span data-copy="{{sumPlain $.O.Due}}" title="Скопировать сумму">{{sum $.O.Due}} {{cur $.Business.Currency}}</span></p>
+  {{if $.O.Split}}<p class="pay-of">из {{sum $.O.Total}} {{cur $.Business.Currency}}</p>{{end}}
   {{if $.Choices}}<form class="choices" method="post" action="{{p}}/o/{{$.O.Token}}/qty" aria-label="Срок">
     <input type="hidden" name="csrf" value="{{$.CSRF}}">
     {{range $.Choices}}<button type="submit" name="qty" value="{{.Qty}}"{{if .On}} aria-pressed="true" class="on"{{end}}>{{.Label}}</button>{{end}}
   </form>{{end}}
   {{if $.QR}}<div class="pay-qr"><img src="{{p}}/pay-qr" alt="QR для оплаты" width="200">
-    <p class="small muted">Отсканируйте в приложении банка и введите сумму <b>{{sumPlain $.O.Due}}</b></p></div>{{end}}
+    <p>Отсканируйте в приложении банка и введите сумму <b>{{sumPlain $.O.Due}}</b></p></div>{{end}}
   {{$tabs := .Tabs}}{{if gt (len $tabs) 1}}<div class="pay-tabs" role="tablist" aria-label="Откуда платите">
     {{range $i, $t := $tabs}}<input type="radio" name="paytab" id="paytab{{$i}}"{{if eq $i 0}} checked{{end}}><label for="paytab{{$i}}">{{$t.Name}}</label>{{end}}
   </div>{{end}}
@@ -28,82 +31,24 @@
     {{if .Recipient}}<button class="pay-row" type="button" data-copy="{{.Recipient}}"><span>Получатель</span><b>{{.Recipient}}</b><i aria-hidden="true"></i></button>{{end}}
     <button class="pay-row" type="button" data-copy="{{$.Purpose}}"><span>Назначение платежа</span><b>{{$.Purpose}}</b><i aria-hidden="true"></i></button>
   </div>
-  <p class="pay-tip muted small">Нажмите на строку, чтобы скопировать</p>
   {{if and $.O.Split $.O.AdvanceAt}}<p class="banner ok" role="status">Аванс получен. Остаток можно перевести после работы или отдать на месте.</p>{{end}}
   <form method="post" action="{{p}}/o/{{$.O.Token}}/paid">
     <input type="hidden" name="csrf" value="{{$.CSRF}}">
-    <button class="cta wide" type="submit">Я оплатил</button>
+    <button class="btn-main" type="submit">Я оплатил</button>
   </form>
-  <p class="muted small pay-after">После нажатия сразу начнём проверку перевода</p>
-  <details class="pay-more"><summary>Важно про перевод</summary>
-    <p class="muted small">Укажите сумму и назначение платежа точно как здесь: по ним продавец находит оплату. Реквизиты действуют только для этого заказа.</p>
-    {{if .Note}}<p class="muted small">{{.Note}}</p>{{end}}
-    {{if $.P.Texts.Rules}}<p class="muted small">{{$.P.Texts.Rules}}</p>{{end}}
+  <p class="card-note">После нажатия сразу начнём проверку перевода</p>
+  <details class="more"><summary>Важно про перевод</summary>
+    <p>Укажите сумму и назначение платежа точно как здесь: по ним продавец находит оплату. Реквизиты действуют только для этого заказа.</p>
+    {{if .Note}}<p>{{.Note}}</p>{{end}}
+    {{if $.P.Texts.Rules}}<p>{{$.P.Texts.Rules}}</p>{{end}}
   </details>
 </section>
 {{end}}{{end}}
 
-{{if .Setup}}
-<section class="card setup" id="setup">
-  <div class="talk-icon" aria-hidden="true">{{if .SetupDone}}✅{{else}}🛠{{end}}</div>
-  <h2>{{if .SetupDone}}Данные сохранены{{else}}Осталось настроить{{end}}</h2>
-  <p class="talk-sub">{{if .SetupDone}}Можно поменять, пока мы не закончили{{else}}Оплата получена. Заполните, и мы начнём{{end}}</p>
-  <form method="post" action="{{p}}/o/{{.O.Token}}/setup" class="setup-form">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    {{range .Setup}}<div class="field{{if .Error}} has-error{{end}}">
-      <label for="s_{{.ID}}">{{.Label}}{{if not .Required}} <span class="muted small">— можно позже</span>{{end}}</label>
-      {{if eq .Type "slug"}}<div class="slug"><input id="s_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}" type="text" inputmode="url" autocapitalize="none" spellcheck="false"
-        pattern="[A-Za-z0-9][A-Za-z0-9\-]{1,28}[A-Za-z0-9]" maxlength="30" placeholder="valya"{{if .Required}} required{{end}}><span>{{.Unit}}</span></div>
-      {{else if eq .Type "textarea"}}<textarea id="s_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
-      {{else}}<input id="s_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}" type="text"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
-      {{if .Error}}<p class="field-error">{{.Error}}</p>{{else if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
-    </div>{{end}}
-    <button class="cta wide" type="submit">Сохранить</button>
-  </form>
-</section>
-{{end}}
-
-{{if .Chat}}
-<section class="card talk" id="talk">
-  <div class="talk-icon" aria-hidden="true">🔔</div>
-  <h2>Куда прислать новости заказа?</h2>
-  <p class="talk-sub">Сообщим, когда оплата придёт и заказ будет готов</p>
-  <div class="talk-ways">
-  {{if .BotLinked}}<p class="tg-on"><svg class="tg-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.94 4.3 18.7 19.6c-.24 1.08-.88 1.34-1.78.84l-4.92-3.63-2.37 2.29c-.26.26-.48.48-.99.48l.35-5.02 9.13-8.25c.4-.35-.09-.55-.62-.2L6.2 13.2l-4.86-1.52c-1.06-.33-1.08-1.06.22-1.57L20.56 2.8c.88-.32 1.65.2 1.38 1.5z"/></svg>Новости приходят в Telegram</p>
-  {{else}}<a class="tg-btn" href="{{.BotLink}}" target="_blank" rel="noopener"><svg class="tg-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.94 4.3 18.7 19.6c-.24 1.08-.88 1.34-1.78.84l-4.92-3.63-2.37 2.29c-.26.26-.48.48-.99.48l.35-5.02 9.13-8.25c.4-.35-.09-.55-.62-.2L6.2 13.2l-4.86-1.52c-1.06-.33-1.08-1.06.22-1.57L20.56 2.8c.88-.32 1.65.2 1.38 1.5z"/></svg>Telegram</a>{{end}}
-  <form class="bot-only" method="post" action="{{p}}/o/{{.O.Token}}/botonly">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    <label class="dot" title="Продавец не будет звонить и писать вам лично"><input type="checkbox" name="on" value="1"{{if .O.BotOnly}} checked{{end}} data-autosubmit><span>Связь только через бота</span></label>
-    <noscript><button class="link" type="submit">Сохранить</button></noscript>
-  </form>
-  </div>
-  {{if .ChatOpen}}<p class="talk-or">или</p>
-  <a class="here-btn" href="#chat"><span aria-hidden="true">✉️</span>Написать здесь</a>{{end}}
-</section>
-{{else if .Ask}}
-<section class="card ask" id="contact">
-  <h2>Куда написать, когда всё будет готово?</h2>
-  <form method="post" action="{{p}}/o/{{.O.Token}}/contact">
-    <input type="hidden" name="csrf" value="{{.CSRF}}">
-    {{range .Ask}}<div class="field{{if .Error}} has-error{{end}}">
-      <label for="f_{{.ID}}">{{.Label}}{{if not .Required}} <span class="muted small">— можно позже</span>{{end}}</label>
-      {{if eq .Type "textarea"}}<textarea id="f_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
-      {{else}}<input id="f_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}"{{if eq .Type "phone"}} type="text" autocomplete="tel" placeholder="@ник или +996 …"{{else}} type="text"{{end}}{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
-      {{if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
-      {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
-    </div>{{end}}
-    <button class="cta wide" type="submit">Сохранить</button>
-  </form>
-</section>
-{{end}}
-
-{{if .Waiting}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
-{{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
-
 {{if .NeedCode}}
 <section class="card">
-  <h2>Подтвердите email</h2>
-  <p class="muted">Мы отправили код на {{.O.Email}}. Без подтверждения заказ не будет выполнен{{if eq .O.Method "transfer"}}, а реквизиты не появятся{{end}}.</p>
+  <h2>Код из письма</h2>
+  <p class="card-sub">Мы отправили код на {{.O.Email}}{{if eq .O.Method "transfer"}}: после него появятся реквизиты{{end}}.</p>
   <form method="post" action="{{p}}/o/{{.O.Token}}/code" class="inline">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <label class="sr" for="code">Код из письма</label>
@@ -115,39 +60,71 @@
 </section>
 {{end}}
 
+{{if .Setup}}
+<section class="card setup" id="setup">
+  <h2>{{if .SetupDone}}Данные сохранены{{else}}Осталось настроить{{end}}</h2>
+  {{if .SetupDone}}<p class="card-sub">Можно поменять, пока мы не закончили</p>{{end}}
+  <form method="post" action="{{p}}/o/{{.O.Token}}/setup" class="stack-form">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    {{range .Setup}}<div class="field{{if .Error}} has-error{{end}}">
+      <label for="s_{{.ID}}">{{.Label}}{{if not .Required}} <span class="opt">можно позже</span>{{end}}</label>
+      {{if eq .Type "slug"}}<div class="slug"><input id="s_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}" type="text" inputmode="url" autocapitalize="none" spellcheck="false"
+        pattern="[A-Za-z0-9][A-Za-z0-9\-]{1,28}[A-Za-z0-9]" maxlength="30" placeholder="valya"{{if .Required}} required{{end}}><span>{{.Unit}}</span></div>
+      {{else if eq .Type "textarea"}}<textarea id="s_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
+      {{else}}<input id="s_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}" type="text"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
+      {{if .Error}}<p class="field-error">{{.Error}}</p>{{else if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
+    </div>{{end}}
+    <button class="{{if .SetupDone}}btn-quiet{{else}}btn-main{{end}}" type="submit">Сохранить</button>
+  </form>
+</section>
+{{end}}
 
-<section class="card">
-  <h2>Ваш заказ</h2>
+{{if .Chat}}
+<section class="card talk{{if .Setup}} compact{{end}}" id="talk">
+  {{if not .Setup}}<h2>Куда прислать новости заказа?</h2>
+  <p class="card-sub">Сообщим, когда оплата придёт и заказ будет готов</p>{{end}}
+  <div class="talk-ways">
+    {{if .BotLinked}}<p class="tg-on">{{template "tglogo"}}Новости приходят в Telegram</p>
+    {{else}}<a class="btn-tg" href="{{.BotLink}}" target="_blank" rel="noopener">{{template "tglogo"}}{{if .Setup}}Новости в Telegram{{else}}Telegram{{end}}</a>{{end}}
+    <form class="bot-only" method="post" action="{{p}}/o/{{.O.Token}}/botonly">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label class="dot" title="Продавец не будет звонить и писать вам лично"><input type="checkbox" name="on" value="1"{{if .O.BotOnly}} checked{{end}} data-autosubmit><span>Связь только через бота</span></label>
+      <noscript><button class="link" type="submit">Сохранить</button></noscript>
+    </form>
+  </div>
+  {{if .ChatOpen}}{{if not .Setup}}<p class="or">или</p>{{end}}
+  <a class="btn-quiet here" href="#chat"><span aria-hidden="true">✉️</span>Написать здесь</a>{{end}}
+</section>
+{{else if .Ask}}
+<section class="card" id="contact">
+  <h2>Куда написать, когда всё будет готово?</h2>
+  <form method="post" action="{{p}}/o/{{.O.Token}}/contact" class="stack-form">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    {{template "askfields" .}}
+    <button class="btn-main" type="submit">Сохранить</button>
+  </form>
+</section>
+{{end}}
+
+<details class="card summary">
+  <summary><span class="summary-title">Ваш заказ</span><span class="summary-line">{{range $i, $l := .O.Lines}}{{if $i}}, {{end}}{{$l.Title}}{{if gt $l.Qty 1}} × {{$l.Qty}}{{end}}{{end}}</span>{{if .O.Priced}}<b>{{sum .O.Total}} {{cur .Business.Currency}}</b>{{end}}</summary>
   {{if .O.Lines}}
   <table class="lines">
     {{range .O.Lines}}<tr><td>{{.Title}} × {{.Qty}}</td><td class="num">{{sum .Sum}}</td></tr>{{end}}
     {{range .O.Fees}}<tr><td>{{.Title}}</td><td class="num">{{sum .Sum}}</td></tr>{{end}}
     <tr class="sum"><td>Итого</td><td class="num">{{sum .O.Total}} {{cur .Business.Currency}}</td></tr>
   </table>
-  {{else if .O.Priced}}
-  <p class="big">К оплате: {{sum .O.Total}} {{cur .Business.Currency}}</p>
   {{end}}
-  <dl class="facts">
+  {{if or .Fields (or .O.Paid (ne .O.Method "transfer"))}}<dl class="facts">
     {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</dd>{{end}}
     {{if or .O.Paid (ne .O.Method "transfer")}}<dt>Оплата</dt><dd>{{.MethodTitle}}{{if .O.Paid}}, оплачено{{end}}</dd>{{end}}
-  </dl>
-</section>
+  </dl>{{end}}
+</details>
 
 {{if .Call}}
-<section class="card">
-  <a class="cta button" href="{{.Call}}" target="_blank" rel="noopener">Позвонить исполнителю</a>
-  <p class="hint">Звонок через интернет, без номеров: «{{.Business.Name}}» откроет ту же ссылку у себя. Работает, пока заказ открыт.</p>
-</section>
-{{end}}
-
-{{if .Actions}}
-<section class="card actions">
-  {{range .Actions}}
-  <form method="post" action="{{p}}/o/{{$.O.Token}}/t/{{.ID}}"{{if or (eq .To "cancelled") (eq .To "rejected")}} data-confirm="{{.Title}}?"{{end}}>
-    <input type="hidden" name="csrf" value="{{$.CSRF}}">
-    <button type="submit" class="{{if or (eq .To "cancelled") (eq .To "rejected")}}secondary{{end}}">{{.Title}}</button>
-  </form>
-  {{end}}
+<section class="card call">
+  <a class="btn-quiet" href="{{.Call}}" target="_blank" rel="noopener">📞 Позвонить исполнителю</a>
+  <p class="card-note">Звонок через интернет, без номеров: «{{.Business.Name}}» откроет ту же ссылку у себя. Работает, пока заказ открыт.</p>
 </section>
 {{end}}
 
@@ -155,29 +132,42 @@
 <section class="card chat" id="chat">
   <h2>Сообщения продавцу</h2>
   {{if .Messages}}<ol class="msgs" aria-label="Переписка">{{range .Messages}}<li class="{{if .Mine}}mine{{end}}">{{.Text}}</li>{{end}}</ol>
-  {{else}}<p class="muted small">Спросите что угодно о заказе: ответ появится здесь{{if .BotLinked}} и в Telegram{{end}}.</p>{{end}}
+  {{else}}<p class="card-sub">Спросите что угодно о заказе: ответ появится здесь{{if .BotLinked}} и в Telegram{{end}}.</p>{{end}}
   <form class="say" method="post" action="{{p}}/o/{{.O.Token}}/msg">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <label class="sr" for="say">Сообщение продавцу</label>
     <textarea id="say" name="text" rows="1" maxlength="1000" placeholder="Сообщение" required></textarea>
     <button type="submit" aria-label="Отправить">↑</button>
   </form>
-  {{if .Ask}}<details class="ask-more"{{range .Ask}}{{if .Error}} open{{end}}{{end}}><summary>Нет Telegram? Оставьте номер</summary>
-  <form method="post" action="{{p}}/o/{{.O.Token}}/contact">
+  {{if .Ask}}<details class="more"{{range .Ask}}{{if .Error}} open{{end}}{{end}}><summary>Нет Telegram? Оставьте номер</summary>
+  <form method="post" action="{{p}}/o/{{.O.Token}}/contact" class="stack-form">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
-    {{range .Ask}}<div class="field{{if .Error}} has-error{{end}}">
-      <label for="f_{{.ID}}">{{.Label}}{{if not .Required}} <span class="muted small">— можно позже</span>{{end}}</label>
-      {{if eq .Type "textarea"}}<textarea id="f_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
-      {{else}}<input id="f_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}"{{if eq .Type "phone"}} type="text" autocomplete="tel" placeholder="@ник или +996 …"{{else}} type="text"{{end}}{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
-      {{if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
-      {{if .Error}}<p class="field-error">{{.Error}}</p>{{end}}
-    </div>{{end}}
-    <button type="submit">Сохранить</button>
+    {{template "askfields" .}}
+    <button class="btn-quiet" type="submit">Сохранить</button>
   </form>
   </details>{{end}}
 </section>
 {{end}}
 
-{{if and .P.Texts.Check (not .Final)}}<p class="check-note">{{.P.Texts.Check}}</p>{{end}}
-<p class="muted small">Сохраните ссылку на эту страницу: статус обновляется здесь автоматически.{{if .O.Email}} Письма приходят на {{.O.Email}}.{{end}}</p>
+<footer class="op-foot">
+  {{if and .P.Texts.Check (not .Final)}}<p class="check-note">{{.P.Texts.Check}}</p>{{end}}
+  <p>Сохраните ссылку на эту страницу: статус обновляется здесь автоматически.{{if .O.Email}} Письма приходят на {{.O.Email}}.{{end}}</p>
+  {{if .Actions}}<div class="quiet-actions">{{range .Actions}}
+    <form method="post" action="{{p}}/o/{{$.O.Token}}/t/{{.ID}}"{{if or (eq .To "cancelled") (eq .To "rejected")}} data-confirm="{{.Title}}?"{{end}}>
+      <input type="hidden" name="csrf" value="{{$.CSRF}}">
+      <button type="submit" class="{{if or (eq .To "cancelled") (eq .To "rejected")}}link-off{{else}}btn-quiet{{end}}">{{.Title}}</button>
+    </form>{{end}}
+  </div>{{end}}
+</footer>
+
+</div>
 {{end}}
+
+{{define "askfields"}}{{range .Ask}}<div class="field{{if .Error}} has-error{{end}}">
+  <label for="f_{{.ID}}">{{.Label}}{{if not .Required}} <span class="opt">можно позже</span>{{end}}</label>
+  {{if eq .Type "textarea"}}<textarea id="f_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
+  {{else}}<input id="f_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}"{{if eq .Type "phone"}} type="text" autocomplete="tel" placeholder="@ник или +996 …"{{else}} type="text"{{end}}{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
+  {{if .Error}}<p class="field-error">{{.Error}}</p>{{else if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
+</div>{{end}}{{end}}
+
+{{define "tglogo"}}<svg class="tg-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.94 4.3 18.7 19.6c-.24 1.08-.88 1.34-1.78.84l-4.92-3.63-2.37 2.29c-.26.26-.48.48-.99.48l.35-5.02 9.13-8.25c.4-.35-.09-.55-.62-.2L6.2 13.2l-4.86-1.52c-1.06-.33-1.08-1.06.22-1.57L20.56 2.8c.88-.32 1.65.2 1.38 1.5z"/></svg>{{end}}

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
 	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
@@ -283,6 +285,8 @@ type orderView struct {
 	Ask         []fieldView     // a quick order's contact card, after «Я оплатил»
 	Setup       []fieldView     // what the customer fills in once the payment is confirmed (checkout.setup)
 	SetupDone   bool            // the needed one of them is there
+	Pay         bool            // the order waits for the customer's transfer: the pay card is the page
+	Stage       stage           // the head of the page: where the order is, said once
 	Chat        bool            // the news card: Telegram and «только через бота»
 	ChatOpen    bool            // the customer may write: the chat is on and he is not banned
 	Messages    []order.Message // the chat so far
@@ -339,7 +343,53 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 	case o.Method == profile.MethodTransfer && v.NeedCode:
 		v.Waiting = "Введите код из письма, чтобы увидеть реквизиты для оплаты."
 	}
+	v.Pay = v.Requisites != nil && o.ReportedAt == nil && !o.Paid
+	v.Stage = s.stageOf(&v)
 	return v
+}
+
+// stage is the head of the order page: an icon, what is happening, one line of what is next. Every state of
+// the order says it there once; the progress line above shows the way.
+type stage struct {
+	Icon, Title, Sub string
+	Tone             string // pay, wait, ok, done, off: the icon's colour
+	Live             bool   // something is happening right now: the icon breathes
+}
+
+func (s *Server) stageOf(v *orderView) stage {
+	o, st := v.O, v.State
+	initial := o.State == s.svc.Flow.Initial()
+	switch {
+	case st.Final && o.Paid || st.Final && st.ID == "done":
+		return stage{Icon: "🎉", Title: st.Title, Sub: subOf(st), Tone: "done"}
+	case st.Final:
+		return stage{Icon: "✕", Title: st.Title, Sub: subOf(st), Tone: "off"}
+	case v.NeedCode:
+		return stage{Icon: "✉️", Title: "Подтвердите email", Sub: "Код уже в письме: без него заказ не продолжится", Tone: "wait"}
+	case v.Pay:
+		return stage{Icon: "💳", Title: "Оплатите заказ", Sub: "Заказ принят и уже в обработке", Tone: "pay", Live: true}
+	case o.ReportedAt != nil && !o.Paid:
+		return stage{Icon: "⏳", Title: "Проверяем перевод", Sub: "Продавец подтвердит оплату, статус обновится здесь сам", Tone: "wait", Live: true}
+	case o.Paid && initial && v.Setup != nil && !v.SetupDone:
+		return stage{Icon: "✓", Title: "Оплата получена", Sub: "Осталось несколько деталей, и мы начнём", Tone: "ok"}
+	case o.Paid && initial:
+		return stage{Icon: "✓", Title: "Оплата получена", Sub: "Скоро возьмём заказ в работу", Tone: "ok", Live: true}
+	case v.Waiting != "":
+		return stage{Icon: "⏳", Title: st.Title, Sub: v.Waiting, Tone: "wait", Live: true}
+	}
+	return stage{Icon: "🛠", Title: st.Title, Sub: subOf(st), Tone: "ok", Live: true}
+}
+
+// subOf is the state's line for the customer without the title it often starts with («Готово: сайт работает»).
+func subOf(st profile.State) string {
+	sub := strings.TrimSpace(st.Customer)
+	if rest, ok := strings.CutPrefix(sub, st.Title); ok {
+		sub = strings.TrimLeft(rest, ":.,— ")
+		if r, size := utf8.DecodeRuneInString(sub); size > 0 {
+			sub = string(unicode.ToUpper(r)) + sub[size:]
+		}
+	}
+	return sub
 }
 
 func (s *Server) orderPage(w http.ResponseWriter, r *http.Request) {

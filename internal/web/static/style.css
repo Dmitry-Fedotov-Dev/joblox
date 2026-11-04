@@ -460,52 +460,6 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
   .top .cart-link { flex: none; padding: 7px 14px; font-size: 14px; }
 }
 
-/* the order page: the order's progress first, then the sum and where to send it */
-.order-head { margin: 8px 0 4px; }
-.order-head h1 { margin: 10px 0 6px; }
-.order-head .eyebrow { margin: 0; }
-.live { display: inline-flex; align-items: center; gap: 9px; margin: 10px 0 0; padding: 7px 14px 7px 12px; border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 12%, var(--panel)); font-size: 14px; font-weight: 700; line-height: 1.3; }
-.pulse { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: .25; } }
-@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
-/* one calm column on a wide screen, like a bank's payment page */
-.order-head, .order-head ~ section, .order-head ~ p { max-width: 560px; margin-left: auto; margin-right: auto; }
-/* the progress is one row on a phone too: the payment stays on the first screen */
-.order-head .track { margin: 18px 0 4px; flex-direction: row; flex-wrap: nowrap; gap: 4px; }
-.order-head .track li { flex: 1 1 0; min-width: 0; padding: 30px 2px 0; text-align: center; font-size: 12.5px; line-height: 1.25; }
-.order-head .track li::before { top: 0; left: 50%; translate: -50% 0; }
-.order-head .track li::after { top: 11px; bottom: auto; left: calc(50% + 16px); right: calc(-50% + 16px); width: auto; height: 2px; }
-.pay { border: 2px solid var(--accent); text-align: center; padding: 26px 22px 20px; }
-.pay-label { margin: 0; color: var(--muted); font-size: 15px; }
-.pay-sum { margin: 4px 0 0; font-size: clamp(40px, 11vw, 52px); line-height: 1.05; letter-spacing: -.035em; font-weight: 800; }
-.pay-sum span { cursor: pointer; }
-.pay-sum .copied { outline: 0; color: var(--ok); }
-.pay-of { margin: 4px 0 0; }
-.pay-qr { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 18px 0 4px; }
-.pay-qr img { width: 200px; max-width: 100%; height: auto; border-radius: 18px; background: #fff; padding: 8px; }
-.pay-qr p { margin: 0; max-width: 30ch; }
-.pay-rows { margin: 20px 0 0; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; text-align: left; }
-.pay-row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) 18px; gap: 2px 12px; align-items: center;
-  width: 100%; padding: 13px 16px; border-top: 1px solid var(--line); cursor: pointer; }
-.pay-row:first-child { border-top: 0; }
-.pay-row span { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
-.pay-row b { grid-column: 1; font-size: 17px; font-weight: 700; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.pay-row i { grid-column: 2; grid-row: 2; width: 16px; height: 16px; opacity: .4; background: currentColor;
-  -webkit-mask: no-repeat center/16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='9' y='9' width='12' height='12' rx='2'/%3E%3Cpath d='M5 15V5a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E"); mask: no-repeat center/16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='9' y='9' width='12' height='12' rx='2'/%3E%3Cpath d='M5 15V5a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E"); }
-.pay-row:hover i, .pay-row:focus-visible i { opacity: .9; }
-.pay-row:focus-visible { background: var(--soft); }
-.pay-row.plain { cursor: default; }
-.pay-row.copied { outline: 0; }
-.pay-row.copied b { color: var(--ok); }
-.pay-row.copied span::after { content: " · скопировано"; color: var(--ok); }
-.pay-row.copied i { opacity: 1; color: var(--ok); -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E"); }
-.pay-tip { margin: 8px 0 0; }
-.pay .cta { margin-top: 18px; }
-.pay-after { margin: 10px 0 0; }
-.pay-more { text-align: left; margin-top: 14px; }
-.pay-more summary { cursor: pointer; color: var(--muted); font-size: 14px; }
-
 /* copy by a tap */
 [data-copy] { cursor: pointer; }
 .copied:not(button) { outline: 2px solid color-mix(in srgb, #2e9d5b 60%, transparent); outline-offset: 3px; border-radius: 8px; }
@@ -530,15 +484,6 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .stepper input:focus { outline: 2px solid var(--accent); border-radius: 10px; }
 .item { grid-template-columns: 1fr auto; }
 
-/* a quick order: «1 мес · 3 мес · 12 мес» in the pay card, the contact card after «Я оплатил» */
-.choices { display: inline-flex; gap: 4px; padding: 4px; margin: 14px 0 0; border-radius: 999px; background: var(--soft); }
-.choices button { min-height: 0; padding: 8px 16px; border-radius: 999px; background: none; color: var(--muted); font-size: 15px; font-weight: 700; }
-.choices button.on { background: var(--panel); color: var(--fg); box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
-.ask h2 { margin-top: 0; }
-.ask .cta.tg { display: block; text-align: center; text-decoration: none; background: #2aabee; color: #fff; line-height: 58px; padding: 0; }
-.ask .or { text-align: center; margin: 12px 0 4px; }
-.quick { min-height: 50vh; display: grid; place-items: center; text-align: center; }
-
 /* ways to pay as tabs («Из России · Из Кыргызстана»): only the chosen one's rows show; no scripts needed */
 .pay-tabs { display: flex; gap: 4px; padding: 4px; margin: 20px 0 -8px; border-radius: 999px; background: var(--soft); }
 .pay-tabs input { position: absolute; opacity: 0; pointer-events: none; }
@@ -551,36 +496,127 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .pay:has(#paytab3:checked) .pay-row[data-tab]:not([data-tab="3"]) { display: none; }
 .pay-rows > .pay-row:not([hidden]) { border-top: 1px solid var(--line); }
 .pay-rows > .pay-row:first-child { border-top: 0; }
-/* the pay card stays one screen on a phone: with the months and the tabs «Я оплатил» is still in sight */
-@media (max-width: 560px), (max-height: 860px) {
-  .order-head .track { margin-top: 12px; }
-  .pay { padding: 18px 16px 16px; margin-top: 10px; }
-  .pay-sum { font-size: 42px; }
-  .choices { margin-top: 10px; }
-  .choices button { padding: 7px 14px; font-size: 14px; }
-  .pay-tabs { margin-top: 14px; }
-  .pay-tabs label { padding: 8px; font-size: 14px; }
-  .pay-rows { margin-top: 14px; }
-  .pay-row { padding: 9px 14px; }
-  .pay-row b { font-size: 16px; }
-  .pay-tip { display: none; }
-  .pay .cta { margin-top: 14px; }
-}
+/* ================================================================ the order page
+   One column. On top the stage: a thin progress line, an icon, what is happening, one line of what is next.
+   Under it one card with the one thing asked of the customer now; the rest is quiet: the order folded into a
+   line, the chat, a footnote. One radius, one rhythm, three kinds of buttons: main, Telegram, quiet. */
+.op { --gap: 14px; --r: 24px; max-width: 540px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--gap); padding-bottom: 8px; }
+.op > * { margin: 0; animation: op-rise .45s cubic-bezier(.2, .7, .2, 1) both; }
+.op > :nth-child(2) { animation-delay: .05s; } .op > :nth-child(3) { animation-delay: .1s; } .op > :nth-child(n+4) { animation-delay: .15s; }
+@keyframes op-rise { from { opacity: 0; transform: translateY(10px); } }
+.op .card { margin: 0; border-radius: var(--r); padding: 24px; }
+.op h2 { margin: 0; font-size: 19px; letter-spacing: -.015em; }
+.card-sub { margin: 4px 0 0; color: var(--muted); font-size: 14.5px; }
+.card-note { margin: 10px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
 
-/* the order's news card, after «Я оплатил»: one calm centred column — the question, Telegram, a small
-   «только через бота» dot under it, «или», and «Написать здесь» as a light second way */
-.talk { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-  padding: 32px 24px; min-height: max(300px, calc(100svh - 470px)); }
-.talk-icon { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 24px;
-  background: color-mix(in srgb, var(--accent) 14%, var(--panel)); margin-bottom: 14px; }
-.talk h2 { margin: 0; font-size: 21px; letter-spacing: -.02em; }
-.talk-sub { margin: 6px 0 22px; color: var(--muted); font-size: 14.5px; max-width: 30ch; }
-.talk-ways { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.tg-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; border-radius: 16px;
-  background: #2aabee; color: #fff; font-weight: 800; font-size: 17px; text-decoration: none; transition: background .15s ease; }
-.tg-btn:hover { background: #229ed9; }
+/* the stage */
+.stage { text-align: center; padding: 6px 8px 4px; }
+.stage h1 { margin: 12px 0 0; font-size: clamp(28px, 7.4vw, 36px); line-height: 1.08; letter-spacing: -.035em; }
+.stage-sub { margin: 8px auto 0; max-width: 34ch; color: var(--muted); font-size: 15.5px; line-height: 1.45; }
+.stage-ref { margin: 10px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); opacity: .8; }
+.stage-icon { position: relative; width: 64px; height: 64px; margin: 18px auto 0; border-radius: 50%; display: grid; place-items: center;
+  font-size: 28px; font-weight: 800; background: var(--soft); color: var(--fg); }
+.stage-icon.tone-pay { background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
+.stage-icon.tone-wait { background: color-mix(in srgb, #f5b041 18%, var(--panel)); }
+.stage-icon.tone-ok, .stage-icon.tone-done { background: color-mix(in srgb, var(--ok) 20%, var(--panel)); color: var(--ok); }
+.stage-icon.live::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid currentColor; opacity: 0;
+  color: var(--accent); animation: op-breathe 2.4s ease-out infinite; }
+.stage-icon.tone-ok.live::after { color: var(--ok); }
+.stage-icon.tone-wait.live::after { color: #f5b041; }
+@keyframes op-breathe { 0% { opacity: .55; transform: scale(.92); } 100% { opacity: 0; transform: scale(1.25); } }
+
+/* the progress: four dots on a thin line, the labels small; the current one bold and ringed */
+.stage .track { display: flex; list-style: none; margin: 0 auto; padding: 0; max-width: 420px; counter-reset: none; flex-direction: row; gap: 0; }
+.stage .track li { flex: 1 1 0; min-width: 0; position: relative; padding: 18px 2px 0; text-align: center; font-size: 11.5px; line-height: 1.25; color: var(--muted); }
+.stage .track li::before { content: ""; position: absolute; top: 0; left: 50%; translate: -50% 0; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--line); box-shadow: none; counter-increment: none; display: block; color: transparent; font-size: 0; }
+.stage .track li::after { content: ""; position: absolute; top: 4px; left: calc(50% + 9px); right: calc(-50% + 9px); width: auto; bottom: auto; height: 2px;
+  border-radius: 2px; background: var(--line); }
+.stage .track li:last-child::after { display: none; }
+.stage .track li.done { color: var(--fg); }
+.stage .track li.done::before, .stage .track li.done::after { background: var(--ink); }
+.stage .track li.now { color: var(--fg); font-weight: 800; }
+.stage .track li.now::before { background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); }
+.stage .track li.now.done::before { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent); }
+
+/* buttons: the main one, Telegram, the quiet one */
+.btn-main { display: block; width: 100%; min-height: 56px; margin: 0; border: 0; border-radius: 18px; background: var(--accent); color: var(--accent-fg);
+  font: inherit; font-size: 17px; font-weight: 800; cursor: pointer; text-align: center; text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 14px 28px -16px color-mix(in srgb, var(--accent) 85%, transparent); transition: transform .12s ease, filter .15s ease; }
+.btn-main:hover { filter: brightness(1.05); }
+.btn-main:active, .btn-tg:active { transform: translateY(1px); }
+.btn-tg { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; border-radius: 18px;
+  background: linear-gradient(180deg, #2aabee 0%, #229ed9 100%); color: #fff; font-weight: 800; font-size: 17px; text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 2px rgba(0, 0, 0, .25), 0 12px 26px -14px rgba(34, 158, 217, .85); transition: transform .12s ease; }
+.btn-tg:hover { background: linear-gradient(180deg, #229ed9 0%, #1b8cc4 100%); }
+.btn-quiet { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px;
+  border: 1px solid var(--line); background: transparent; color: var(--fg); font: inherit; font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer;
+  transition: background .15s ease, border-color .15s ease; }
+.btn-quiet:hover { background: var(--soft); border-color: var(--soft); }
 .tg-logo { width: 21px; height: 21px; flex: none; }
-.tg-on { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; min-height: 52px; border-radius: 16px;
+
+/* the pay card */
+.op .pay { border: 1.5px solid color-mix(in srgb, var(--accent) 55%, var(--line)); text-align: center; padding: 22px 20px 18px; }
+.pay-label { margin: 0; color: var(--muted); font-size: 14px; }
+.pay-sum { margin: 2px 0 0; font-size: 46px; line-height: 1.05; letter-spacing: -.04em; font-weight: 800; }
+.pay-sum span { cursor: pointer; }
+.pay-sum .copied { outline: 0; color: var(--ok); }
+.pay-of { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.choices { display: inline-flex; gap: 4px; padding: 4px; margin: 12px 0 0; border-radius: 999px; background: var(--soft); }
+.choices button { min-height: 0; padding: 7px 15px; border-radius: 999px; background: none; color: var(--muted); font-size: 14px; font-weight: 700; }
+.choices button.on { background: var(--panel); color: var(--fg); box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+.pay-qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 16px 0 0; }
+.pay-qr img { width: 180px; max-width: 100%; height: auto; border-radius: 16px; background: #fff; padding: 8px; }
+.pay-qr p { margin: 0; max-width: 30ch; color: var(--muted); font-size: 13px; }
+.op .pay-tabs { margin: 16px 0 -6px; }
+.pay-rows { margin: 16px 0 0; border-radius: 18px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; text-align: left; }
+.pay-row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) 18px; gap: 1px 12px; align-items: center;
+  width: 100%; padding: 10px 16px; border-top: 1px solid var(--line); cursor: pointer; }
+.pay-row:first-child { border-top: 0; }
+.pay-row span { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.pay-row b { grid-column: 1; font-size: 16px; font-weight: 700; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.pay-row i { grid-column: 2; grid-row: 2; width: 16px; height: 16px; opacity: .4; background: currentColor;
+  -webkit-mask: no-repeat center/16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='9' y='9' width='12' height='12' rx='2'/%3E%3Cpath d='M5 15V5a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E");
+  mask: no-repeat center/16px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='9' y='9' width='12' height='12' rx='2'/%3E%3Cpath d='M5 15V5a2 2 0 0 1 2-2h10'/%3E%3C/svg%3E"); }
+.pay-row:hover i, .pay-row:focus-visible i { opacity: .9; }
+.pay-row:focus-visible { background: var(--soft); }
+.pay-row.plain { cursor: default; }
+.pay-row.copied { outline: 0; }
+.pay-row.copied b { color: var(--ok); }
+.pay-row.copied span::after { content: " · скопировано"; color: var(--ok); }
+.pay-row.copied i { opacity: 1; color: var(--ok);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E"); }
+.op .pay form { margin-top: 16px; }
+
+/* «Важно про перевод», «Нет Telegram?»: folded */
+.more { margin-top: 12px; text-align: left; }
+.more summary { cursor: pointer; color: var(--muted); font-size: 13.5px; list-style: none; text-align: center; }
+.more summary::-webkit-details-marker { display: none; }
+.more summary::after { content: " ›"; }
+.more[open] summary::after { content: " ⌄"; }
+.more p { margin: 8px 0 0; color: var(--muted); font-size: 13.5px; }
+.more form { margin-top: 12px; }
+
+/* forms in cards */
+.stack-form { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+.stack-form .field { margin: 0; }
+.stack-form label { font-size: 14px; font-weight: 700; }
+.opt { font-weight: 500; color: var(--muted); font-size: 12.5px; margin-left: 6px; }
+.slug { display: flex; align-items: center; border: 1.5px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+.slug:focus-within { border-color: var(--ink); }
+.slug input { flex: 1; min-width: 0; border: 0; border-radius: 0; background: none; padding-right: 4px; text-align: left; }
+.slug input:focus { outline: none; }
+.slug span { padding: 0 14px 0 0; color: var(--muted); white-space: nowrap; }
+.op .setup { border: 1.5px solid color-mix(in srgb, var(--ok) 45%, var(--line)); }
+
+/* the news card: Telegram, the dot under it, «или», «Написать здесь» */
+.talk { text-align: center; }
+.talk-ways { margin: 18px auto 0; width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.talk.compact { padding: 18px 20px; }
+.talk.compact .talk-ways { margin-top: 0; }
+.talk.compact .here { margin-top: 12px; }
+.tg-on { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; min-height: 52px; border-radius: 18px;
   font-weight: 700; background: color-mix(in srgb, #2aabee 14%, var(--panel)); }
 .tg-on .tg-logo { color: #2aabee; }
 .bot-only { margin: 0; }
@@ -593,47 +629,55 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 .dot input:checked::after { transform: scale(1); }
 .dot input:checked + span { color: var(--fg); }
 .dot input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.talk-or { width: 100%; max-width: 360px; display: flex; align-items: center; gap: 12px; margin: 18px 0 6px; color: var(--muted); font-size: 13px; }
-.talk-or::before, .talk-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.here-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; color: var(--fg);
-  font-weight: 700; font-size: 15px; text-decoration: none; transition: background .15s ease; }
-.here-btn:hover { background: var(--soft); }
+.or { width: 100%; max-width: 360px; display: flex; align-items: center; gap: 12px; margin: 16px auto 10px; color: var(--muted); font-size: 12.5px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.here::after { content: "↓"; color: var(--muted); font-weight: 600; }
 
-/* the order's chat at the bottom of the page */
-.chat h2 { margin: 0 0 6px; font-size: 20px; }
-.msgs { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+/* the order, folded into one line */
+.summary { padding: 0; }
+.summary summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+  padding: 18px 22px; }
+.summary summary::-webkit-details-marker { display: none; }
+.summary-title { font-weight: 800; font-size: 16px; }
+.summary-line { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.summary summary b { font-size: 16px; }
+.summary summary b::after { content: "›"; display: inline-block; margin-left: 10px; color: var(--muted); transition: transform .2s ease; }
+.summary[open] summary b::after { transform: rotate(90deg); }
+.summary > :not(summary) { margin: 0 22px; }
+.summary > :last-child { margin-bottom: 18px; }
+.summary .lines { margin-top: 0; }
+
+/* the chat */
+.msgs { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .msgs li { max-width: 85%; padding: 9px 13px; border-radius: 16px 16px 16px 4px; background: var(--soft); white-space: pre-line; overflow-wrap: anywhere; }
 .msgs li.mine { align-self: flex-end; border-radius: 16px 16px 4px 16px; background: color-mix(in srgb, var(--accent) 18%, var(--panel)); }
 .say { display: flex; gap: 8px; align-items: flex-end; margin: 14px 0 0; }
 .say textarea { flex: 1; border-radius: 22px; padding: 12px 16px; min-height: 48px; resize: none; }
 .say button { flex: none; width: 48px; height: 48px; min-height: 0; padding: 0; border-radius: 50%; background: var(--accent); color: var(--accent-fg); font-size: 22px; }
-.ask-more { margin-top: 14px; }
-.ask-more summary { cursor: pointer; color: var(--muted); font-size: 14px; }
-.ask-more form { margin-top: 10px; }
-.ask .cta.tg { display: block; text-align: center; text-decoration: none; background: #2aabee; color: #fff; line-height: 56px; padding: 0; }
+.call { text-align: center; }
+
+/* the foot: how long the check takes, the link to keep, a cancel as a quiet link */
+.op-foot { padding: 6px 8px 0; text-align: center; color: var(--muted); font-size: 13px; }
+.op-foot p { margin: 0 0 8px; }
+.check-note::before { content: "⏱ "; }
+.quiet-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; margin-top: 10px; }
+.quiet-actions form { margin: 0; }
+.link-off { all: unset; cursor: pointer; color: var(--muted); font-size: 13.5px; text-decoration: underline; text-underline-offset: 3px; }
+.link-off:hover { color: var(--err, #d33); }
+
+/* the one-tap page while it places the order */
+.quick { min-height: 50vh; display: grid; place-items: center; text-align: center; }
+.live { display: inline-flex; align-items: center; gap: 9px; margin: 10px 0 0; padding: 7px 14px 7px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel)); font-size: 14px; font-weight: 700; }
+.pulse { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+
 html { scroll-behavior: smooth; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-/* Telegram in its own logo's blue, with a little body; «Написать здесь» a quiet outlined pill that still reads as a button */
-.tg-btn { background: linear-gradient(180deg, #2aabee 0%, #229ed9 100%); border-radius: 18px; min-height: 54px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 1px 2px rgba(0, 0, 0, .25), 0 12px 26px -14px rgba(34, 158, 217, .85); }
-.tg-btn:hover { background: linear-gradient(180deg, #229ed9 0%, #1b8cc4 100%); }
-.tg-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 6px 16px -12px rgba(34, 158, 217, .9); }
-.here-btn { border: 1px solid var(--line); padding: 10px 18px 10px 14px; background: transparent; }
-.here-btn::after { content: "↓"; color: var(--muted); font-weight: 600; margin-left: 2px; }
-.here-btn:hover { background: var(--soft); border-color: var(--soft); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .pulse { animation: none; }
+  .op > *, .stage-icon.live::after { animation: none; }
+}
 
-/* how long the check takes, and the money back if it is late: a footnote under the lead */
-.check-note { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); display: flex; gap: 8px; align-items: baseline; }
-.check-note::before { content: "⏱"; }
-
-/* «Осталось настроить» after the payment: the same calm centred head as the news card, the fields under it */
-.setup { text-align: center; padding: 30px 24px 24px; }
-.setup .talk-icon { margin: 0 auto 14px; }
-.setup h2 { margin: 0; font-size: 21px; }
-.setup .talk-sub { margin: 6px auto 20px; }
-.setup-form { text-align: left; max-width: 420px; margin: 0 auto; }
-.slug { display: flex; align-items: center; border: 1.5px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
-.slug:focus-within { border-color: var(--ink); }
-.slug input { flex: 1; min-width: 0; border: 0; border-radius: 0; background: none; padding-right: 2px; text-align: right; }
-.slug input:focus { outline: none; }
-.slug span { padding: 0 14px 0 0; color: var(--muted); white-space: nowrap; }
+.op .summary { padding: 0; }
+.stage-icon { font-size: 30px; font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", var(--sans); }

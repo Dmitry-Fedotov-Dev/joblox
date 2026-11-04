@@ -127,7 +127,7 @@ func (s *Server) chat(r *http.Request, o *order.Order, v *orderView) {
 	if s.cfg.CustomerBot != nil {
 		name = s.cfg.CustomerBot()
 	}
-	if name == "" || s.svc.IsFinal(o.State) || (s.svc.P.Checkout.Quick() && o.ReportedAt == nil) {
+	if name == "" || s.svc.IsFinal(o.State) || (s.svc.P.Checkout.Quick() && o.ReportedAt == nil && !o.Paid) {
 		return
 	}
 	v.Chat, v.BotLinked, v.ChatOpen = true, o.Fields["telegram_id"] != "", s.svc.ChatOpen(r.Context(), o)
