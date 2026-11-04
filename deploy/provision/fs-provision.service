@@ -1,0 +1,8 @@
+[Unit]
+Description=free-sellers.com: make the shops asked for in the tariff site's bot
+After=docker.service cdd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/fs-provision
+TimeoutStartSec=20min

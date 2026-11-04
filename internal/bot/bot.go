@@ -307,6 +307,13 @@ func (b *Bot) card(o *order.Order) (string, *Keyboard) {
 	if reported {
 		add(Button{Text: "↩️ Оплата не найдена", Data: fmt.Sprintf("n:%d", o.ID)})
 	}
+	if b.svc.CanProvision(o) {
+		title := "🚀 Создать магазин"
+		if o.Fields["provision"] == "failed" {
+			title = "🚀 Создать магазин ещё раз"
+		}
+		add(Button{Text: title, Data: fmt.Sprintf("mk:%d", o.ID)})
+	}
 	var row, cancel []Button
 	for _, t := range b.svc.Flow.Open(o.State, profile.ActorOperator, o.Flags()) {
 		if cancelling(p, t) {
@@ -403,6 +410,10 @@ func (b *Bot) OrderChanged(ctx context.Context, o *order.Order, ev order.Event) 
 		note = "📲 Клиент подключил Telegram: новости заказа и ваши ответы придут ему туда"
 	case "setup":
 		note = "🛠 " + ev.Note
+	case "provisioned":
+		note = "🚀 Магазин готов: " + ev.Note + ". Ссылки ушли покупателю, заказ закрыт"
+	case "provision_failed":
+		note = "⚠️ Магазин не создан: " + ev.Note
 	case "contact":
 		note = "📇 " + ev.Note
 	case "bot_only":
@@ -494,6 +505,8 @@ func (b *Bot) button(ctx context.Context, cq *CallbackQuery) {
 		err, done = b.svc.ConfirmAdvance(ctx, o, op, "отмечено в боте"), "Аванс отмечен"
 	case "b":
 		err, done = b.svc.BlockCustomer(ctx, o, op), "Клиент в чёрном списке"
+	case "mk":
+		err, done = b.svc.RequestShop(ctx, o, op), "Создаём магазин: это пара минут"
 	case "t":
 		if len(parts) != 3 {
 			err = errors.New("bad button")

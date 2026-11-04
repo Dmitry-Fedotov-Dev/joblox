@@ -93,6 +93,9 @@ type Service struct {
 	Mail    Mailer
 	Notify  Notifier
 	Observe Observer
+	// ProvisionDir is where «Создать магазин» leaves its requests for the server's provisioner and finds the
+	// answers (JOBLOX_PROVISION_DIR); empty: no such button.
+	ProvisionDir string
 	// Customer reaches the customer outside the page (the bot, once he linked Telegram); nil: nobody.
 	Customer CustomerChannel
 	req      atomic.Pointer[Requisites] // the owner may set or change them in the cabinet while running

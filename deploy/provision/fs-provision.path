@@ -1,0 +1,9 @@
+[Unit]
+Description=free-sellers.com: watch for «Создать магазин» requests
+
+[Path]
+PathExistsGlob=/var/lib/cdd/projects/openline-order/data/provision/*.req
+Unit=fs-provision.service
+
+[Install]
+WantedBy=multi-user.target

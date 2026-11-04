@@ -1,0 +1,82 @@
+#!/bin/bash
+# fs-provision makes the shops asked for by «🚀 Создать магазин» in the tariff site's bot.
+# The site (cd project openline-order) leaves <order>.req in its data directory, provision/; this script, run
+# by systemd as root (fs-provision.path), makes the shop as a cd clone of the template shop: its own env with
+# a fresh owner key, name.free-sellers.com (the wildcard record points here), HTTPS. It answers <order>.done:
+# the address and the owner's link, or why not. Nothing else on the server is touched.
+set -uo pipefail
+SITE=${FS_SITE:-openline-order}    # the tariff site
+LEADER=${FS_LEADER:-uslozhnyaesh}  # the shop every new one runs the build of (Valya's)
+ZONE=${FS_ZONE:-free-sellers.com}
+ENVDIR=${FS_ENVDIR:-/etc/cdd/env}
+RESERVED=" www api app admin order orders deploy hub joblox shop shops mail smtp static cdn test demo pay print sar grafana status help support "
+
+exec 9>"${FS_LOCK:-/run/fs-provision.lock}"
+flock -n 9 || exit 0
+
+field() { python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get(sys.argv[2],""))' "$1" "$2" 2>/dev/null; }
+show() { cdctl project show "$1" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get(sys.argv[1],""))' "$2"; }
+
+data=$(show "$SITE" data_mount)
+[ -n "$data" ] || { echo "$SITE has no data directory"; exit 1; }
+DIR=${FS_DIR:-/var/lib/cdd/projects/$SITE/data/provision}
+[ -d "$DIR" ] || exit 0
+
+answer() { # file ok url admin error
+  python3 - "$@" <<'PY'
+import json, os, sys
+f, ok, url, admin, err = sys.argv[1:6]
+tmp = f + ".tmp"
+with open(tmp, "w") as h:
+    json.dump({"ok": ok == "1", "url": url, "admin": admin, "error": err}, h, ensure_ascii=False)
+try:
+    os.chown(tmp, 10001, 10001)  # the site runs as 10001
+except (AttributeError, PermissionError):
+    pass
+os.rename(tmp, f)
+PY
+}
+
+for req in "$DIR"/*.req; do
+  [ -e "$req" ] || continue
+  id=$(basename "$req" .req)
+  if ! [[ $id =~ ^[0-9]+$ ]]; then rm -f "$req"; continue; fi
+  done_f="$DIR/$id.done"
+  name=$(field "$req" name | tr '[:upper:]' '[:lower:]')
+  mv -f "$req" "$req.taken"
+  fail() { echo "order $id: $1"; answer "$done_f" 0 "" "" "$1"; }
+
+  if ! [[ $name =~ ^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$ ]]; then fail "адрес «$name» не подходит"; continue; fi
+  if [[ $RESERVED == *" $name "* ]]; then fail "адрес $name зарезервирован, нужен другой"; continue; fi
+  proj="fs-$name" host="$name.$ZONE"
+  if cdctl project show "$proj" >/dev/null 2>&1 || grep -rqsE "(^|[ ,])$host([ ,{]|$)" "${FS_CADDY:-/etc/caddy}"/; then
+    fail "адрес $host уже занят"; continue
+  fi
+
+  leader_env=$(show "$LEADER" env_file)
+  if [ ! -f "$leader_env" ]; then fail "нет настроек шаблона $LEADER"; continue; fi
+  profile=$(grep -E '^JOBLOX_PROFILE=' "$leader_env" | tail -1 | cut -d= -f2-)
+  profile="$(dirname "${profile:-/profiles/x.yaml}")/shop.yaml"
+  key=$(openssl rand -hex 24)
+  env="$ENVDIR/$proj.env"
+  umask 077
+  {
+    grep -E '^(JOBLOX_ENV|JOBLOX_DB|JOBLOX_ADDR|JOBLOX_ADMIN_ADDR|JOBLOX_TRUSTED_PROXIES)=' "$leader_env"
+    echo "JOBLOX_PROFILE=$profile"
+    echo "JOBLOX_BASE_URL=https://$host"
+    echo "JOBLOX_SECRET=$(openssl rand -hex 32)"
+    echo "JOBLOX_OWNER_KEY=$key"
+    echo "JOBLOX_NETWORK_URL=https://$ZONE"
+  } > "$env.tmp" && mv -f "$env.tmp" "$env"
+
+  echo "order $id: making $host"
+  if out=$(cdctl project clone "$proj" --from "$LEADER" --env-file "$env" --domain "$host" --yes 2>&1); then
+    echo "$out" | tail -5
+    answer "$done_f" 1 "https://$host/" "https://$host/owner/enter?k=$key" ""
+  else
+    echo "$out" | tail -20
+    cdctl project rm "$proj" >/dev/null 2>&1
+    rm -f "$env"
+    fail "$(echo "$out" | grep -v '^\s*$' | tail -2 | tr '\n' ' ')"
+  fi
+done

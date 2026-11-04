@@ -366,6 +366,9 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 		log.Warn("the cabinet's bot did not start", "err", err)
 	}
 	go sweep(ctx, svc, log)
+	if svc.ProvisionDir = os.Getenv("JOBLOX_PROVISION_DIR"); svc.ProvisionDir != "" {
+		go svc.WatchProvision(ctx) // «Создать магазин»: the server's provisioner answers here
+	}
 	if url := env("JOBLOX_NETWORK_URL", ""); url != "" && url != "off" {
 		id, err := st.Meta(ctx, "network_id")
 		if err != nil {
