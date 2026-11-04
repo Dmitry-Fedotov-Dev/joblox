@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"regexp"
@@ -56,7 +57,10 @@ func (b *Bot) customerSays(ctx context.Context, m *Message, operator bool) bool 
 	if err != nil {
 		return false
 	}
-	if err := b.svc.CustomerSays(ctx, o, text); err != nil {
+	if err := b.svc.CustomerSays(ctx, o, text); errors.Is(err, order.ErrChatClosed) {
+		_, _ = b.api.Send(ctx, m.Chat.ID, "Сообщения продавцу сейчас отключены. Новости заказа будут приходить сюда.", nil)
+		return true
+	} else if err != nil {
 		_, _ = b.api.Send(ctx, m.Chat.ID, fmt.Sprintf("Не отправилось: сообщение до %d символов.", order.MaxMessage), nil)
 		return true
 	}
@@ -93,6 +97,26 @@ func (b *Bot) operatorAnswers(ctx context.Context, m *Message) bool {
 	}
 	_, _ = b.api.Send(ctx, m.Chat.ID, fmt.Sprintf("✅ Заказ №%d: ответ отправлен покупателю %s.", o.ID, where), nil)
 	return true
+}
+
+// chatSwitch turns the customers' messages off or on for every order and says so; callback is the button's
+// query to answer, empty for the /chat command.
+func (b *Bot) chatSwitch(ctx context.Context, callback string, m *Message, off bool) {
+	if err := b.svc.SetChatOff(ctx, off); err != nil {
+		b.log.Warn("chat switch", "err", err)
+		return
+	}
+	text, kb := "💬 Чат включён: покупатели снова могут писать со страницы заказа и в боте.", (*Keyboard)(nil)
+	if off {
+		text = "🔕 Чат выключен: покупатели больше не могут писать со страницы заказа и в боте. Новости заказов им приходят."
+		kb = &Keyboard{Rows: [][]Button{{{Text: "💬 Включить чат", Data: "c:on"}}}}
+	}
+	if callback != "" {
+		_ = b.api.Answer(ctx, callback, "")
+	}
+	if m != nil {
+		_, _ = b.api.Send(ctx, m.Chat.ID, text, kb)
+	}
 }
 
 // who is the customer of the order as the operators see him: the name and the contact.

@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -41,8 +42,39 @@ func message(text string) (string, bool) {
 	return text, true
 }
 
+// ErrChatClosed: the chat is off for everyone, or this customer is banned.
+var ErrChatClosed = errors.New("сообщения отключены")
+
+// ChatOpen says the customer of the order may write: the chat is on and he is not banned.
+func (s *Service) ChatOpen(ctx context.Context, o *Order) bool {
+	if s.ChatOff(ctx) || o.Fields["chat_blocked"] == "1" {
+		return false
+	}
+	if id := o.Fields["telegram_id"]; id != "" {
+		if banned, err := s.Store.IsBlocked(ctx, "tg:"+id); err == nil && banned {
+			return false
+		}
+	}
+	return true
+}
+
+// ChatOff: the operators turned the customers' messages off for every order (one button in the bot).
+func (s *Service) ChatOff(ctx context.Context) bool { return s.Setting(ctx, "chat_off") == "1" }
+
+// SetChatOff turns the customers' messages off or back on; the order's news still reach them.
+func (s *Service) SetChatOff(ctx context.Context, off bool) error {
+	v := ""
+	if off {
+		v = "1"
+	}
+	return s.SetSetting(ctx, "chat_off", v)
+}
+
 // CustomerSays is a message of the customer: the operators get it in their bot.
 func (s *Service) CustomerSays(ctx context.Context, o *Order, text string) error {
+	if !s.ChatOpen(ctx, o) {
+		return ErrChatClosed
+	}
 	text, ok := message(text)
 	if !ok {
 		return ErrForbidden

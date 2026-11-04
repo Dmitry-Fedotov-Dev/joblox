@@ -67,3 +67,47 @@ func TestBotOnlyOnTheCard(t *testing.T) {
 		t.Fatal("the card does not say it")
 	}
 }
+
+// «Забанить» under a customer's message closes his chat on the page and in the bot, and his new orders.
+func TestBanFromTheChat(t *testing.T) {
+	b, svc, fake := setup(t, "bakery")
+	svc.Customer = b
+	ctx := context.Background()
+	o := create(t, svc)
+	const customer = 556
+	b.Handle(ctx, Update{Message: &Message{From: &User{ID: customer}, Chat: Chat{ID: customer}, Text: "/start o" + o.Token}})
+	say(b, customer, "спам")
+	press(b, "b:1")
+	o, _ = svc.Store.Get(ctx, o.ID)
+	if svc.ChatOpen(ctx, o) {
+		t.Fatal("the banned customer can still write")
+	}
+	if err := svc.CustomerSays(ctx, o, "ещё спам"); err == nil {
+		t.Fatal("a banned customer's message was taken from the page")
+	}
+	say(b, customer, "и ещё")
+	if texts := fake.texts("sendMessage"); !strings.Contains(texts[len(texts)-1], "отключены") {
+		t.Fatalf("the bot took a banned customer's message: %v", texts[len(texts)-1])
+	}
+	if blocked, _ := svc.Store.IsBlocked(ctx, "tg:556"); !blocked {
+		t.Fatal("the Telegram account is not on the blocklist")
+	}
+}
+
+// «Выключить чат»: nobody writes, from the page or the bot, until it is on again; the news still go.
+func TestChatSwitch(t *testing.T) {
+	b, svc, fake := setup(t, "bakery")
+	ctx := context.Background()
+	o := create(t, svc)
+	press(b, "c:off")
+	if !svc.ChatOff(ctx) || svc.ChatOpen(ctx, o) || !strings.Contains(strings.Join(fake.texts("sendMessage"), "\n"), "Чат выключен") {
+		t.Fatal("the chat is not off")
+	}
+	if err := svc.CustomerSays(ctx, o, "привет"); err == nil {
+		t.Fatal("a message got through a closed chat")
+	}
+	say(b, operator, "/chat on")
+	if svc.ChatOff(ctx) || !svc.ChatOpen(ctx, o) {
+		t.Fatal("/chat on did not open it")
+	}
+}

@@ -672,13 +672,22 @@ func (s *Service) SetPrice(ctx context.Context, o *Order, total money.Amount, op
 
 // BlockCustomer puts the order's email and phone on the blocklist.
 func (s *Service) BlockCustomer(ctx context.Context, o *Order, operatorID string) error {
-	for _, v := range []string{o.Email, normPhone(o.Fields["phone"])} {
+	// the email, the phone, the device and the Telegram account: no new orders, no more messages
+	values := []string{o.Email, normPhone(o.Fields["phone"]), o.ClientHash}
+	if id := o.Fields["telegram_id"]; id != "" {
+		values = append(values, "tg:"+id)
+	}
+	for _, v := range values {
 		if v != "" {
 			if err := s.Store.Block(ctx, v, fmt.Sprintf("заказ №%d", o.ID)); err != nil {
 				return err
 			}
 		}
 	}
+	if o.Fields == nil {
+		o.Fields = map[string]string{}
+	}
+	o.Fields["chat_blocked"] = "1"
 	now := s.Now()
 	o.UpdatedAt = now
 	return s.Store.Save(ctx, o, Event{At: now, Actor: profile.ActorOperator, ActorID: operatorID, Kind: "blocked", Note: "клиент в чёрном списке"})

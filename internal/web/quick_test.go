@@ -94,3 +94,21 @@ func TestNoQuickOrderWithoutAfter(t *testing.T) {
 		t.Fatal("«quick» skipped the bakery's required fields")
 	}
 }
+
+// A closed chat takes «Написать здесь» and the chat off the page; Telegram stays.
+func TestChatClosedOnThePage(t *testing.T) {
+	s := newSite(t, "openline")
+	s.srv.cfg.CustomerBot = func() string { return "freesellersdotcombot" }
+	_, page := s.get(t, "/quick?add=hosting")
+	r, _ := s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, page)}, "stamp": {match(t, stampRe, page)}, "quick": {"1"}, "item_hosting": {"1"}})
+	link := r.Header.Get("Location")
+	_, page = s.get(t, link)
+	s.post(t, link+"/paid", url.Values{"csrf": {match(t, csrfRe, page)}})
+	if err := s.svc.SetChatOff(t.Context(), true); err != nil {
+		t.Fatal(err)
+	}
+	_, page = s.get(t, link)
+	if strings.Contains(page, "Написать здесь") || strings.Contains(page, `id="chat"`) || !strings.Contains(page, "t.me/freesellersdotcombot") {
+		t.Fatal("a closed chat is still on the page, or Telegram is gone")
+	}
+}

@@ -269,7 +269,8 @@ type orderView struct {
 	Call        string
 	Choices     []monthChoice   // «1 мес · 3 мес · 12 мес» while the order waits for money
 	Ask         []fieldView     // a quick order's contact card, after «Я оплатил»
-	Chat        bool            // the order's chat with the seller, through the bot
+	Chat        bool            // the news card: Telegram and «только через бота»
+	ChatOpen    bool            // the customer may write: the chat is on and he is not banned
 	Messages    []order.Message // the chat so far
 	BotLink     string          // «Получать статус в Telegram»: the bot, tied to this order
 	BotLinked   bool            // the customer's Telegram is tied to the order

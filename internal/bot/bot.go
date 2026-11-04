@@ -396,7 +396,8 @@ func (b *Bot) OrderChanged(ctx context.Context, o *order.Order, ev order.Event) 
 	switch ev.Kind {
 	case "message":
 		b.broadcast(ctx, fmt.Sprintf("💬 <b>Заказ №%d</b>%s: %s\n\n<i>↩️ Ответьте на это сообщение, и ответ увидит покупатель.</i>",
-			o.ID, b.who(o), html.EscapeString(ev.Note)), nil)
+			o.ID, b.who(o), html.EscapeString(ev.Note)), &Keyboard{Rows: [][]Button{{
+			{Text: "🚫 Забанить", Data: fmt.Sprintf("b:%d", o.ID)}, {Text: "🔕 Выключить чат", Data: "c:off"}}}})
 		return
 	case "telegram":
 		note = "📲 Клиент подключил Telegram: новости заказа и ваши ответы придут ему туда"
@@ -437,6 +438,10 @@ func (b *Bot) Refused(ctx context.Context, _ string, d antifraud.Decision) {
 // ---------------------------------------------------------------- buttons
 
 func (b *Bot) button(ctx context.Context, cq *CallbackQuery) {
+	if off, ok := strings.CutPrefix(cq.Data, "c:"); ok { // the chat for everyone, off or on
+		b.chatSwitch(ctx, cq.ID, cq.Message, off == "off")
+		return
+	}
 	parts := strings.Split(cq.Data, ":")
 	if len(parts) < 2 || cq.Message == nil {
 		_ = b.api.Answer(ctx, cq.ID, "Неизвестная кнопка")
@@ -658,6 +663,8 @@ func (b *Bot) command(ctx context.Context, m *Message) {
 			"За этот месяц: %d %s, оплачено на <b>%s %s</b>", day.Open, day.Review,
 			day.Today, plural(day.Today, "заказ", "заказа", "заказов"), day.PaidToday, day.RevenueDay, cur,
 			month.Today, plural(month.Today, "заказ", "заказа", "заказов"), month.RevenueDay, cur))
+	case "/chat":
+		b.chatSwitch(ctx, "", m, strings.TrimSpace(args) != "on")
 	case "/pause":
 		b.svc.Pause()
 		reason := args

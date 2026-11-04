@@ -57,8 +57,8 @@
     <noscript><button class="link" type="submit">Сохранить</button></noscript>
   </form>
   </div>
-  <p class="talk-or">или</p>
-  <a class="here-btn" href="#chat"><span aria-hidden="true">✉️</span>Написать здесь</a>
+  {{if .ChatOpen}}<p class="talk-or">или</p>
+  <a class="here-btn" href="#chat"><span aria-hidden="true">✉️</span>Написать здесь</a>{{end}}
 </section>
 {{else if .Ask}}
 <section class="card ask" id="contact">
@@ -131,7 +131,7 @@
 </section>
 {{end}}
 
-{{if .Chat}}
+{{if .ChatOpen}}
 <section class="card chat" id="chat">
   <h2>Сообщения продавцу</h2>
   {{if .Messages}}<ol class="msgs" aria-label="Переписка">{{range .Messages}}<li class="{{if .Mine}}mine{{end}}">{{.Text}}</li>{{end}}</ol>

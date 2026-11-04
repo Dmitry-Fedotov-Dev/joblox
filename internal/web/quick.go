@@ -130,7 +130,7 @@ func (s *Server) chat(r *http.Request, o *order.Order, v *orderView) {
 	if name == "" || s.svc.IsFinal(o.State) || (s.svc.P.Checkout.Quick() && o.ReportedAt == nil) {
 		return
 	}
-	v.Chat, v.BotLinked = true, o.Fields["telegram_id"] != ""
+	v.Chat, v.BotLinked, v.ChatOpen = true, o.Fields["telegram_id"] != "", s.svc.ChatOpen(r.Context(), o)
 	v.BotLink = "https://t.me/" + name + "?start=o" + o.Token
 	msgs, err := s.svc.Messages(r.Context(), o)
 	if err != nil {
@@ -148,7 +148,8 @@ func (s *Server) orderMessage(w http.ResponseWriter, r *http.Request) {
 		s.message(w, r, http.StatusTooManyRequests, "Слишком много сообщений", "Подождите минуту и напишите ещё раз.")
 		return
 	}
-	if err := s.svc.CustomerSays(r.Context(), o, r.PostFormValue("text")); err != nil && !errors.Is(err, order.ErrForbidden) {
+	if err := s.svc.CustomerSays(r.Context(), o, r.PostFormValue("text")); err != nil && !errors.Is(err, order.ErrForbidden) &&
+		!errors.Is(err, order.ErrChatClosed) {
 		s.log.Error("order message", "err", err)
 	}
 	s.redirect(w, r, "/o/"+o.Token+"#chat", http.StatusSeeOther)
