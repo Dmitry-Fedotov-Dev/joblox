@@ -701,3 +701,10 @@ a.btn-main { display: flex; align-items: center; justify-content: center; }
 .stage-icon.tone-wait { color: #f5b041; }
 .stage-icon.tone-ok, .stage-icon.tone-done { color: var(--ok); }
 .stage-icon.tone-off { color: var(--muted); }
+
+/* the opened order fits its card: the table and the facts take the card's width less its padding */
+.summary > :not(summary) { box-sizing: border-box; width: auto; max-width: none; }
+.summary .lines { width: calc(100% - 44px); }
+.summary .facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; margin-top: 10px; }
+.summary .facts dt { color: var(--muted); font-size: 14px; }
+.summary .facts dd { margin: 0; text-align: right; overflow-wrap: anywhere; }

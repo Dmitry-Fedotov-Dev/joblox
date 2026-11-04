@@ -127,7 +127,7 @@
   </table>
   {{end}}
   {{if or .Fields (or .O.Paid (ne .O.Method "transfer"))}}<dl class="facts">
-    {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}{{if .Unit}} {{.Unit}}{{end}}</dd>{{end}}
+    {{range .Fields}}<dt>{{.Label}}</dt><dd>{{.Value}}{{if .Unit}}{{if ne .Type "slug"}} {{end}}{{.Unit}}{{end}}</dd>{{end}}
     {{if or .O.Paid (ne .O.Method "transfer")}}<dt>Оплата</dt><dd>{{.MethodTitle}}{{if .O.Paid}}, оплачено{{end}}</dd>{{end}}
   </dl>{{end}}
 </details>
