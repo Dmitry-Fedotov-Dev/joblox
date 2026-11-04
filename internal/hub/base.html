@@ -178,16 +178,28 @@ li { margin: 4px 0; }
 .lead { font-size: 18px; }
 /* the start page: three tariffs */
 .lead { font-size: 18px; color: var(--muted); }
-.tariffs { display: grid; gap: 14px; margin: 18px 0; }
-@media (min-width: 820px) { .tariffs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.tariff { display: flex; flex-direction: column; gap: 6px; padding: 22px; border-radius: 24px; background: var(--panel); border: 1px solid var(--line); }
-.tariff.hot { border: 2px solid var(--accent); }
-.tariff .price { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -.03em; }
+.tariffs { display: grid; gap: 14px; margin: 18px 0 40px; }
+@media (min-width: 820px) { .tariffs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+.tariff { display: flex; flex-direction: column; padding: 22px 24px 18px; border-radius: 26px; background: var(--panel); border: 1px solid var(--line); }
+.tariff.hot { border: 2px solid var(--accent); box-shadow: 0 24px 48px -32px color-mix(in srgb, var(--accent) 70%, transparent); }
+.tariff .name { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.tariff .pick { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-fg); background: var(--accent);
+  padding: 3px 8px; border-radius: 999px; }
+.tariff .price { margin: 10px 0 0; font-size: 40px; line-height: 1; font-weight: 800; letter-spacing: -.04em; }
 .tariff .price small { font-size: 15px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
-.tariff ul { margin: 6px 0 14px; padding-left: 18px; font-size: 15px; }
-.tariff .btn { margin-top: auto; display: block; text-align: center; padding: 14px; border-radius: 16px; background: var(--accent); color: var(--accent-fg);
+.tariff .for { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
+.tariff ul { list-style: none; margin: 16px 0 20px; padding: 14px 0 0; border-top: 1px solid var(--line); display: grid; gap: 8px; font-size: 14.5px; line-height: 1.35; }
+.tariff li { display: flex; gap: 10px; align-items: baseline; }
+.tariff li::before { content: "✓"; color: var(--accent); font-weight: 800; flex: none; }
+.tariff li.no { color: var(--muted); }
+.tariff li.no::before { content: "✕"; color: var(--muted); font-weight: 700; }
+.tariff li.no + li:not(.no), .tariff li:not(.no) + li.no { margin-top: 6px; }
+.tariff .btn { margin-top: auto; display: block; text-align: center; padding: 15px; border-radius: 16px; background: var(--ink); color: var(--ink-fg);
   font-weight: 800; text-decoration: none; }
-.tariff .btn.ghost { background: var(--soft); color: var(--fg); }
+.tariff.hot .btn { background: var(--accent); color: var(--accent-fg); }
+.tariff .note { display: block; margin: 12px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); text-align: center; }
+.tariff a.note { text-decoration: none; }
+.tariff a.note:hover { color: var(--fg); }
 .soon { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--soft); color: var(--muted); font-size: 12px; font-weight: 700; }
 .cmp { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 14px; }
 .cmp th, .cmp td { padding: 9px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
