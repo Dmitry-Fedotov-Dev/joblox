@@ -1,4 +1,4 @@
-# Joblox
+# free-sellers.com
 
 [![CI](https://github.com/Dmitry-Fedotov-Dev/joblox/actions/workflows/ci.yml/badge.svg)](https://github.com/Dmitry-Fedotov-Dev/joblox/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
@@ -29,7 +29,7 @@
 | Бот операторов | Telegram: карточка каждого заказа с кнопками разрешённых сейчас переходов, отметка оплаты, цена по запросу, чёрный список, пауза приёма |
 | Дашборд | Встроенный: онлайн, запросы в секунду, время ответа, процессор и память сервера, заказы за сутки. Плюс метрики Prometheus и готовый дашборд Grafana |
 | Хранилище | SQLite в одном файле, журнал событий заказа без возможности правки задним числом |
-| Joblox Network | По желанию владельца: анонимный счётчик установок, людей онлайн и заказов, открытое API |
+| Сеть free-sellers.com | По желанию владельца: анонимный счётчик установок, людей онлайн и заказов, открытое API |
 
 Готовые профили в [`profiles/`](profiles):
 
@@ -117,7 +117,7 @@ Caddy сам получит сертификат HTTPS. Подробно, вкл
 - [Мониторинг](docs/MONITORING.md): встроенный дашборд, Prometheus, Grafana, тревоги
 - [Тесты](docs/TESTING.md): модульные, функциональные сценарии k6, нагрузка
 - [Архитектура](docs/ARCHITECTURE.md): пакеты, данные, масштабирование
-- [Joblox Network](docs/NETWORK.md): биржа исполнителей и счётчик на https://joblox.openline.one
+- [Сеть free-sellers.com](docs/NETWORK.md): биржа исполнителей и счётчик на https://free-sellers.com
 
 ## Лицензия
 
