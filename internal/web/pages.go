@@ -286,6 +286,8 @@ type orderView struct {
 	Setup       []fieldView     // what the customer fills in once the payment is confirmed (checkout.setup)
 	SetupDone   bool            // the needed one of them is there
 	Pay         bool            // the order waits for the customer's transfer: the pay card is the page
+	ResultURL   string          // what the customer got (the shop), on the finished order
+	AdminLink   string          // his own back office, once an operator sent it
 	Stage       stage           // the head of the page: where the order is, said once
 	Chat        bool            // the news card: Telegram and «только через бота»
 	ChatOpen    bool            // the customer may write: the chat is on and he is not banned
@@ -344,6 +346,9 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 		v.Waiting = "Введите код из письма, чтобы увидеть реквизиты для оплаты."
 	}
 	v.Pay = v.Requisites != nil && o.ReportedAt == nil && !o.Paid
+	if st.Final && o.Paid || st.ID == "done" {
+		v.ResultURL, v.AdminLink = s.svc.ResultURL(o), o.Fields["admin_link"]
+	}
 	v.Stage = s.stageOf(&v)
 	return v
 }

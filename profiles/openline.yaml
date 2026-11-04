@@ -31,6 +31,8 @@ checkout:
   after: [phone, name]
   # once the payment is confirmed: the details of the site, the address first
   setup: [site, shop, business]
+  # the finished order links to the shop; the operator sends the back office's link with /admin
+  result: "https://{site}.free-sellers.com/"
 
 payment:
   methods: [transfer]

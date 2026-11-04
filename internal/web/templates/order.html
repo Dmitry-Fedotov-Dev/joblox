@@ -3,7 +3,7 @@
 
 <header class="stage" data-order="{{.O.Token}}" data-version="{{.O.Version}}">
   {{if .Steps}}<ol class="track" aria-label="Ход заказа">{{range .Steps}}<li class="{{if .Done}}done{{end}}{{if .Now}} now{{end}}"><span>{{.Title}}</span></li>{{end}}</ol>{{end}}
-  <div class="stage-icon tone-{{.Stage.Tone}}{{if .Stage.Live}} live{{end}}" aria-hidden="true">{{.Stage.Icon}}</div>
+  <div class="stage-icon tone-{{.Stage.Tone}}{{if .Stage.Live}} live{{end}}" aria-hidden="true"><span>{{.Stage.Icon}}</span></div>
   <h1>{{.Stage.Title}}</h1>
   {{if .Stage.Sub}}<p class="stage-sub" role="status">{{.Stage.Sub}}</p>{{end}}
   <p class="stage-ref">Заказ №{{.O.ID}} · {{.Ref}}</p>
@@ -11,6 +11,17 @@
 
 {{if and .Waiting (ne .Stage.Sub .Waiting)}}<p class="banner" role="status">{{.Waiting}}</p>{{end}}
 {{if .CodeNote}}<p class="banner" role="status">{{.CodeNote}}</p>{{end}}
+
+{{if or .ResultURL .AdminLink}}
+<section class="card result">
+  <h2>Ваш {{if .ResultURL}}сайт{{else}}заказ{{end}} готов</h2>
+  {{if .ResultURL}}<p class="result-url">{{.ResultURL}}</p>
+  <a class="btn-main" href="{{.ResultURL}}" target="_blank" rel="noopener">Открыть сайт</a>{{end}}
+  {{if .AdminLink}}<a class="btn-quiet wide" href="{{.AdminLink}}" target="_blank" rel="noopener">🔑 Войти в админку</a>
+  <p class="card-note">Это ключ от ваших заказов: сохраните ссылку и никому её не пересылайте. Потом можно привязать вход через Google.</p>
+  {{else}}<p class="card-note">Ссылку для входа в админку пришлём сюда{{if .BotLinked}} и в Telegram{{end}}.</p>{{end}}
+</section>
+{{end}}
 
 {{if .Pay}}{{with .Requisites}}
 <section class="card pay">

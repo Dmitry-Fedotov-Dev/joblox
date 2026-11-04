@@ -1,6 +1,8 @@
 package web
 
 import (
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/order"
+	"github.com/Dmitry-Fedotov-Dev/joblox/internal/profile"
 	"net/http"
 	"net/url"
 	"strings"
@@ -147,5 +149,38 @@ func TestSetupAfterPayment(t *testing.T) {
 	}
 	if _, page = s.get(t, link); !strings.Contains(page, "Данные сохранены") {
 		t.Fatal("the card does not say the details are saved")
+	}
+}
+
+// The finished order links to the shop made of its address, and to the back office once an operator sent it.
+func TestResultLinks(t *testing.T) {
+	s := newSite(t, "openline")
+	_, page := s.get(t, "/quick?add=hosting")
+	r, _ := s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, page)}, "stamp": {match(t, stampRe, page)}, "quick": {"1"}, "item_hosting": {"1"}})
+	link := r.Header.Get("Location")
+	_, page = s.get(t, link)
+	csrf := match(t, csrfRe, page)
+	get := func() *order.Order {
+		o, _ := s.svc.Store.ByToken(t.Context(), strings.TrimPrefix(link, "/o/"))
+		return o
+	}
+	_ = s.svc.ConfirmPayment(t.Context(), get(), "1", "")
+	s.post(t, link+"/setup", url.Values{"csrf": {csrf}, "f_site": {"valya"}})
+	_ = s.svc.Transition(t.Context(), get(), "take", profile.ActorOperator, "1")
+	if _, page = s.get(t, link); strings.Contains(page, "Открыть сайт") {
+		t.Fatal("the site is offered before it is done")
+	}
+	_ = s.svc.Transition(t.Context(), get(), "done", profile.ActorOperator, "1")
+	if _, page = s.get(t, link); !strings.Contains(page, `href="https://valya.free-sellers.com/"`) || strings.Contains(page, "Войти в админку") {
+		t.Fatal("the finished order does not link to the shop, or offers a back office nobody sent")
+	}
+	if err := s.svc.SetAdminLink(t.Context(), get(), "1", "http://insecure"); err == nil {
+		t.Fatal("a plain http link was taken")
+	}
+	if err := s.svc.SetAdminLink(t.Context(), get(), "1", "https://valya.free-sellers.com/owner/enter?k=secret"); err != nil {
+		t.Fatal(err)
+	}
+	if _, page = s.get(t, link); !strings.Contains(page, "Войти в админку") || !strings.Contains(page, "owner/enter?k=secret") {
+		t.Fatal("the back office link is not on the page")
 	}
 }

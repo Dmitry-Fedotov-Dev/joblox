@@ -138,6 +138,9 @@ type Checkout struct {
 	// Setup lists what the customer fills in once the payment is confirmed: the details of the work (the address
 	// of the site, the shop's name). The first one is needed, the others may wait.
 	Setup []string `yaml:"setup"`
+	// Result is the address of what the customer gets, made of his fields: «https://{site}.free-sellers.com/».
+	// The finished order's page links to it; empty: nothing to link.
+	Result string `yaml:"result"`
 }
 
 // Quick: the order is placed by one tap and the fields come after.

@@ -681,3 +681,15 @@ html { scroll-behavior: smooth; }
 
 .op .summary { padding: 0; }
 .stage-icon { font-size: 30px; font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", var(--sans); }
+/* the stage's emoji sits in the middle of its circle: no line box around it, the glyph's own box centred */
+.stage-icon { line-height: 1; display: grid; place-items: center; margin-left: auto; margin-right: auto; }
+.stage-icon > span { display: block; line-height: 1; height: 1em; width: 1.15em; text-align: center; }
+
+/* the finished order: the site's address, «Открыть сайт», the key to the back office */
+.op .result { text-align: center; border: 1.5px solid color-mix(in srgb, var(--ok) 45%, var(--line)); }
+.result-url { margin: 6px 0 16px; font-weight: 700; color: var(--muted); overflow-wrap: anywhere; }
+.result .btn-quiet.wide { display: flex; width: 100%; margin-top: 10px; min-height: 52px; border-radius: 18px; }
+/* the emoji's own box sits a touch low in its circle */
+.stage-icon > span { transform: translateY(-.07em); }
+a.btn-main { display: flex; align-items: center; justify-content: center; }
+.stage-icon > span { transform: translateY(-.1em); }

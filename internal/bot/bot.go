@@ -614,6 +614,17 @@ func (b *Bot) command(ctx context.Context, m *Message) {
 		}
 		text, kb := b.card(o)
 		_, _ = b.api.Send(ctx, m.Chat.ID, "Цена названа.\n"+text, kb)
+	case "/admin":
+		num, link, _ := strings.Cut(strings.TrimSpace(args), " ")
+		o, ok := b.find(ctx, num, say)
+		if !ok {
+			return
+		}
+		if err := b.svc.SetAdminLink(ctx, o, op, link); err != nil {
+			say("Не выполнено: " + html.EscapeString(err.Error()) + ". Пример: /admin 12 https://valya.free-sellers.com/owner/enter?k=…")
+			return
+		}
+		say(fmt.Sprintf("✅ Заказ №%d: ссылка на админку на странице заказа%s.", o.ID, map[bool]string{true: " и у покупателя в Telegram", false: ""}[o.Fields["telegram_id"] != ""]))
 	case "/paid":
 		num, note, _ := strings.Cut(args, " ")
 		o, ok := b.find(ctx, num, say)

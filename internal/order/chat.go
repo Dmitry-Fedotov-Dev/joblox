@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -204,3 +205,52 @@ func (s *Service) SetBotOnly(ctx context.Context, o *Order, on bool) error {
 
 // BotOnly says the customer asked to be reached only through the bot.
 func (o *Order) BotOnly() bool { return o.Fields["bot_only"] == "1" }
+
+// ResultURL is the address of what the customer gets (checkout.result with his fields), empty while a field
+// it needs is not there.
+func (s *Service) ResultURL(o *Order) string {
+	tpl := s.P.Checkout.Result
+	if tpl == "" {
+		return ""
+	}
+	out, missing := tpl, false
+	for _, f := range s.P.Checkout.Fields {
+		key := "{" + f.ID + "}"
+		if strings.Contains(out, key) {
+			v := o.Fields[f.ID]
+			if v == "" {
+				missing = true
+			}
+			out = strings.ReplaceAll(out, key, url.PathEscape(v))
+		}
+	}
+	if missing {
+		return ""
+	}
+	return out
+}
+
+// SetAdminLink keeps the link to the customer's own back office (an operator sends it once the work is done):
+// the order page shows it to the customer, and the bot sends it to him with the shop's address.
+func (s *Service) SetAdminLink(ctx context.Context, o *Order, operatorID, link string) error {
+	u, err := url.Parse(strings.TrimSpace(link))
+	if err != nil || u.Scheme != "https" || u.Host == "" {
+		return errors.New("нужна ссылка https://…")
+	}
+	if o.Fields == nil {
+		o.Fields = map[string]string{}
+	}
+	o.Fields["admin_link"] = u.String()
+	now := s.Now()
+	o.UpdatedAt = now
+	if err := s.save(ctx, o, Event{At: now, Actor: profile.ActorOperator, ActorID: operatorID, Kind: "admin_link", Note: "ссылка на админку передана"}); err != nil {
+		return err
+	}
+	text := "🎉 Заказ №" + strconv.FormatInt(o.ID, 10) + " готов."
+	if site := s.ResultURL(o); site != "" {
+		text += "\nВаш сайт: " + site
+	}
+	text += "\nАдминка: " + u.String() + "\nСсылку на админку никому не пересылайте: она открывает ваши заказы."
+	s.customer().Tell(ctx, o, text)
+	return nil
+}
