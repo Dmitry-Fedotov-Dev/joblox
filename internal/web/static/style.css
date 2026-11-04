@@ -625,3 +625,15 @@ html { scroll-behavior: smooth; }
 /* how long the check takes, and the money back if it is late: a footnote under the lead */
 .check-note { margin: 8px 0 0; font-size: 13.5px; color: var(--muted); display: flex; gap: 8px; align-items: baseline; }
 .check-note::before { content: "⏱"; }
+
+/* «Осталось настроить» after the payment: the same calm centred head as the news card, the fields under it */
+.setup { text-align: center; padding: 30px 24px 24px; }
+.setup .talk-icon { margin: 0 auto 14px; }
+.setup h2 { margin: 0; font-size: 21px; }
+.setup .talk-sub { margin: 6px auto 20px; }
+.setup-form { text-align: left; max-width: 420px; margin: 0 auto; }
+.slug { display: flex; align-items: center; border: 1.5px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+.slug:focus-within { border-color: var(--ink); }
+.slug input { flex: 1; min-width: 0; border: 0; border-radius: 0; background: none; padding-right: 2px; text-align: right; }
+.slug input:focus { outline: none; }
+.slug span { padding: 0 14px 0 0; color: var(--muted); white-space: nowrap; }

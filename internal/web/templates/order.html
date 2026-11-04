@@ -43,6 +43,26 @@
 </section>
 {{end}}{{end}}
 
+{{if .Setup}}
+<section class="card setup" id="setup">
+  <div class="talk-icon" aria-hidden="true">{{if .SetupDone}}✅{{else}}🛠{{end}}</div>
+  <h2>{{if .SetupDone}}Данные сохранены{{else}}Осталось настроить{{end}}</h2>
+  <p class="talk-sub">{{if .SetupDone}}Можно поменять, пока мы не закончили{{else}}Оплата получена. Заполните, и мы начнём{{end}}</p>
+  <form method="post" action="{{p}}/o/{{.O.Token}}/setup" class="setup-form">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    {{range .Setup}}<div class="field{{if .Error}} has-error{{end}}">
+      <label for="s_{{.ID}}">{{.Label}}{{if not .Required}} <span class="muted small">— можно позже</span>{{end}}</label>
+      {{if eq .Type "slug"}}<div class="slug"><input id="s_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}" type="text" inputmode="url" autocapitalize="none" spellcheck="false"
+        pattern="[A-Za-z0-9][A-Za-z0-9\-]{1,28}[A-Za-z0-9]" maxlength="30" placeholder="valya"{{if .Required}} required{{end}}><span>{{.Unit}}</span></div>
+      {{else if eq .Type "textarea"}}<textarea id="s_{{.ID}}" name="f_{{.ID}}" rows="2"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}>{{.Value}}</textarea>
+      {{else}}<input id="s_{{.ID}}" name="f_{{.ID}}" value="{{.Value}}" type="text"{{if .MaxLen}} maxlength="{{.MaxLen}}"{{end}}{{if .Required}} required{{end}}>{{end}}
+      {{if .Error}}<p class="field-error">{{.Error}}</p>{{else if .Hint}}<p class="hint">{{.Hint}}</p>{{end}}
+    </div>{{end}}
+    <button class="cta wide" type="submit">Сохранить</button>
+  </form>
+</section>
+{{end}}
+
 {{if .Chat}}
 <section class="card talk" id="talk">
   <div class="talk-icon" aria-hidden="true">🔔</div>

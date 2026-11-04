@@ -34,6 +34,8 @@ func (e FieldErrors) Error() string {
 	return strings.Join(parts, "; ")
 }
 
+var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$`)
+
 var phoneRe = regexp.MustCompile(`^(\+?[0-9][0-9 ()\-]{5,22}|@[A-Za-z][A-Za-z0-9_]{4,31})$`) // a number or a Telegram @name
 
 const datetimeLayout = "2006-01-02T15:04" // what <input type="datetime-local"> sends
@@ -107,6 +109,12 @@ func ValidateFields(p *profile.Profile, in map[string]string) (map[string]string
 		case profile.FieldSelect:
 			if !slices.Contains(f.Options, v) {
 				bad(f.ID, "выберите вариант из списка")
+				continue
+			}
+		case profile.FieldSlug:
+			v = strings.ToLower(v)
+			if !slugRe.MatchString(v) {
+				bad(f.ID, "латинские буквы, цифры и дефис, от 3 до 30 знаков")
 				continue
 			}
 		case profile.FieldURL:

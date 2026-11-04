@@ -135,6 +135,9 @@ type Checkout struct {
 	// After lists the fields asked on the order page once the customer said he paid, not before: with it the
 	// order is placed by one tap (/quick?add=item), with no form at all. The first one is the contact.
 	After []string `yaml:"after"`
+	// Setup lists what the customer fills in once the payment is confirmed: the details of the work (the address
+	// of the site, the shop's name). The first one is needed, the others may wait.
+	Setup []string `yaml:"setup"`
 }
 
 // Quick: the order is placed by one tap and the fields come after.
@@ -150,6 +153,7 @@ const (
 	FieldDatetime = "datetime"
 	FieldSelect   = "select"
 	FieldURL      = "url"
+	FieldSlug     = "slug" // a name for an address: latin letters, digits and hyphens; the unit is what follows it
 )
 
 type Field struct {
@@ -340,6 +344,11 @@ func (p *Profile) Validate() error {
 			add("checkout.after: %q is not a checkout field", id)
 		}
 	}
+	for _, id := range p.Checkout.Setup {
+		if !slices.ContainsFunc(p.Checkout.Fields, func(f Field) bool { return f.ID == id }) {
+			add("checkout.setup: %q is not a checkout field", id)
+		}
+	}
 	for _, it := range p.Catalog {
 		for _, q := range it.Choices {
 			if q < 1 || (it.MaxQty > 0 && q > it.MaxQty) {
@@ -356,7 +365,7 @@ func (p *Profile) Validate() error {
 		}
 		fields[f.ID] = f
 		switch f.Type {
-		case FieldText, FieldTextarea, FieldPhone, FieldEmail, FieldNumber, FieldDatetime, FieldURL:
+		case FieldText, FieldTextarea, FieldPhone, FieldEmail, FieldNumber, FieldDatetime, FieldURL, FieldSlug:
 		case FieldSelect:
 			if len(f.Options) == 0 {
 				add("checkout field %q: select needs options", f.ID)

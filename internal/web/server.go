@@ -227,6 +227,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /quick", s.quickOrder)
 	mux.HandleFunc("POST /o/{token}/qty", s.orderQty)
 	mux.HandleFunc("POST /o/{token}/contact", s.orderContact)
+	mux.HandleFunc("POST /o/{token}/setup", s.orderSetup)
 	mux.HandleFunc("POST /o/{token}/msg", s.orderMessage)
 	mux.HandleFunc("POST /o/{token}/botonly", s.orderBotOnly)
 	mux.HandleFunc("POST /beat", s.beat)

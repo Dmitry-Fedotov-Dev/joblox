@@ -160,6 +160,8 @@ func (s *Service) StateText(o *Order) string {
 		text = st.Title
 	}
 	switch {
+	case o.Paid && o.State == s.Flow.Initial():
+		text = "оплата получена" // the state is still the first one until an operator takes the order
 	case o.Paid:
 	case o.ReportedAt != nil && !st.Final:
 		text = "проверяем оплату"

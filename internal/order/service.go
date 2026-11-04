@@ -759,7 +759,19 @@ func (s *Service) SetQty(ctx context.Context, o *Order, qty int) error {
 // SetFields saves what the customer of a quick order typed after it (checkout.after): the contact first.
 // Only those fields change; the contact, the first of them, is needed, the others may stay empty.
 func (s *Service) SetFields(ctx context.Context, o *Order, in map[string]string) error {
-	after := s.P.Checkout.After
+	return s.setFields(ctx, o, in, s.P.Checkout.After, "contact", "клиент оставил контакт: ")
+}
+
+// SetSetup saves the details the customer fills in once the payment is confirmed (checkout.setup).
+func (s *Service) SetSetup(ctx context.Context, o *Order, in map[string]string) error {
+	if !o.Paid && o.AdvanceAt == nil {
+		return ErrForbidden
+	}
+	return s.setFields(ctx, o, in, s.P.Checkout.Setup, "setup", "клиент заполнил данные: ")
+}
+
+// setFields changes only the listed fields, the first of them needed; kind and note make the order's event.
+func (s *Service) setFields(ctx context.Context, o *Order, in map[string]string, after []string, kind, note string) error {
 	if len(after) == 0 || s.IsFinal(o.State) {
 		return ErrForbidden
 	}
@@ -793,7 +805,13 @@ func (s *Service) SetFields(ctx context.Context, o *Order, in map[string]string)
 	}
 	now := s.Now()
 	o.UpdatedAt = now
-	return s.save(ctx, o, Event{At: now, Actor: profile.ActorCustomer, Kind: "contact", Note: "клиент оставил контакт: " + o.Fields[after[0]]})
+	var typed []string
+	for _, id := range after {
+		if v := o.Fields[id]; v != "" {
+			typed = append(typed, v)
+		}
+	}
+	return s.save(ctx, o, Event{At: now, Actor: profile.ActorCustomer, Kind: kind, Note: note + strings.Join(typed, " · ")})
 }
 
 // SetTelegram is the contact by «Продолжить через Telegram»: the account Telegram vouched for. The contact field

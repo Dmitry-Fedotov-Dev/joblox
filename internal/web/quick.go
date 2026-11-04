@@ -165,3 +165,56 @@ func (s *Server) orderBotOnly(w http.ResponseWriter, r *http.Request) {
 	}
 	s.redirect(w, r, "/o/"+o.Token+"#talk", http.StatusSeeOther)
 }
+
+// setupFields is the card «Осталось настроить» of a paid order (checkout.setup): its fields, typed or saved;
+// done when the needed first one is there.
+func (s *Server) setupFields(o *order.Order, typed map[string]string, errs order.FieldErrors) ([]fieldView, bool) {
+	p := s.svc.P
+	if len(p.Checkout.Setup) == 0 || (!o.Paid && o.AdvanceAt == nil) || s.svc.IsFinal(o.State) {
+		return nil, false
+	}
+	var out []fieldView
+	for i, id := range p.Checkout.Setup {
+		for _, f := range p.Checkout.Fields {
+			if f.ID != id {
+				continue
+			}
+			f.Required = i == 0
+			v := fieldView{Field: f, Value: o.Fields[id]}
+			if typed != nil {
+				v.Value = typed[id]
+			}
+			for _, e := range errs {
+				if e.Field == id {
+					v.Error = e.Msg
+				}
+			}
+			out = append(out, v)
+		}
+	}
+	return out, o.Fields[p.Checkout.Setup[0]] != ""
+}
+
+func (s *Server) orderSetup(w http.ResponseWriter, r *http.Request) {
+	o, ok := s.formOrder(w, r)
+	if !ok {
+		return
+	}
+	typed := map[string]string{}
+	for _, id := range s.svc.P.Checkout.Setup {
+		typed[id] = r.PostFormValue("f_" + id)
+	}
+	err := s.svc.SetSetup(r.Context(), o, typed)
+	var fe order.FieldErrors
+	switch {
+	case errors.As(err, &fe):
+		v := s.orderView(w, r, o, "", "")
+		v.Setup, _ = s.setupFields(o, typed, fe)
+		v.SetupDone = false
+		s.render(w, "order", http.StatusUnprocessableEntity, v)
+		return
+	case err != nil && !errors.Is(err, order.ErrForbidden):
+		s.log.Error("order setup", "err", err)
+	}
+	s.redirect(w, r, "/o/"+o.Token+"#setup", http.StatusSeeOther)
+}

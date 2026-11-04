@@ -112,3 +112,40 @@ func TestChatClosedOnThePage(t *testing.T) {
 		t.Fatal("a closed chat is still on the page, or Telegram is gone")
 	}
 }
+
+// Once the payment is confirmed the customer fills in the site's details: the address first.
+func TestSetupAfterPayment(t *testing.T) {
+	s := newSite(t, "openline")
+	_, page := s.get(t, "/quick?add=hosting")
+	r, _ := s.post(t, "/order", url.Values{"csrf": {match(t, csrfRe, page)}, "stamp": {match(t, stampRe, page)}, "quick": {"1"}, "item_hosting": {"1"}})
+	link := r.Header.Get("Location")
+	_, page = s.get(t, link)
+	csrf := match(t, csrfRe, page)
+	if strings.Contains(page, "Осталось настроить") {
+		t.Fatal("the details are asked before the payment")
+	}
+	if r, _ := s.post(t, link+"/setup", url.Values{"csrf": {csrf}, "f_site": {"valya"}}); r.StatusCode != http.StatusSeeOther {
+		t.Fatalf("setup before the payment: %d", r.StatusCode)
+	}
+	o, _ := s.svc.Store.ByToken(t.Context(), strings.TrimPrefix(link, "/o/"))
+	if o.Fields["site"] != "" {
+		t.Fatal("the details were taken before the payment")
+	}
+	if err := s.svc.ConfirmPayment(t.Context(), o, "1", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, page = s.get(t, link); !strings.Contains(page, "Осталось настроить") || !strings.Contains(page, ".free-sellers.com</span>") {
+		t.Fatal("no setup card after the payment")
+	}
+	if r, _ := s.post(t, link+"/setup", url.Values{"csrf": {csrf}, "f_site": {"Валя!"}}); r.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("a bad address was taken: %d", r.StatusCode)
+	}
+	s.post(t, link+"/setup", url.Values{"csrf": {csrf}, "f_site": {"Valya-Shop"}, "f_shop": {"Магазин Вали"}})
+	o, _ = s.svc.Store.ByToken(t.Context(), strings.TrimPrefix(link, "/o/"))
+	if o.Fields["site"] != "valya-shop" || o.Fields["shop"] != "Магазин Вали" {
+		t.Fatalf("details: %v", o.Fields)
+	}
+	if _, page = s.get(t, link); !strings.Contains(page, "Данные сохранены") {
+		t.Fatal("the card does not say the details are saved")
+	}
+}

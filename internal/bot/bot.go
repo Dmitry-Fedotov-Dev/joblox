@@ -401,6 +401,10 @@ func (b *Bot) OrderChanged(ctx context.Context, o *order.Order, ev order.Event) 
 		return
 	case "telegram":
 		note = "📲 Клиент подключил Telegram: новости заказа и ваши ответы придут ему туда"
+	case "setup":
+		note = "🛠 " + ev.Note
+	case "contact":
+		note = "📇 " + ev.Note
 	case "bot_only":
 		note = "🤫 " + ev.Note
 	case "verified":

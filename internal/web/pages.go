@@ -281,6 +281,8 @@ type orderView struct {
 	Call        string
 	Choices     []monthChoice   // «1 мес · 3 мес · 12 мес» while the order waits for money
 	Ask         []fieldView     // a quick order's contact card, after «Я оплатил»
+	Setup       []fieldView     // what the customer fills in once the payment is confirmed (checkout.setup)
+	SetupDone   bool            // the needed one of them is there
 	Chat        bool            // the news card: Telegram and «только через бота»
 	ChatOpen    bool            // the customer may write: the chat is on and he is not banned
 	Messages    []order.Message // the chat so far
@@ -323,6 +325,10 @@ func (s *Server) orderView(w http.ResponseWriter, r *http.Request, o *order.Orde
 	v.Call = s.callLink(o)
 	v.Choices = s.choices(o)
 	v.Ask = s.askAfter(o, nil, nil)
+	v.Setup, v.SetupDone = s.setupFields(o, nil, nil)
+	if o.Paid && o.State == s.svc.Flow.Initial() {
+		v.State.Customer = "Оплата получена" // not «Ожидает оплаты» while the order waits to be taken
+	}
 	s.chat(r, o, &v)
 	switch {
 	case st.Final:

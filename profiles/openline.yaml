@@ -22,12 +22,15 @@ checkout:
   fields:
     - {id: phone, label: Telegram или телефон, type: phone, required: true, hint: Напишем в Telegram или WhatsApp}
     - {id: name, label: Как к вам обращаться, type: text, max_len: 80}
-    - {id: site, label: Адрес сайта, type: text, max_len: 40, hint: "Например, valya: будет valya.free-sellers.com"}
-    - {id: business, label: Что продаёте, type: textarea, max_len: 600, hint: "Товары или услуги, город, как сейчас принимаете заказы"}
+    - {id: site, label: Адрес сайта, type: slug, unit: .free-sellers.com, hint: "Латиницей, например valya"}
+    - {id: shop, label: Название магазина, type: text, max_len: 60, hint: "Как его увидят покупатели"}
+    - {id: business, label: Что продаёте, type: textarea, max_len: 600, hint: "Товары или услуги, город"}
     - {id: email, label: Email для документов, type: email}
 
   # the order is placed by one tap from the tariffs; these come after «Я оплатил», the contact first
-  after: [phone, site, business]
+  after: [phone, name]
+  # once the payment is confirmed: the details of the site, the address first
+  setup: [site, shop, business]
 
 payment:
   methods: [transfer]
