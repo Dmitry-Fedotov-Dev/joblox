@@ -693,3 +693,11 @@ html { scroll-behavior: smooth; }
 .stage-icon > span { transform: translateY(-.07em); }
 a.btn-main { display: flex; align-items: center; justify-content: center; }
 .stage-icon > span { transform: translateY(-.1em); }
+
+/* the stage's icon is a line drawing, centred by its own geometry (an emoji's box sits differently in every font) */
+.stage-icon { color: var(--fg); }
+.stage-icon svg { width: 28px; height: 28px; display: block; }
+.stage-icon.tone-pay { color: var(--accent); }
+.stage-icon.tone-wait { color: #f5b041; }
+.stage-icon.tone-ok, .stage-icon.tone-done { color: var(--ok); }
+.stage-icon.tone-off { color: var(--muted); }

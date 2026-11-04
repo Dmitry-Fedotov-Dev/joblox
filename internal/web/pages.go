@@ -366,23 +366,23 @@ func (s *Server) stageOf(v *orderView) stage {
 	initial := o.State == s.svc.Flow.Initial()
 	switch {
 	case st.Final && o.Paid || st.Final && st.ID == "done":
-		return stage{Icon: "🎉", Title: st.Title, Sub: subOf(st), Tone: "done"}
+		return stage{Icon: "done", Title: st.Title, Sub: subOf(st), Tone: "done"}
 	case st.Final:
-		return stage{Icon: "✕", Title: st.Title, Sub: subOf(st), Tone: "off"}
+		return stage{Icon: "off", Title: st.Title, Sub: subOf(st), Tone: "off"}
 	case v.NeedCode:
-		return stage{Icon: "✉️", Title: "Подтвердите email", Sub: "Код уже в письме: без него заказ не продолжится", Tone: "wait"}
+		return stage{Icon: "mail", Title: "Подтвердите email", Sub: "Код уже в письме: без него заказ не продолжится", Tone: "wait"}
 	case v.Pay:
-		return stage{Icon: "💳", Title: "Оплатите заказ", Sub: "Заказ принят и уже в обработке", Tone: "pay", Live: true}
+		return stage{Icon: "pay", Title: "Оплатите заказ", Sub: "Заказ принят и уже в обработке", Tone: "pay", Live: true}
 	case o.ReportedAt != nil && !o.Paid:
-		return stage{Icon: "⏳", Title: "Проверяем перевод", Sub: "Продавец подтвердит оплату, статус обновится здесь сам", Tone: "wait", Live: true}
+		return stage{Icon: "wait", Title: "Проверяем перевод", Sub: "Продавец подтвердит оплату, статус обновится здесь сам", Tone: "wait", Live: true}
 	case o.Paid && initial && v.Setup != nil && !v.SetupDone:
-		return stage{Icon: "✓", Title: "Оплата получена", Sub: "Осталось несколько деталей, и мы начнём", Tone: "ok"}
+		return stage{Icon: "ok", Title: "Оплата получена", Sub: "Осталось несколько деталей, и мы начнём", Tone: "ok"}
 	case o.Paid && initial:
-		return stage{Icon: "✓", Title: "Оплата получена", Sub: "Скоро возьмём заказ в работу", Tone: "ok", Live: true}
+		return stage{Icon: "ok", Title: "Оплата получена", Sub: "Скоро возьмём заказ в работу", Tone: "ok", Live: true}
 	case v.Waiting != "":
-		return stage{Icon: "⏳", Title: st.Title, Sub: v.Waiting, Tone: "wait", Live: true}
+		return stage{Icon: "wait", Title: st.Title, Sub: v.Waiting, Tone: "wait", Live: true}
 	}
-	return stage{Icon: "🛠", Title: st.Title, Sub: subOf(st), Tone: "ok", Live: true}
+	return stage{Icon: "work", Title: st.Title, Sub: subOf(st), Tone: "ok", Live: true}
 }
 
 // subOf is the state's line for the customer without the title it often starts with («Готово: сайт работает»).
