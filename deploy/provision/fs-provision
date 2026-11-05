@@ -59,7 +59,7 @@ for req in "$DIR"/*.req; do
   profile="$(dirname "${profile:-/profiles/x.yaml}")/shop.yaml"
   key=$(openssl rand -hex 24)
   env="$ENVDIR/$proj.env"
-  umask 077
+  ( umask 077  # only the env file is secret: the Caddy site and the shop's files must stay readable
   {
     grep -E '^(JOBLOX_ENV|JOBLOX_DB|JOBLOX_ADDR|JOBLOX_ADMIN_ADDR|JOBLOX_TRUSTED_PROXIES)=' "$leader_env"
     echo "JOBLOX_PROFILE=$profile"
@@ -67,7 +67,7 @@ for req in "$DIR"/*.req; do
     echo "JOBLOX_SECRET=$(openssl rand -hex 32)"
     echo "JOBLOX_OWNER_KEY=$key"
     echo "JOBLOX_NETWORK_URL=https://$ZONE"
-  } > "$env.tmp" && mv -f "$env.tmp" "$env"
+  } > "$env.tmp" && mv -f "$env.tmp" "$env" )
 
   echo "order $id: making $host"
   if out=$(cdctl project clone "$proj" --from "$LEADER" --env-file "$env" --domain "$host" --yes 2>&1); then
