@@ -244,6 +244,14 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if err != nil {
 		return err
 	}
+	// A shop made from a template (deploy/provision) keeps the template's profile, so it follows the template's
+	// releases, and only names itself: JOBLOX_BUSINESS_NAME and JOBLOX_BUSINESS_ABOUT replace the template's.
+	if v := strings.TrimSpace(os.Getenv("JOBLOX_BUSINESS_NAME")); v != "" {
+		p.Business.Name = v
+	}
+	if v := strings.TrimSpace(os.Getenv("JOBLOX_BUSINESS_ABOUT")); v != "" {
+		p.Business.Description = v
+	}
 	req, err := order.LoadRequisites(cfg.Requisites)
 	if err != nil {
 		return err

@@ -15,6 +15,9 @@ exec 9>"${FS_LOCK:-/run/fs-provision.lock}"
 flock -n 9 || exit 0
 
 field() { python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get(sys.argv[2],""))' "$1" "$2" 2>/dev/null; }
+# one line of the customer's own text for the env file: no line breaks (they would add variables), no control
+# characters, at most $3 characters
+text() { python3 -c 'import json,sys; v=str(json.load(open(sys.argv[1])).get(sys.argv[2],"")); v=" ".join("".join(c if c.isprintable() else " " for c in v).split()); print(v[:int(sys.argv[3])])' "$1" "$2" "$3" 2>/dev/null; }
 show() { cdctl project show "$1" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get(sys.argv[1],""))' "$2"; }
 
 data=$(show "$SITE" data_mount)
@@ -43,6 +46,7 @@ for req in "$DIR"/*.req; do
   if ! [[ $id =~ ^[0-9]+$ ]]; then rm -f "$req"; continue; fi
   done_f="$DIR/$id.done"
   name=$(field "$req" name | tr '[:upper:]' '[:lower:]')
+  title=$(text "$req" title 60) about=$(text "$req" about 160)
   mv -f "$req" "$req.taken"
   fail() { echo "order $id: $1"; answer "$done_f" 0 "" "" "$1"; }
 
@@ -63,6 +67,8 @@ for req in "$DIR"/*.req; do
   {
     grep -E '^(JOBLOX_ENV|JOBLOX_DB|JOBLOX_ADDR|JOBLOX_ADMIN_ADDR|JOBLOX_TRUSTED_PROXIES)=' "$leader_env"
     echo "JOBLOX_PROFILE=$profile"
+    [ -z "$title" ] || echo "JOBLOX_BUSINESS_NAME=$title"
+    [ -z "$about" ] || echo "JOBLOX_BUSINESS_ABOUT=$about"
     echo "JOBLOX_BASE_URL=https://$host"
     echo "JOBLOX_SECRET=$(openssl rand -hex 32)"
     echo "JOBLOX_OWNER_KEY=$key"
