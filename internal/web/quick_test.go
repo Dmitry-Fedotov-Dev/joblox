@@ -40,7 +40,8 @@ func TestQuickOrder(t *testing.T) {
 	}
 	s.post(t, link+"/paid", url.Values{"csrf": {csrf}})
 	_, page = s.get(t, link)
-	if !strings.Contains(page, "Куда прислать новости заказа?") || !strings.Contains(page, "https://t.me/freesellersdotcombot?start=o"+strings.TrimPrefix(link, "/o/")) ||
+	// the address card comes first while the transfer is checked; the news card is the compact one under it
+	if !strings.Contains(page, "Осталось настроить") || !strings.Contains(page, "https://t.me/freesellersdotcombot?start=o"+strings.TrimPrefix(link, "/o/")) ||
 		!strings.Contains(page, "Связь только через бота") || strings.Contains(page, ">3 мес</button>") {
 		t.Fatal("after «Я оплатил»: no chat, no Telegram link, no «только через бота», or the months still change")
 	}
@@ -132,6 +133,15 @@ func TestSetupAfterPayment(t *testing.T) {
 	o, _ := s.svc.Store.ByToken(t.Context(), strings.TrimPrefix(link, "/o/"))
 	if o.Fields["site"] != "" {
 		t.Fatal("the details were taken before the payment")
+	}
+	// «Я оплатил»: the address may be chosen while the transfer is checked
+	s.post(t, link+"/paid", url.Values{"csrf": {csrf}})
+	if _, page = s.get(t, link); !strings.Contains(page, "Проверяем перевод") || !strings.Contains(page, ".free-sellers.com</span>") {
+		t.Fatal("no address card while the transfer is checked")
+	}
+	o, _ = s.svc.Store.ByToken(t.Context(), strings.TrimPrefix(link, "/o/"))
+	if s.svc.CanProvision(o) {
+		t.Fatal("a shop can be made before the payment is confirmed")
 	}
 	if err := s.svc.ConfirmPayment(t.Context(), o, "1", ""); err != nil {
 		t.Fatal(err)

@@ -170,7 +170,7 @@ func (s *Server) orderBotOnly(w http.ResponseWriter, r *http.Request) {
 // done when the needed first one is there.
 func (s *Server) setupFields(o *order.Order, typed map[string]string, errs order.FieldErrors) ([]fieldView, bool) {
 	p := s.svc.P
-	if len(p.Checkout.Setup) == 0 || (!o.Paid && o.AdvanceAt == nil) || s.svc.IsFinal(o.State) {
+	if len(p.Checkout.Setup) == 0 || !o.SetupOpen() || s.svc.IsFinal(o.State) {
 		return nil, false
 	}
 	var out []fieldView

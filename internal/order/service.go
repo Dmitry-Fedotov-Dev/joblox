@@ -767,11 +767,16 @@ func (s *Service) SetFields(ctx context.Context, o *Order, in map[string]string)
 
 // SetSetup saves the details the customer fills in once the payment is confirmed (checkout.setup).
 func (s *Service) SetSetup(ctx context.Context, o *Order, in map[string]string) error {
-	if !o.Paid && o.AdvanceAt == nil {
+	if !o.SetupOpen() {
 		return ErrForbidden
 	}
 	return s.setFields(ctx, o, in, s.P.Checkout.Setup, "setup", "клиент заполнил данные: ")
 }
+
+// SetupOpen says the customer may fill in the details of checkout.setup (the shop's address and name): once
+// he said he paid, so the wait for the check is not wasted. The shop itself is made only after the payment
+// is confirmed (CanProvision).
+func (o *Order) SetupOpen() bool { return o.Paid || o.AdvanceAt != nil || o.ReportedAt != nil }
 
 // setFields changes only the listed fields, the first of them needed; kind and note make the order's event.
 func (s *Service) setFields(ctx context.Context, o *Order, in map[string]string, after []string, kind, note string) error {
