@@ -252,6 +252,9 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if v := strings.TrimSpace(os.Getenv("JOBLOX_BUSINESS_ABOUT")); v != "" {
 		p.Business.Description = v
 	}
+	if v := strings.TrimSpace(os.Getenv("JOBLOX_BUSINESS_CONTACT")); v != "" {
+		p.Business.Contact = v
+	}
 	req, err := order.LoadRequisites(cfg.Requisites)
 	if err != nil {
 		return err
