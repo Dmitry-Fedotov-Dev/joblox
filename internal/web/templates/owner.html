@@ -70,6 +70,7 @@
 {{else}}
 <section class="dash">
   <div class="a-title"><h1>Настройки</h1></div>
+  {{if .NoPay}}<p class="alert" role="alert"><b>Покупатели сейчас не могут оформить заказ:</b> не указано, куда переводить деньги. <a href="#pay">Укажите реквизиты</a> — и оплата сразу появится на сайте.</p>{{end}}
 
   <div class="card">
     <p class="eyebrow">Ваш сайт</p>

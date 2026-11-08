@@ -37,8 +37,12 @@
     <div class="hp" aria-hidden="true"><label>Сайт <input name="website" tabindex="-1" autocomplete="off"></label></div>
     <h2>Оформление</h2>
     {{if .FormError}}<p class="banner error" role="alert">{{.FormError}}</p>{{end}}
+    {{if .Methods}}
     {{template "fields" .}}
     <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>Оформить заказ</button>
+    {{else}}
+    <p class="banner" role="status">Магазин пока не принимает заказы на сайте: продавец ещё не указал, куда переводить оплату.{{with .P.Business.Contact}} Напишите продавцу: <b>{{.}}</b>.{{end}}</p>
+    {{end}}
     {{if .P.Payment.RequireEmailCode}}<p class="muted small">После оформления на почту придёт код подтверждения.</p>{{end}}
   </form>
 </div>

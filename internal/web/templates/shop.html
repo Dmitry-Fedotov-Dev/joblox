@@ -74,8 +74,12 @@
   {{if .Quote}}<p class="banner">Цена рассчитывается по заявке: оператор назовёт её после проверки, вы получите письмо.</p>{{end}}
 
   <h2>{{if .Quote}}Заявка{{else}}Данные для заказа{{end}}</h2>
+  {{if .Methods}}
   {{template "fields" .}}
   <button class="cta" type="submit"{{if .Paused}} disabled{{end}}>{{if .Quote}}Отправить заявку{{else}}Оформить заказ{{end}}</button>
+  {{else}}
+  <p class="banner" role="status">Заказы на сайте пока не принимаются: продавец ещё не указал, куда переводить оплату.{{with .P.Business.Contact}} Напишите продавцу: <b>{{.}}</b>.{{end}}</p>
+  {{end}}
   {{if .P.Payment.RequireEmailCode}}<p class="muted small">После оформления на почту придёт код подтверждения.</p>{{end}}
 </form>
 {{end}}

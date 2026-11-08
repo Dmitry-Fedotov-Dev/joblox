@@ -194,6 +194,7 @@ type ownerView struct {
 	CashOff     bool
 	Transfer    bool // the profile takes transfers at all
 	Cash        bool
+	NoPay       bool // no way to pay is on: customers cannot place an order
 	Form        SetupInput
 	FormError   string
 	Kinds       any
@@ -240,6 +241,7 @@ func (s *Server) ownerView(w http.ResponseWriter, r *http.Request) (ownerView, e
 	v.Req, v.ReqFixed, v.CashOff = s.svc.Req(), s.cfg.ReqFixed, s.svc.CashOff()
 	v.Transfer = slices.Contains(s.svc.P.Payment.Methods, profile.MethodTransfer)
 	v.Cash = slices.Contains(s.svc.P.Payment.Methods, profile.MethodCash)
+	v.NoPay = len(s.svc.Methods()) == 0
 	v.ReqError = r.URL.Query().Get("req")
 	v.HasQR = s.svc.PaymentQR(r.Context()) != nil
 	if v.Req != nil {
