@@ -1,4 +1,5 @@
 {{define "content"}}
+{{$save := "Создать товар"}}{{if .Product}}{{$save = "Сохранить"}}{{else if .Services}}{{$save = "Создать услугу"}}{{else if .Food}}{{$save = "Добавить в меню"}}{{end}}
 <div class="a-title">
   <h1>{{if .Product}}{{.Product.Title}}{{else if .Services}}Новая услуга{{else if .Food}}Новое блюдо{{else}}Новый товар{{end}}</h1>
   {{if and .Product (not .Hidden)}}<a class="btn ghost small" href="{{p}}/p/{{.Product.Slug}}" target="_blank" rel="noopener">Открыть на сайте ↗</a>{{end}}
@@ -77,9 +78,9 @@
       {{end}}{{end}}
       <label class="dropzone" data-dropzone>
         <b>{{if and .Product .Product.Images}}Добавить фото{{else}}Выбрать фото{{end}}</b><small data-picked>Можно сразу несколько. Первое станет обложкой.</small>
-        <input type="file" name="photos" accept="image/*" multiple form="product-form" data-photo-input>
+        <input type="file" name="photos" accept="image/*" multiple form="product-form" data-photo-input data-save="{{$save}}"{{if not (and .Product .Product.Images)}} data-cover{{end}}>
       </label>
-      <p class="help" style="margin:12px 0 0">До {{.MaxImages}} фото (осталось {{.ImagesLeft}}), каждое до {{.MB}} МБ. Мы сами повернём их как надо, уменьшим и уберём из файлов место съёмки. Фото загрузятся, когда нажмёте «{{if .Product}}Сохранить{{else}}Создать{{end}}».</p>
+      <p class="help" style="margin:12px 0 0">До {{.MaxImages}} фото (осталось {{.ImagesLeft}}), каждое до {{.MB}} МБ. Мы сами повернём их как надо, уменьшим и уберём из файлов место съёмки. Фото загрузятся, когда нажмёте «{{$save}}».</p>
     </div>
 
     {{if not .Services}}
@@ -100,7 +101,7 @@
       {{end}}{{end}}
       <label class="dropzone" data-dropzone>
         <b>Добавить настоящие фото</b><small data-picked>Можно сразу несколько</small>
-        <input type="file" name="real_photos" accept="image/*" multiple form="product-form" data-photo-input>
+        <input type="file" name="real_photos" accept="image/*" multiple form="product-form" data-photo-input data-save="{{$save}}">
       </label>
     </div>
     {{end}}
