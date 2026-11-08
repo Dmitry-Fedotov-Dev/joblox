@@ -860,3 +860,36 @@ func (s *Service) ReportPaid(ctx context.Context, o *Order) error {
 	o.ReportedAt, o.UpdatedAt = &now, now
 	return s.save(ctx, o, Event{At: now, Actor: profile.ActorCustomer, Kind: "reported", Note: "клиент сообщил, что оплатил"})
 }
+
+// The name, the description and the contact the owner typed in the setup wizard. They replace the template's
+// (and JOBLOX_BUSINESS_*), are kept in the site's database and are applied at once and on every start.
+const (
+	settingBizName    = "biz_name"
+	settingBizAbout   = "biz_about"
+	settingBizContact = "biz_contact"
+)
+
+// LoadBusiness applies the owner's name, description and contact, when he set them.
+func (s *Service) LoadBusiness(ctx context.Context) {
+	if v := s.Setting(ctx, settingBizName); v != "" {
+		s.P.Business.Name = v
+	}
+	if v := s.Setting(ctx, settingBizAbout); v != "" {
+		s.P.Business.Description = v
+	}
+	if v := s.Setting(ctx, settingBizContact); v != "" {
+		s.P.Business.Contact = v
+	}
+}
+
+// SetBusiness keeps the owner's name, description and contact and shows them on the site right away.
+// An empty description or contact clears it; the name is required.
+func (s *Service) SetBusiness(ctx context.Context, name, about, contact string) error {
+	for k, v := range map[string]string{settingBizName: name, settingBizAbout: about, settingBizContact: contact} {
+		if err := s.SetSetting(ctx, k, v); err != nil {
+			return err
+		}
+	}
+	s.P.Business.Name, s.P.Business.Description, s.P.Business.Contact = name, about, contact
+	return nil
+}

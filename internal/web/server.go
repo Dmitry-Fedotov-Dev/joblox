@@ -151,9 +151,9 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 	}
 	s.tpl = map[string]*template.Template{}
 	// the back office has its own layout, made after the admin of Mama's workshop; the rest is the site's
-	office := map[string]bool{"home": true, "orders": true, "aorder": true, "owner": true, "catalog": true, "item": true, "login": true}
+	office := map[string]bool{"home": true, "orders": true, "aorder": true, "owner": true, "catalog": true, "item": true, "login": true, "wizard": true}
 	for _, page := range []string{"shop", "order", "message", "admin", "owner", "terms", "store", "product", "cart", "catalog", "item",
-		"home", "orders", "aorder", "login", "quick"} {
+		"home", "orders", "aorder", "login", "quick", "wizard"} {
 		layout := "layout.html"
 		if office[page] {
 			layout = "alayout.html"

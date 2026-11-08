@@ -139,6 +139,7 @@ func (s *Server) ownerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /bot/relay/verify", s.relayVerify)
 	mux.HandleFunc("POST /bot/relay/update", s.relayUpdate)
 	mux.HandleFunc("POST /owner/requisites", s.ownerOnly(s.ownerRequisites))
+	s.wizardRoutes(mux)
 	mux.HandleFunc("GET /pay-qr", s.payQR)
 	mux.HandleFunc("POST /owner/o/{id}/{action}", s.ownerOnly(s.ownerAction))
 	s.backofficeRoutes(mux)
@@ -162,6 +163,8 @@ func (s *Server) ownerEnter(w http.ResponseWriter, r *http.Request) {
 	to := "/admin" // the key leaves the address bar at once; a new installation starts with the setup
 	if o := s.cfg.Owner; o != nil && o.Configured != nil && !o.Configured() {
 		to = "/owner"
+	} else if s.wizardDue(r.Context()) {
+		to = "/owner/welcome" // a new shop: name, payment, first product, step by step
 	}
 	s.redirect(w, r, to, http.StatusSeeOther)
 }
@@ -499,7 +502,15 @@ func (s *Server) ownerRequisites(w http.ResponseWriter, r *http.Request) {
 		req.Recipient, req.Note = clip(req.Recipient, 120), clip(req.Note, 300)
 	}
 	if err := s.svc.SaveRequisites(r.Context(), req, r.PostFormValue("cash") != "1"); err != nil {
+		if back := wizardBack(r); back != "" {
+			s.redirect(w, r, back+"&req="+url.QueryEscape(err.Error()), http.StatusSeeOther)
+			return
+		}
 		s.redirect(w, r, "/owner?req="+url.QueryEscape(err.Error())+"#pay", http.StatusSeeOther)
+		return
+	}
+	if back := wizardBack(r); back != "" {
+		s.redirect(w, r, back, http.StatusSeeOther)
 		return
 	}
 	s.redirect(w, r, "/owner#pay", http.StatusSeeOther)

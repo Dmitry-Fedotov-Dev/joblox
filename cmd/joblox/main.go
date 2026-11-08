@@ -295,6 +295,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	}
 	svc := order.New(p, st, mailer, req, cfg.Secret, cfg.BaseURL)
 	svc.Log = log
+	svc.LoadBusiness(ctx) // the name and contact the owner typed in the setup wizard win over the template's
 	var catalog *shop.Catalog
 	var photos *shop.Photos
 	if p.Pricing.Mode == profile.PricingShop || p.ServiceCatalog != nil {

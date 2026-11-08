@@ -1,0 +1,79 @@
+{{define "content"}}
+<section class="wizard">
+  <ol class="wiz-steps" aria-label="Шаги настройки">
+    {{range .Steps}}<li class="{{if .On}}on{{else if .Done}}done{{end}}"><span>{{if .Done}}✓{{else}}{{.N}}{{end}}</span>{{.Title}}</li>{{end}}
+  </ol>
+
+  {{if eq .Step 1}}
+  <div class="card">
+    <p class="eyebrow">Шаг 1</p>
+    <h1>Как называется ваш магазин?</h1>
+    <p class="muted">Это увидят покупатели вверху сайта и в ссылке, которой вы поделитесь.</p>
+    {{if .Problems}}<div class="alert" role="alert">Поправьте: {{range $i, $p := .Problems}}{{if $i}}, {{end}}{{$p}}{{end}}.</div>{{end}}
+    <form method="post" action="{{p}}/owner/welcome/name" class="stack">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <label class="field"><span>Название</span><input name="name" value="{{.Name}}" maxlength="60" required placeholder="Плюшевая лавка"></label>
+      <label class="field"><span>Пара слов о магазине (необязательно)</span><input name="about" value="{{.About}}" maxlength="160" placeholder="Мягкие игрушки ручной работы, доставка по городу"></label>
+      <label class="field"><span>Как с вами связаться</span><input name="contact" value="{{.Contact}}" maxlength="60" placeholder="@telegram или +996 700 000 000"></label>
+      <div class="wiz-actions"><button type="submit">Дальше →</button></div>
+    </form>
+  </div>
+
+  {{else if eq .Step .PayStep}}
+  <div class="card" id="pay">
+    <p class="eyebrow">Шаг {{.Step}}</p>
+    <h1>Куда покупатели переводят деньги?</h1>
+    <p class="muted">Деньги приходят вам напрямую, без процентов. Покупатель увидит эти реквизиты после заказа и нажмёт «Я оплатил».{{if .NoPay}} <b>Пока реквизитов нет, заказать на сайте нельзя.</b>{{end}}</p>
+    {{if .ReqError}}<div class="alert" role="alert">{{.ReqError}}</div>{{end}}
+    <form method="post" action="{{p}}/owner/requisites" class="stack">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <input type="hidden" name="back" value="/owner/welcome?step={{.Next}}">
+      <label class="field"><span>Получатель — как вас увидит банк покупателя</span><input name="recipient" value="{{with .Req}}{{.Recipient}}{{end}}" placeholder="Валентина И." maxlength="120" required></label>
+      {{range $i, $r := .ReqRows}}
+      <div class="req-row">
+        <input name="label{{inc $i}}" value="{{$r.Label}}" placeholder="{{if eq $i 0}}Перевод по номеру телефона{{else}}Карта{{end}}" maxlength="60" aria-label="Как переводить">
+        <input name="value{{inc $i}}" value="{{$r.Value}}" placeholder="{{if eq $i 0}}+996 700 000 000{{else}}4000 0000 0000 0000{{end}}" maxlength="120" aria-label="Номер или реквизиты">
+      </div>
+      {{end}}
+      {{if .Cash}}<label class="check"><input type="checkbox" name="cash" value="1" {{if not .CashOff}}checked{{end}}> Принимать и оплату при получении</label>{{end}}
+      <div class="wiz-actions">
+        <button type="submit">Сохранить и дальше →</button>
+        <a class="button secondary" href="{{p}}/owner/welcome?step={{.Next}}">Пропустить</a>
+      </div>
+    </form>
+    <p class="muted small">Банковский QR для оплаты можно добавить потом в «Настройках».</p>
+  </div>
+
+  {{else if eq .Step .ProductStep}}
+  <div class="card">
+    <p class="eyebrow">Шаг {{.Step}}</p>
+    <h1>{{if eq .Items "услуги"}}Добавьте первую услугу{{else}}Добавьте первый товар{{end}}</h1>
+    {{if .Products}}<div class="alert ok">Уже на сайте: {{.Products}}. Можно добавить ещё или идти дальше.</div>
+    {{else}}<p class="muted">Фото с телефона, название и цена — этого достаточно. Остальное можно дописать потом.</p>{{end}}
+    <div class="wiz-actions">
+      <a class="button" href="{{p}}/owner/catalog/new?back={{urlquery (printf "/owner/welcome?step=%d" .Step)}}">+ {{if eq .Items "услуги"}}Добавить услугу{{else}}Добавить товар{{end}}</a>
+      <a class="button secondary" href="{{p}}/owner/welcome?step={{.Next}}">{{if .Products}}Дальше →{{else}}Пропустить{{end}}</a>
+    </div>
+  </div>
+
+  {{else}}
+  <div class="card">
+    <p class="eyebrow">Готово</p>
+    <h1>Магазин работает 🎉</h1>
+    <p class="muted">Вот ссылка на ваш магазин. Отправьте её покупателям, поставьте в профиль Instagram и Telegram.</p>
+    <p class="wiz-url"><a href="{{.SiteURL}}/" target="_blank" rel="noopener">{{.SiteURL}}</a></p>
+    {{if .SiteQR}}<div class="wiz-qr">{{.SiteQR}}</div>{{end}}
+    <ul class="wiz-check">
+      <li class="{{if .Name}}ok{{end}}">Название: <b>{{.Name}}</b></li>
+      {{if .HasPay}}<li class="{{if .Req}}ok{{else}}no{{end}}">Оплата: {{if .Req}}реквизиты указаны{{else}}<a href="{{p}}/owner/welcome?step={{.PayStep}}">нет реквизитов — без них заказать нельзя</a>{{end}}</li>{{end}}
+      {{if .HasCatalog}}<li class="{{if .Products}}ok{{else}}no{{end}}">{{if eq .Items "услуги"}}Услуги{{else}}Товары{{end}}: {{if .Products}}{{.Products}} на сайте{{else}}<a href="{{p}}/owner/welcome?step={{.ProductStep}}">пока ни одного</a>{{end}}</li>{{end}}
+    </ul>
+    <form method="post" action="{{p}}/owner/welcome/done" class="wiz-actions">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <button type="submit" name="to" value="site">Открыть мой магазин</button>
+      <button type="submit" name="to" value="admin" class="secondary">В админку</button>
+    </form>
+  </div>
+  {{end}}
+</section>
+{{end}}

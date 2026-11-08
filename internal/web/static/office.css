@@ -356,3 +356,21 @@ pre { background: var(--paper-2); padding: 12px; border-radius: 12px; overflow-x
 .sso-buttons { display: grid; gap: 10px; margin: 16px 0; max-width: 360px; }
 .btn.sso-google { background: #fff; color: #1f1f1f; border-color: var(--line); }
 .btn.sso-apple { background: #000; color: #fff; border-color: #000; }
+
+/* the setup wizard of a new shop */
+.wizard { max-width: 640px; margin: 0 auto; }
+.wiz-steps { display: flex; gap: 6px; list-style: none; padding: 0; margin: 4px 0 18px; flex-wrap: wrap; }
+.wiz-steps li { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--muted, #888); background: var(--card); border: 1px solid var(--line); }
+.wiz-steps li span { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--line); color: inherit; font-size: 13px; }
+.wiz-steps li.on { color: var(--plum); border-color: var(--plum); }
+.wiz-steps li.on span { background: var(--plum); color: #fff; }
+.wiz-steps li.done span { background: var(--sage-soft); color: #4c6347; }
+.wizard h1 { font-size: 26px; line-height: 1.2; margin: 4px 0 8px; }
+.wiz-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.wiz-url { font-size: 20px; font-weight: 700; word-break: break-all; margin: 14px 0; }
+.wiz-qr svg { width: 180px; height: 180px; }
+.wiz-check { list-style: none; padding: 0; margin: 16px 0; }
+.wiz-check li { padding: 6px 0 6px 28px; position: relative; }
+.wiz-check li::before { content: "•"; position: absolute; left: 6px; }
+.wiz-check li.ok::before { content: "✓"; color: #4c6347; }
+.wiz-check li.no::before { content: "!"; color: var(--danger); font-weight: 800; }

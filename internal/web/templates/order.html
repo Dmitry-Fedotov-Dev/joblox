@@ -15,11 +15,12 @@
 {{if or .ResultURL .AdminLink}}
 <section class="card result">
   <h2>Ваш {{if .ResultURL}}сайт{{else}}заказ{{end}} готов</h2>
-  {{if .ResultURL}}<p class="result-url">{{.ResultURL}}</p>
-  <a class="btn-main" href="{{.ResultURL}}" target="_blank" rel="noopener">Открыть сайт</a>{{end}}
-  {{if .AdminLink}}<a class="btn-quiet wide" href="{{.AdminLink}}" target="_blank" rel="noopener">🔑 Войти в админку</a>
-  <p class="card-note">Это ключ от ваших заказов: сохраните ссылку и никому её не пересылайте. Потом можно привязать вход через Google.</p>
-  {{else}}<p class="card-note">Ссылку для входа в админку пришлём сюда{{if .BotLinked}} и в Telegram{{end}}.</p>{{end}}
+  {{if .ResultURL}}<p class="result-url">{{.ResultURL}}</p>{{end}}
+  {{if .AdminLink}}<a class="btn-main" href="{{.AdminLink}}" target="_blank" rel="noopener">⚙️ Настроить магазин →</a>
+  <p class="card-note">Пошагово: название, куда покупатели платят, первый товар — пара минут с телефона. Эта ссылка — ключ от вашей админки: сохраните её и никому не пересылайте.</p>
+  {{if .ResultURL}}<a class="btn-quiet wide" href="{{.ResultURL}}" target="_blank" rel="noopener">Открыть сайт</a>{{end}}
+  {{else}}{{if .ResultURL}}<a class="btn-main" href="{{.ResultURL}}" target="_blank" rel="noopener">Открыть сайт</a>{{end}}
+  <p class="card-note">Ссылку для входа в админку пришлём сюда{{if .BotLinked}} и в Telegram{{end}}.</p>{{end}}
 </section>
 {{end}}
 

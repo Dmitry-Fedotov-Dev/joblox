@@ -63,11 +63,12 @@ type productForm struct {
 	Saved                     bool
 	Currency                  string
 	MaxImages, ImagesLeft, MB int
+	Back                      string // the setup wizard's next step, when the product is added from it
 }
 
 func (s *Server) productFormView(w http.ResponseWriter, r *http.Request, p *shop.Product) productForm {
 	v := productForm{base: s.base(w, r, "Новый товар"), Product: p, Currency: currencySign(s.svc.P.Business.Currency),
-		MaxImages: shop.MaxImages, ImagesLeft: shop.MaxImages, MB: shop.MaxUpload >> 20}
+		MaxImages: shop.MaxImages, ImagesLeft: shop.MaxImages, MB: shop.MaxUpload >> 20, Back: wizardBack(r)}
 	if p != nil {
 		v.Title, v.Description, v.Hidden, v.Preorder = p.Title, p.Description, p.Hidden, p.Preorder
 		v.base.Title = p.Title
@@ -203,6 +204,9 @@ func (s *Server) itemSave(w http.ResponseWriter, r *http.Request) {
 	}
 	photoMsg := s.savePhotos(r, id)
 	target := "/owner/catalog/" + strconv.FormatInt(id, 10) + "?saved=1"
+	if back := wizardBack(r); back != "" {
+		target = back
+	}
 	if photoMsg != "" {
 		target += "&photo=" + url.QueryEscape(photoMsg)
 	}

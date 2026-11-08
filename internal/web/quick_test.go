@@ -181,7 +181,7 @@ func TestResultLinks(t *testing.T) {
 		t.Fatal("the site is offered before it is done")
 	}
 	_ = s.svc.Transition(t.Context(), get(), "done", profile.ActorOperator, "1")
-	if _, page = s.get(t, link); !strings.Contains(page, `href="https://valya.free-sellers.com/"`) || strings.Contains(page, "Войти в админку") {
+	if _, page = s.get(t, link); !strings.Contains(page, `href="https://valya.free-sellers.com/"`) || strings.Contains(page, "Настроить магазин") {
 		t.Fatal("the finished order does not link to the shop, or offers a back office nobody sent")
 	}
 	if err := s.svc.SetAdminLink(t.Context(), get(), "1", "http://insecure"); err == nil {
@@ -190,7 +190,7 @@ func TestResultLinks(t *testing.T) {
 	if err := s.svc.SetAdminLink(t.Context(), get(), "1", "https://valya.free-sellers.com/owner/enter?k=secret"); err != nil {
 		t.Fatal(err)
 	}
-	if _, page = s.get(t, link); !strings.Contains(page, "Войти в админку") || !strings.Contains(page, "owner/enter?k=secret") {
+	if _, page = s.get(t, link); !strings.Contains(page, "Настроить магазин") || !strings.Contains(page, "owner/enter?k=secret") {
 		t.Fatal("the back office link is not on the page")
 	}
 }

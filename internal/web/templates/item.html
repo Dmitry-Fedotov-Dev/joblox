@@ -10,6 +10,7 @@
   <form id="product-form" method="post" action="{{p}}/owner/catalog/save" enctype="multipart/form-data">
     <input type="hidden" name="csrf" value="{{.CSRF}}">
     <input type="hidden" name="id" value="{{if .Product}}{{.Product.ID}}{{end}}">
+    {{if .Back}}<input type="hidden" name="back" value="{{.Back}}">{{end}}
     <div class="a-card">
       <h2>Описание</h2>
       <div class="field"><label for="title">Название <span class="req">*</span></label>
