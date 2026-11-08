@@ -5,7 +5,7 @@ business:
   currency: KGS
   timezone: Asia/Bishkek
   og_image: valya-og.jpg
-  placeholder: knit
+  # placeholder: knit  # нитки и клубок временно убраны (2026-11-08), вернуть — раскомментировать
 
 pricing:
   mode: shop
