@@ -667,7 +667,7 @@ main:has(> .page-yarn) .pcard .yarn .loop { display: none; }
 
 /* the one-tap page while it places the order */
 .quick { min-height: 50vh; display: grid; place-items: center; text-align: center; }
-.live { display: inline-flex; align-items: center; gap: 9px; margin: 10px 0 0; padding: 7px 14px 7px 12px; border-radius: 999px;
+.quick-live { display: inline-flex; align-items: center; gap: 9px; margin: 10px 0 0; padding: 7px 14px 7px 12px; border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 12%, var(--panel)); font-size: 14px; font-weight: 700; }
 .pulse { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .25; } }
