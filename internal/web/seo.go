@@ -122,9 +122,11 @@ func availability(p *shop.Product, food bool) stockState {
 
 type ldNode = map[string]any
 
-// jsonLD renders a graph for a <script type="application/ld+json">. json.Marshal escapes <, > and &, so no text
-// of the owner's can close the script.
-func jsonLD(nodes ...ldNode) template.JS {
+// jsonLD renders a graph as a whole <script type="application/ld+json"> element. json.Marshal escapes <, > and
+// &, so no text of the owner's can close the script. The element is built here rather than in layout.html: the
+// templates then hold no inline script that is not JavaScript, and CI's node --check of inline scripts stays
+// meaningful.
+func jsonLD(nodes ...ldNode) template.HTML {
 	doc := ldNode{"@context": "https://schema.org"}
 	if len(nodes) == 1 {
 		for k, v := range nodes[0] {
@@ -137,7 +139,7 @@ func jsonLD(nodes ...ldNode) template.JS {
 	if err != nil {
 		return ""
 	}
-	return template.JS(b) //nolint:gosec // HTML-escaped JSON, see above
+	return template.HTML(`<script type="application/ld+json">` + string(b) + `</script>`) //nolint:gosec // HTML-escaped JSON, see above
 }
 
 func ldPrice(a money.Amount) string { return strings.TrimSuffix(a.Plain(), ".00") }
@@ -274,7 +276,7 @@ func (s *Server) productNode(p *shop.Product) ldNode {
 }
 
 // storeLD is the front page's markup: the store and the list of what it sells.
-func (s *Server) storeLD(list []*shop.Product) template.JS {
+func (s *Server) storeLD(list []*shop.Product) template.HTML {
 	store := s.storeNode()
 	var items []ldNode
 	for i, p := range list {
@@ -294,7 +296,7 @@ func (s *Server) storeLD(list []*shop.Product) template.JS {
 }
 
 // productLD is a product page's markup: the product, its offer and the store that sells it.
-func (s *Server) productLD(p *shop.Product) template.JS {
+func (s *Server) productLD(p *shop.Product) template.HTML {
 	return jsonLD(s.productNode(p), s.storeNode())
 }
 

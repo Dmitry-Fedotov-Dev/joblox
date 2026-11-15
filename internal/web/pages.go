@@ -41,7 +41,7 @@ type base struct {
 	// Food: a bakery or a food stall; the shop's words become the menu's (блюда, порции, «на заказ»).
 	Food bool
 	// JSONLD is the page's Schema.org markup for search engines and AI agents; empty: none.
-	JSONLD template.JS
+	JSONLD template.HTML
 	// Facts are the seller's place, delivery and payment in words, for the footer and the product page.
 	Facts sellerFacts
 	// NoIndex keeps the page out of search: a demo, the cart, an order.
@@ -505,7 +505,7 @@ type adminView struct {
 	Title                 string
 	Paused                bool
 	Business              profile.Business
-	JSONLD                template.JS // the layout's structured data: never on the dashboard
+	JSONLD                template.HTML // the layout's structured data: never on the dashboard
 	Facts                 sellerFacts
 	NoIndex               bool // the dashboard keeps out of search
 	Version               string

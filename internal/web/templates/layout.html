@@ -18,7 +18,7 @@
   <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="{{asset "favicon.svg"}}" type="image/svg+xml">
   <link rel="stylesheet" href="{{asset "style.css"}}">
-  {{with .JSONLD}}<script type="application/ld+json">{{.}}</script>{{end}}
+  {{.JSONLD}}
 </head>
 <body>
   {{if .Demo}}<p class="demo-bar">Это пример сайта на <a href="https://free-sellers.com">free-sellers.com</a>: заказы никто не выполнит, деньги не переводите.</p>{{end}}
