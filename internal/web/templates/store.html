@@ -4,11 +4,14 @@
   <p class="eyebrow">{{if eq .Business.Kind "bakery"}}Еда на заказ{{else if .Business.Kind}}Магазин{{end}}</p>
   <h1>{{whole .Business.Name}}</h1>
   {{if .Business.Description}}<p class="lead">{{.Business.Description}}</p>{{end}}
-  {{$n := 0}}{{range .Products}}{{if .InStock}}{{$n = inc $n}}{{end}}{{end}}
   <ul class="hero-meta">
-    {{if $n}}<li><b>{{$n}}</b> {{if eq .Business.Kind "bakery"}}{{plural $n "позиция" "позиции" "позиций"}} в меню{{else}}{{plural $n "товар" "товара" "товаров"}} в наличии{{end}}</li>{{end}}
+    {{if .Food}}{{$n := add .Ready .Made}}{{if $n}}<li><b>{{$n}}</b> {{plural $n "позиция" "позиции" "позиций"}} в меню</li>{{end}}
+    {{else}}{{if .Ready}}<li><b>{{.Ready}}</b> {{plural .Ready "товар" "товара" "товаров"}} в наличии</li>{{end}}
+    {{if .Made}}<li><b>{{.Made}}</b> под заказ</li>{{end}}{{end}}
+    {{with .Facts.Place}}<li>{{.}}</li>{{end}}
     {{if .Business.Contact}}<li>{{.Business.Contact}}</li>{{end}}
-    <li>Оплата напрямую продавцу</li>
+    {{with .Facts.Delivery}}<li>Доставка: {{.}}</li>{{end}}
+    <li>{{with .Facts.Payment}}Оплата {{.}}{{else}}Оплата напрямую продавцу{{end}}</li>
   </ul>
 </section>
 

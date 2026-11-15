@@ -80,6 +80,7 @@ type wizardView struct {
 	Step, Next           int
 	Steps                []wizardStep
 	Name, About, Contact string
+	City, Delivery       string
 	Problems             []string
 	Req                  *order.Requisites
 	ReqRows              []order.RequisiteRow
@@ -119,7 +120,7 @@ func (s *Server) wizardPage(w http.ResponseWriter, r *http.Request) {
 	}
 	b := s.svc.P.Business
 	v := wizardView{base: s.base(w, r, "Настройка магазина"), Step: step, Next: step + 1, Name: b.Name, About: b.Description,
-		Contact: b.Contact, Req: s.svc.Req(), ReqError: r.URL.Query().Get("req"), CashOff: s.svc.CashOff(),
+		Contact: b.Contact, City: b.City, Delivery: b.Delivery, Req: s.svc.Req(), ReqError: r.URL.Query().Get("req"), CashOff: s.svc.CashOff(),
 		Products: s.productCount(ctx), SiteURL: s.svc.BaseURL(), NoPay: len(s.svc.Methods()) == 0,
 		HasPay: pay > 0, HasCatalog: product > 0, PayStep: pay, ProductStep: product, DoneStep: done, Items: "товары"}
 	if s.isServices() {
@@ -156,6 +157,8 @@ func (s *Server) wizardName(w http.ResponseWriter, r *http.Request) {
 	name, ok1 := field(r, "name", 60)
 	about, ok2 := field(r, "about", 160)
 	contact, ok3 := field(r, "contact", 60)
+	city, ok4 := field(r, "city", 60)
+	delivery, ok5 := field(r, "delivery", 160)
 	var problems []string
 	if !ok1 || utf8.RuneCountInString(name) < 2 {
 		problems = append(problems, "название от 2 до 60 букв")
@@ -166,15 +169,25 @@ func (s *Server) wizardName(w http.ResponseWriter, r *http.Request) {
 	if !ok3 {
 		problems = append(problems, "контакт до 60 знаков")
 	}
+	if !ok4 {
+		problems = append(problems, "город до 60 букв")
+	}
+	if !ok5 {
+		problems = append(problems, "доставка до 160 букв")
+	}
 	if len(problems) > 0 {
 		pay, product, done := s.wizardSteps()
 		v := wizardView{base: s.base(w, r, "Настройка магазина"), Step: 1, Next: 2, Name: name, About: about, Contact: contact,
-			Problems: problems, HasPay: pay > 0, HasCatalog: product > 0, PayStep: pay, ProductStep: product, DoneStep: done}
+			City: city, Delivery: delivery, Problems: problems, HasPay: pay > 0, HasCatalog: product > 0, PayStep: pay, ProductStep: product, DoneStep: done}
 		v.Steps = []wizardStep{{N: 1, Title: "Название", On: true}}
 		s.render(w, "wizard", http.StatusUnprocessableEntity, v)
 		return
 	}
-	if err := s.svc.SetBusiness(r.Context(), name, about, contact); err != nil {
+	err := s.svc.SetBusiness(r.Context(), name, about, contact)
+	if err == nil {
+		err = s.svc.SetPlace(r.Context(), city, delivery)
+	}
+	if err != nil {
 		s.log.Error("wizard name", "err", err)
 		s.message(w, r, http.StatusInternalServerError, "Не сохранилось", "Попробуйте ещё раз.")
 		return

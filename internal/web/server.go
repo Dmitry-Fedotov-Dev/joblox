@@ -67,6 +67,9 @@ type Config struct {
 	// CustomerBot is the @name of the bot that also talks to customers (the order's chat, its news); nil or
 	// empty: the order page has no chat and no Telegram button.
 	CustomerBot func() string
+	// IndexNow is where product changes are announced to search engines (Bing, Yandex, …): empty is
+	// api.indexnow.org, "off" turns it off. Demos, temporary tunnel addresses and local runs never ping.
+	IndexNow string
 }
 
 type Server struct {
@@ -77,9 +80,10 @@ type Server struct {
 	secret  []byte
 	tpl     map[string]*template.Template
 	log     *slog.Logger
-	general *Limiter // every request
-	orders  *Limiter // checkout submits
-	codes   *Limiter // email code tries
+	general *Limiter       // every request
+	orders  *Limiter       // checkout submits
+	codes   *Limiter       // email code tries
+	pings   sync.WaitGroup // IndexNow announcements still on their way (tests wait for them)
 }
 
 func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret []byte, cfg Config, log *slog.Logger) (*Server, error) {
@@ -100,6 +104,7 @@ func New(svc *order.Service, rec *metrics.Recorder, outbox *mail.Outbox, secret 
 		"cur":   currencySign,
 		"join":  strings.Join,
 		"inc":   func(i int) int { return i + 1 },
+		"add":   func(a, b int) int { return a + b },
 		"dec":   func(i int) int { return max(i-1, 0) },
 		"list":  func(a ...int) []int { return a },
 		"sign":  func() string { return currencySign(svc.P.Business.Currency) },
@@ -248,6 +253,7 @@ func (s *Server) Handler() http.Handler {
 	})
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.HandleFunc("GET /terms", s.terms)
+	s.seoRoutes(mux)
 	if s.cfg.Owner != nil {
 		s.ownerRoutes(mux)
 		s.ssoRoutes(mux)

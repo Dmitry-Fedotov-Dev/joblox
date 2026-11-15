@@ -86,6 +86,12 @@ type Business struct {
 	Currency    string `yaml:"currency"` // ISO code, shown next to sums
 	Timezone    string `yaml:"timezone"`
 	Contact     string `yaml:"contact"` // shown in the footer: phone, email or messenger
+	// City, Country and Delivery tell a buyer (and a search engine or an AI agent) where the seller is and how
+	// the goods reach the customer: «Чолпон-Ата», "KG", «Доставка по Иссык-Кулю, самовывоз». Country is an ISO
+	// 3166-1 alpha-2 code; empty: taken from the currency (KGS → KG, KZT → KZ, RUB → RU).
+	City     string `yaml:"city"`
+	Country  string `yaml:"country"`
+	Delivery string `yaml:"delivery"`
 	// Cover is a picture for the top of the site: a JPEG, PNG or WebP file next to the profile.
 	Cover string `yaml:"cover"`
 	// OGImage is the picture of the site's link previews in Telegram and other messengers: a 1200×630

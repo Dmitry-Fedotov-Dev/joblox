@@ -15,6 +15,9 @@
       <label class="field"><span>Название</span><input name="name" value="{{.Name}}" maxlength="60" required placeholder="Плюшевая лавка"></label>
       <label class="field"><span>Пара слов о магазине (необязательно)</span><input name="about" value="{{.About}}" maxlength="160" placeholder="Мягкие игрушки ручной работы, доставка по городу"></label>
       <label class="field"><span>Как с вами связаться</span><input name="contact" value="{{.Contact}}" maxlength="60" placeholder="@telegram или +996 700 000 000"></label>
+      <label class="field"><span>Город</span><input name="city" value="{{.City}}" maxlength="60" placeholder="Бишкек"></label>
+      <label class="field"><span>Как покупатель получит заказ</span><input name="delivery" value="{{.Delivery}}" maxlength="160" placeholder="Доставка по городу, почтой по стране, самовывоз"></label>
+      <p class="muted small">Город и доставку видят покупатели и поисковики: по ним вас находят на запросы вроде «подарок в Бишкеке».</p>
       <div class="wiz-actions"><button type="submit">Дальше →</button></div>
     </form>
   </div>

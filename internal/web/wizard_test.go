@@ -31,12 +31,15 @@ func TestSetupWizard(t *testing.T) {
 		t.Fatalf("a one-letter name must be refused: %d", r.StatusCode)
 	}
 	r, _ := s.post(t, "/owner/welcome/name", url.Values{"csrf": {csrf}, "name": {"Плюшевая лавка"},
-		"about": {"Мягкие игрушки"}, "contact": {"@plush"}})
+		"about": {"Мягкие игрушки"}, "contact": {"@plush"}, "city": {"Бишкек"}, "delivery": {"по городу и почтой"}})
 	if r.StatusCode != http.StatusSeeOther || r.Header.Get("Location") != "/owner/welcome?step=2" {
 		t.Fatalf("name: %d %q", r.StatusCode, r.Header.Get("Location"))
 	}
 	if b := s.svc.P.Business; b.Name != "Плюшевая лавка" || b.Description != "Мягкие игрушки" || b.Contact != "@plush" {
 		t.Fatalf("the business was not renamed: %+v", b)
+	}
+	if b := s.svc.P.Business; b.City != "Бишкек" || b.Delivery != "по городу и почтой" || s.svc.Setting(t.Context(), "biz_city") != "Бишкек" {
+		t.Fatalf("the city and delivery were not kept: %+v", b)
 	}
 	if v := s.svc.Setting(t.Context(), "biz_name"); v != "Плюшевая лавка" {
 		t.Fatalf("the name is not kept for the next start: %q", v)

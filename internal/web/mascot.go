@@ -40,7 +40,7 @@ func yarn(id int64) template.HTML {
 // spins is how many tints of each pose there are in static/spin.
 const spins = 4
 
-// spin is the picture of a preorder card: Dymok resting in one of four soft tints. Most cards he sleeps on,
+// spin is the picture of a preorder card (decorative: the card's label and the page say «Предзаказ» in words): Dymok resting in one of four soft tints. Most cards he sleeps on,
 // on some he purrs with hearts or hums a tune; under the pointer he purrs on any card (CSS .love).
 func spin(id int64) template.HTML {
 	if id < 0 {
@@ -48,6 +48,6 @@ func spin(id int64) template.HTML {
 	}
 	n := id%spins + 1
 	pose := [...]string{"sleep", "sleep", "sleep", "love", "music"}[id%5]
-	return template.HTML(fmt.Sprintf(`<img class="mascot pixel" src="/static/spin/%s-%d.gif" alt="Готовится под заказ" width="200" height="248" loading="lazy" decoding="async">`+
+	return template.HTML(fmt.Sprintf(`<img class="mascot pixel" src="/static/spin/%s-%d.gif" alt="" width="200" height="248" loading="lazy" decoding="async">`+
 		`<img class="mascot pixel love" src="/static/spin/love-%d.gif" alt="" width="200" height="248" loading="lazy" decoding="async">`, pose, n, n))
 }

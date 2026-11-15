@@ -255,6 +255,15 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	if v := strings.TrimSpace(os.Getenv("JOBLOX_BUSINESS_CONTACT")); v != "" {
 		p.Business.Contact = v
 	}
+	if v := strings.TrimSpace(os.Getenv("JOBLOX_BUSINESS_CITY")); v != "" {
+		p.Business.City = v
+	}
+	if v := strings.TrimSpace(os.Getenv("JOBLOX_BUSINESS_COUNTRY")); v != "" {
+		p.Business.Country = strings.ToUpper(v)
+	}
+	if v := strings.TrimSpace(os.Getenv("JOBLOX_BUSINESS_DELIVERY")); v != "" {
+		p.Business.Delivery = v
+	}
 	req, err := order.LoadRequisites(cfg.Requisites)
 	if err != nil {
 		return err
@@ -361,7 +370,7 @@ func run(ctx context.Context, log *slog.Logger, cfg Config, opt runOptions) erro
 	site, err := web.New(svc, rec, outbox, cfg.Secret, web.Config{Bot: botPanel, ReqFixed: cfg.Demo, SSO: cfg.SSO, Trusted: trusted, Dev: cfg.Env == "dev",
 		SecureCookies: opt.SecureCookies || strings.HasPrefix(cfg.BaseURL, "https://"), Version: version, Owner: opt.Owner,
 		CallURL: callURL(), Shop: catalog, Photos: photos, Demo: cfg.Demo, Prefix: pathOf(cfg.BaseURL), Cover: fileNextTo(cfg.Profile, p.Business.Cover), OGImage: fileNextTo(cfg.Profile, p.Business.OGImage),
-		MarketURL: marketURL(), CustomerBot: customerBot}, log)
+		MarketURL: marketURL(), CustomerBot: customerBot, IndexNow: os.Getenv("JOBLOX_INDEXNOW")}, log)
 	if err != nil {
 		return err
 	}

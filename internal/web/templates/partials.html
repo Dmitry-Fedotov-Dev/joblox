@@ -37,9 +37,11 @@
     {{with .Cover}}<img src="{{p}}/img/{{.File}}_t.jpg" alt="" loading="lazy" decoding="async" width="{{.W}}" height="{{.H}}">{{else}}{{if $.Preorder}}{{spin $.ID}}{{else}}{{mascot $.ID}}{{end}}{{end}}
   </span>
   {{if not .Cover}}{{yarn .ID}}{{end}}
-  {{if .Label}}<span class="pill{{if .LabelHot}} hot{{end}}">{{.Label}}</span>{{end}}
   <span class="name">{{.Title}}</span>
   <span class="cost">{{price .Price}} {{sign}}{{if .OldPrice}} <s>{{price .OldPrice}}</s>{{end}}</span>
+  {{/* after the name in the text, so a reader without styles sees «Грибок … 1 000 сом · Последний», not the
+       label glued to the next card's name; CSS still puts it on the picture */}}
+  {{if .Label}}<span class="pill{{if .LabelHot}} hot{{end}}">{{.Label}}</span>{{end}}
 </a>
 {{end}}
 
@@ -72,4 +74,15 @@
   <td>{{.Total}}</td>
   <td><span class="status {{.Tone}}">{{.State}}</span></td>
 </tr>
+{{end}}
+
+{{/* The seller's terms in words under a product: who sells, where, how it comes and how it is paid. */}}
+{{define "facts"}}
+<dl class="facts">
+  <div><dt>Продавец</dt><dd>{{.Business.Name}}</dd></div>
+  {{with .Facts.Place}}<div><dt>Где</dt><dd>{{.}}</dd></div>{{end}}
+  {{with .Facts.Delivery}}<div><dt>Доставка</dt><dd>{{.}}</dd></div>{{end}}
+  {{with .Facts.Payment}}<div><dt>Оплата</dt><dd>{{.}}</dd></div>{{end}}
+  {{with .Business.Contact}}<div><dt>Связь</dt><dd>{{.}}</dd></div>{{end}}
+</dl>
 {{end}}

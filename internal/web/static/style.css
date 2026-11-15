@@ -97,6 +97,14 @@ h2 { font-size: 21px; margin: 28px 0 12px; letter-spacing: -.02em; }
   font-variant-numeric: tabular-nums; }
 .buy .pill { position: static; display: inline-block; margin-bottom: 10px; box-shadow: none; border: 1px solid var(--line); }
 .buy .pill.hot { border-color: var(--accent); }
+.buy .stock { margin: -8px 0 18px; font-size: 14px; color: var(--muted); }
+.buy .stock b { color: var(--fg); }
+.buy .stock.ready b::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%;
+  background: #3fa45b; vertical-align: 1px; }
+.facts { display: grid; gap: 6px; margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; }
+.facts div { display: grid; grid-template-columns: 96px 1fr; gap: 10px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
 .sizes { display: flex; flex-wrap: wrap; gap: 8px; border: 0; padding: 0; margin: 0 0 16px; }
 .sizes legend { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
 .sizes label { position: relative; }

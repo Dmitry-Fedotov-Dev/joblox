@@ -867,7 +867,21 @@ const (
 	settingBizName    = "biz_name"
 	settingBizAbout   = "biz_about"
 	settingBizContact = "biz_contact"
+	// the place: a city and how the goods reach the customer, for the site and its structured data
+	settingBizCity     = "biz_city"
+	settingBizDelivery = "biz_delivery"
 )
+
+// SetPlace keeps the owner's city and delivery terms and shows them on the site right away; empty clears.
+func (s *Service) SetPlace(ctx context.Context, city, delivery string) error {
+	for k, v := range map[string]string{settingBizCity: city, settingBizDelivery: delivery} {
+		if err := s.SetSetting(ctx, k, v); err != nil {
+			return err
+		}
+	}
+	s.P.Business.City, s.P.Business.Delivery = city, delivery
+	return nil
+}
 
 // LoadBusiness applies the owner's name, description and contact, when he set them.
 func (s *Service) LoadBusiness(ctx context.Context) {
@@ -879,6 +893,12 @@ func (s *Service) LoadBusiness(ctx context.Context) {
 	}
 	if v := s.Setting(ctx, settingBizContact); v != "" {
 		s.P.Business.Contact = v
+	}
+	if v := s.Setting(ctx, settingBizCity); v != "" {
+		s.P.Business.City = v
+	}
+	if v := s.Setting(ctx, settingBizDelivery); v != "" {
+		s.P.Business.Delivery = v
 	}
 }
 

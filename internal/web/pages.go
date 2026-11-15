@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"errors"
+	"html/template"
 	"net/http"
 	"net/url"
 	"slices"
@@ -39,13 +40,20 @@ type base struct {
 	Nav string
 	// Food: a bakery or a food stall; the shop's words become the menu's (блюда, порции, «на заказ»).
 	Food bool
+	// JSONLD is the page's Schema.org markup for search engines and AI agents; empty: none.
+	JSONLD template.JS
+	// Facts are the seller's place, delivery and payment in words, for the footer and the product page.
+	Facts sellerFacts
+	// NoIndex keeps the page out of search: a demo, the cart, an order.
+	NoIndex bool
 }
 
 func (s *Server) base(w http.ResponseWriter, r *http.Request, title string) base {
 	v := s.visitor(w, r)
 	s.rec.Seen(v)
 	b := base{Business: s.svc.P.Business, Title: title, CSRF: s.csrfToken(v), Paused: s.svc.Paused(), Shop: s.isShop(), Food: s.isFood(), Demo: s.cfg.Demo, Cover: s.coverURL(),
-		Services: s.isServices(), Catalog: s.hasCatalog(), Rows: s.rowsPerPage(r)}
+		Services: s.isServices(), Catalog: s.hasCatalog(), Rows: s.rowsPerPage(r), Facts: s.sellerFacts()}
+	b.NoIndex = !s.indexable() || r.URL.Path != "/" && !strings.HasPrefix(r.URL.Path, "/p/") && r.URL.Path != "/terms"
 	if b.Shop {
 		b.Cart = s.readCart(r).count()
 	}
@@ -185,6 +193,9 @@ func (s *Server) shop(w http.ResponseWriter, r *http.Request) {
 			s.log.Error("services", "err", err)
 		}
 		v.Cards = cards(list, s.isFood())
+		v.JSONLD = s.storeLD(list)
+	} else {
+		v.JSONLD = jsonLD(s.storeNode())
 	}
 	s.render(w, "shop", http.StatusOK, v)
 }
@@ -494,6 +505,9 @@ type adminView struct {
 	Title                 string
 	Paused                bool
 	Business              profile.Business
+	JSONLD                template.JS // the layout's structured data: never on the dashboard
+	Facts                 sellerFacts
+	NoIndex               bool // the dashboard keeps out of search
 	Version               string
 	Orders                []adminOrder
 	Stats                 order.Stats
@@ -545,7 +559,7 @@ func (s *Server) adminPage(w http.ResponseWriter, r *http.Request) {
 	if s.svc.Req() != nil {
 		finger = s.svc.Req().Fingerprint()
 	}
-	s.render(w, "admin", http.StatusOK, adminView{Title: "Дашборд", Paused: s.svc.Paused(), Business: s.svc.P.Business, Version: s.cfg.Version,
+	s.render(w, "admin", http.StatusOK, adminView{Title: "Дашборд", NoIndex: true, Paused: s.svc.Paused(), Business: s.svc.P.Business, Version: s.cfg.Version,
 		Orders: list, Stats: st, Currency: currencySign(s.svc.P.Business.Currency), Finger: finger, Owner: s.isOwner(r),
 		Nav: map[bool]string{true: "load"}[s.isOwner(r)], Catalog: s.hasCatalog(), Services: s.isServices()})
 }

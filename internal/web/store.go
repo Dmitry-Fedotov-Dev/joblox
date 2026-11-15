@@ -138,6 +138,9 @@ type storeView struct {
 	base
 	Products []productCard
 	Intro    string
+	// Ready is how many products can be bought from stock now, Made how many are made to order: the head of
+	// the storefront says them apart, so «в наличии» never counts what is still to be made.
+	Ready, Made int
 }
 
 func (s *Server) storeFront(w http.ResponseWriter, r *http.Request) {
@@ -149,13 +152,28 @@ func (s *Server) storeFront(w http.ResponseWriter, r *http.Request) {
 	}
 	// what can be bought comes first; sold-out pieces stay at the end as a portfolio
 	sort.SliceStable(list, func(i, j int) bool { return list[i].InStock() && !list[j].InStock() })
-	s.render(w, "store", http.StatusOK, storeView{base: s.base(w, r, s.svc.P.Business.Name), Products: cards(list, s.isFood()),
-		Intro: s.svc.P.Texts.Intro})
+	v := storeView{base: s.base(w, r, s.svc.P.Business.Name), Products: cards(list, s.isFood()), Intro: s.svc.P.Texts.Intro}
+	var shown []*shop.Product
+	for _, p := range list {
+		if p.Hidden {
+			continue
+		}
+		shown = append(shown, p)
+		switch st := availability(p, s.isFood()); {
+		case st.Ready:
+			v.Ready++
+		case p.Preorder:
+			v.Made++
+		}
+	}
+	v.JSONLD = s.storeLD(shown)
+	s.render(w, "store", http.StatusOK, v)
 }
 
 type productView struct {
 	base
 	Product productCard
+	Stock   stockState // what can be bought and when, said in words next to the price
 	Added   bool
 	Error   string
 	More    []productCard
@@ -186,8 +204,9 @@ func (s *Server) renderProduct(w http.ResponseWriter, r *http.Request, p *shop.P
 	if d := strings.TrimSpace(p.Description); d != "" {
 		b.Summary = clipText(d, 200)
 	}
+	b.JSONLD = s.productLD(p)
 	v := productView{base: b, Product: productCard{Product: p, Label: l, LabelHot: hot},
-		Added: r.URL.Query().Get("added") == "1", Error: msg}
+		Added: r.URL.Query().Get("added") == "1", Error: msg, Stock: availability(p, s.isFood())}
 	if list, err := s.cfg.Shop.List(r.Context(), false); err == nil {
 		for _, o := range list {
 			if o.ID != p.ID && (o.InStock() || s.isServices()) && len(v.More) < 4 {

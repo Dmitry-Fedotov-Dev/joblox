@@ -21,6 +21,7 @@
     <p class="muted small">Опишите задачу, мастер посмотрит и назовёт точную цену. Платите после работы.</p>
     {{else}}
     <p class="cost">{{price $p.Price}} {{sign}}{{if $p.OldPrice}} <s>{{price $p.OldPrice}}</s>{{end}}</p>
+    <p class="stock{{if .Stock.Ready}} ready{{end}}"><b>{{.Stock.Text}}</b>{{with .Stock.Note}} · {{.}}{{end}}</p>
 
     {{if $p.InStock}}
     <form method="post" action="{{p}}/cart">
@@ -46,6 +47,7 @@
     {{end}}
 
     {{if $p.Description}}<div class="desc">{{$p.Description}}</div>{{end}}
+    {{template "facts" .}}
   </div>
 </article>
 

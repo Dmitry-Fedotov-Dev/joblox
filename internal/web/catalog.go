@@ -203,6 +203,9 @@ func (s *Server) itemSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	photoMsg := s.savePhotos(r, id)
+	if p, err := s.cfg.Shop.Get(r.Context(), id); err == nil && !p.Hidden {
+		s.pingProduct(p) // a new or changed card: search engines hear of it now, not at the next crawl
+	}
 	target := "/owner/catalog/" + strconv.FormatInt(id, 10) + "?saved=1"
 	if back := wizardBack(r); back != "" {
 		target = back
@@ -265,6 +268,7 @@ func (s *Server) itemAction(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	back := "/owner/catalog#p" + strconv.FormatInt(id, 10)
+	before, _ := s.cfg.Shop.Get(ctx, id) // its address, to announce a hidden, shown or deleted card
 	switch action := r.PathValue("action"); {
 	case action == "hide" || action == "show":
 		err = s.cfg.Shop.SetHidden(ctx, id, action == "hide")
@@ -309,6 +313,12 @@ func (s *Server) itemAction(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 		return
+	}
+	if err == nil && before != nil {
+		switch action := r.PathValue("action"); action {
+		case "hide", "show", "delete":
+			s.pingProduct(before) // the page appeared or is gone: search engines recheck it
+		}
 	}
 	if err != nil && !errors.Is(err, shop.ErrNotFound) {
 		s.log.Error("catalog action", "err", err)

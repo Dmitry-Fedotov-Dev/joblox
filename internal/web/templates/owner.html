@@ -115,6 +115,14 @@
     {{end}}
   </div>
 
+  <div class="card" id="about">
+    <p class="eyebrow">О магазине</p>
+    <p><b>{{.Business.Name}}</b>{{with .Facts.Place}} · {{.}}{{end}}</p>
+    {{if and .Business.City .Business.Delivery}}<p class="muted small">Доставка: {{.Business.Delivery}}</p>
+    {{else}}<p class="muted small">Укажите город и как покупатель получит заказ: это видят покупатели, поисковики и ИИ-помощники, и по ним вас находят на запросы вроде «подарок в Бишкеке».</p>{{end}}
+    <p class="actions"><a class="button secondary" href="{{p}}/owner/welcome?step=1">Название, город, доставка</a></p>
+  </div>
+
   {{if .Catalog}}
   <div class="card" id="rows">
     <p class="eyebrow">Витрина</p>
